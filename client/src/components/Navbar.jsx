@@ -122,32 +122,6 @@ const Navbar = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Demo Content - Remove this in production */}
-            <div className="pt-20 min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-                            Welcome to MDAI
-                        </h1>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            AI-powered learning platform designed to help you achieve your educational goals
-                        </p>
-                    </div>
-                    <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="bg-white p-8 rounded-xl shadow-sm">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                    Feature {i}
-                                </h3>
-                                <p className="text-gray-600">
-                                    Scroll down to see the navbar shadow effect on scroll
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
         </nav>
     );
 };
