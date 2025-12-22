@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "title": "Complete Web Development Bootcamp",
+        "teacher": "Dr. Sarah Johnson",
+        "price": 49.99,
+        "originalPrice": 99.99,
+        "rating": 4.9,
+        "students": 2453,
+        "duration": "24 hours",
+        "lessons": 156,
+        "level": "Beginner",
+        "category": "Development",
+        "thumbnail": "/images/web.jpg"
+    },
+    {
+        "id": 2,
+        "title": "Advanced React & Next.js",
+        "teacher": "Michael Chen",
+        "price": 59.99,
+        "originalPrice": 119.99,
+        "rating": 4.8,
+        "students": 1876,
+        "duration": "18 hours",
+        "lessons": 98,
+        "level": "Advanced",
+        "category": "Development",
+        "thumbnail": "/images/react.jpg"
+    },
+    {
+        "id": 3,
+        "title": "Python Zero to Hero",
+        "teacher": "James Wilson",
+        "price": 39.99,
+        "originalPrice": 79.99,
+        "rating": 4.8,
+        "students": 2987,
+        "duration": "20 hours",
+        "lessons": 132,
+        "level": "Beginner",
+        "category": "Programming",
+        "thumbnail": "/images/python.jpg"
+    },
+    {
+        "id": 4,
+        "title": "UI/UX Design with Figma",
+        "teacher": "Alex Thompson",
+        "price": 44.99,
+        "originalPrice": 89.99,
+        "rating": 4.7,
+        "students": 1543,
+        "duration": "16 hours",
+        "lessons": 89,
+        "level": "Beginner",
+        "category": "Design",
+        "thumbnail": "/images/uiux.jpg"
+    },
+    {
+        "id": 5,
+        "title": "Machine Learning A-Z",
+        "teacher": "Emily Rodriguez",
+        "price": 69.99,
+        "originalPrice": 139.99,
+        "rating": 4.9,
+        "students": 3201,
+        "duration": "32 hours",
+        "lessons": 210,
+        "level": "Intermediate",
+        "category": "Data Science",
+        "thumbnail": "/images/ml.jpg"
+    }
+]

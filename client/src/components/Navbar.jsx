@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import brandLogo from "../assets/logo.jpeg";
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -30,9 +31,15 @@ const Navbar = () => {
                     {/* Logo */}
                     <div className="flex-shrink-0">
                         <a href="#" className="flex items-center space-x-2 group">
-                            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-lg">M</span>
+                            <div className="w-9 h-9 rounded-lg overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-500 flex items-center justify-center">
+                                <img
+                                    src={brandLogo}   // change to your image path
+                                    alt="Teacher"
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                />
                             </div>
+
                             <span className="text-xl font-semibold text-gray-900 tracking-tight">
                                 MDAI
                             </span>
@@ -89,8 +96,8 @@ const Navbar = () => {
             {/* Mobile Menu */}
             <div
                 className={`md:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen
-                        ? 'max-h-96 opacity-100'
-                        : 'max-h-0 opacity-0 overflow-hidden'
+                    ? 'max-h-96 opacity-100'
+                    : 'max-h-0 opacity-0 overflow-hidden'
                     }`}
             >
                 <div className="px-4 pt-2 pb-4 space-y-1 bg-white border-t border-gray-100">
