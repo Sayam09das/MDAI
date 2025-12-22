@@ -1,9 +1,14 @@
 import React from 'react'
+import StatsBar from './StatsBar'
+import MainHeader from './MainHeader'
 
-const returnMainpages = () => {
+const ReturnMainPages = () => {
   return (
-    <div>returnMainpages</div>
+    <>
+      <MainHeader />
+      <StatsBar />
+    </>
   )
 }
 
-export default returnMainpages
+export default ReturnMainPages
