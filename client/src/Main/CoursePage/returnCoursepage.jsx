@@ -1,7 +1,7 @@
 import React from 'react'
-import CourseHeader from './CoursePage/CourseHeader'
-import CourseNavigationTabs from './CoursePage/CourseNavigationTabs'
-import OverviewSection from './CoursePage/OverviewSection'
+import CourseHeader from './CourseHeader'
+import CourseNavigationTabs from './CourseNavigationTabs'
+import OverviewSection from './OverviewSection'
 
 const returnCoursepage = () => {
     return (
@@ -9,7 +9,6 @@ const returnCoursepage = () => {
             <CourseHeader />
             <CourseNavigationTabs />
             <OverviewSection />
-
         </div>
     )
 }
