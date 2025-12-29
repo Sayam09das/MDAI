@@ -17,8 +17,8 @@ const Navbar = () => {
     const navItems = [
         { name: 'Home', href: '/' },
         { name: 'Courses', href: '/courses' },
-        { name: 'About', href: '#about' },
-        { name: 'Contact', href: '#contact' },
+        { name: 'About', href: '/about' },
+        { name: 'Contact', href: '/contact' },
     ];
 
     return (
@@ -101,7 +101,7 @@ const Navbar = () => {
                 className={`md:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen
                     ? 'max-h-96 opacity-100'
                     : 'max-h-0 opacity-0 overflow-hidden'
-                    }`}
+                    } border border-gray-200 shadow-lg rounded-b-2xl bg-white`}
             >
                 <div className="px-4 pt-2 pb-4 space-y-1 bg-white border-t border-gray-100">
                     {navItems.map((item) => (
@@ -116,14 +116,14 @@ const Navbar = () => {
                     ))}
                     <div className="pt-4 space-y-2 border-t border-gray-100 mt-2">
                         <a
-                            href="#login"
+                            href="/login"
                             className="block px-4 py-3 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center border border-indigo-500 "
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             Login
                         </a>
                         <a
-                            href="#register"
+                            href="/register"
                             className="block px-4 py-3 text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200 text-center shadow-sm"
                             onClick={() => setIsMobileMenuOpen(false)}
                         >

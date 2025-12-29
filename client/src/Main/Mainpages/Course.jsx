@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Clock, Users, BookOpen, ChevronRight, Loader2 } from "lucide-react";
-import coursesData from "../../../data/courses.json"; // ✅ FIXED IMPORT PATH & NAME
+import coursesData from "../../../data/courses.json"; 
 
-// ==============================
-// Lazy Loading Image Component
-// ==============================
+
 const LazyImage = ({ src, alt, className }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isInView, setIsInView] = useState(false);
@@ -15,7 +13,7 @@ const LazyImage = ({ src, alt, className }) => {
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsInView(true);
-                    observer.unobserve(entry.target); // ✅ safer than disconnect
+                    observer.unobserve(entry.target); 
                 }
             },
             { threshold: 0.1 }
@@ -48,13 +46,11 @@ const LazyImage = ({ src, alt, className }) => {
     );
 };
 
-// ==============================
-// Course Card Component
-// ==============================
+
 const CourseCard = ({ course, index }) => {
     const handleEnroll = (e) => {
         e.preventDefault();
-        window.location.href = "#login";
+        window.location.href = "/login";
     };
 
     return (
@@ -117,9 +113,7 @@ const CourseCard = ({ course, index }) => {
     );
 };
 
-// ==============================
-// Main Courses Section
-// ==============================
+
 const CoursesSection = () => {
     const [displayedCourses, setDisplayedCourses] = useState(8);
     const [isLoading, setIsLoading] = useState(false);

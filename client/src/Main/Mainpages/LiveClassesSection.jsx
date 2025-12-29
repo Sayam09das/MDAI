@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Video, Clock, Users, Calendar, Play, Lock, TrendingUp, Bell } from 'lucide-react';
+import { toast } from "react-toastify"
+import { useNavigate } from "react-router-dom"
+
 
 const LiveClassesSection = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [activeTab, setActiveTab] = useState('all'); // 'all', 'live', 'upcoming'
+    const [activeTab, setActiveTab] = useState('all');
     const sectionRef = useRef(null);
+    const navigate = useNavigate()
+
 
     // Simulate user login status - Change to true to test logged-in state
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -142,15 +147,45 @@ const LiveClassesSection = () => {
     };
 
     const handleJoinClass = (classItem) => {
+        // 🔴 Not logged in
         if (!isLoggedIn) {
-            window.location.href = '#login';
-        } else if (!classItem.isPaid) {
-            alert('Please purchase this course to join the class');
-        } else {
-            // Join the live class
-            alert(`Joining ${classItem.courseName}...`);
+            toast.warning("Please login to join the live class", {
+                position: "top-right",
+                autoClose: 3000,
+            })
+
+            setTimeout(() => {
+                navigate("/login")
+            }, 1500)
+            return
         }
-    };
+
+        // 🔴 Class is not live yet
+        if (classItem.status !== "live") {
+            toast.info("This class is not live yet. Please wait for the scheduled time ⏳", {
+                position: "top-right",
+                autoClose: 3000,
+            })
+            return
+        }
+
+        // 🔴 Course not purchased
+        if (!classItem.isPaid) {
+            toast.error("Please purchase this course to join the class", {
+                position: "top-right",
+                autoClose: 3000,
+            })
+            return
+        }
+
+        // ✅ All checks passed → join class
+        toast.success(`Joining ${classItem.courseName}...`, {
+            position: "top-right",
+            autoClose: 2000,
+        })
+
+    }
+
 
     const LiveClassCard = ({ classItem, index }) => {
         const isLive = classItem.status === 'live';
@@ -251,8 +286,8 @@ const LiveClassesSection = () => {
                     <button
                         onClick={() => handleJoinClass(classItem)}
                         className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isLive
-                                ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-lg hover:shadow-xl'
-                                : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-lg hover:shadow-xl'
+                            ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-lg hover:shadow-xl'
+                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-lg hover:shadow-xl'
                             } ${!isLoggedIn || !classItem.isPaid ? 'relative' : ''}`}
                     >
                         {!isLoggedIn ? (
@@ -379,8 +414,8 @@ const LiveClassesSection = () => {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-4 md:px-6 py-2 md:py-3 rounded-xl font-semibold text-sm md:text-base transition-all duration-300 cursor-pointer ${activeTab === tab.key
-                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
                                 }`}
                         >
                             {tab.label} <span className="ml-1 md:ml-2 text-xs md:text-sm opacity-75">({tab.count})</span>

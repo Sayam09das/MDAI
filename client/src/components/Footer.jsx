@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Linkedin, Github, Twitter, Send, CheckCircle } from 'lucide-react';
 
 const Footer = () => {
+    const logoUrl = import.meta.env.VITE_LOGO_URL;
     const [email, setEmail] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isHovered, setIsHovered] = useState(null);
@@ -18,17 +19,17 @@ const Footer = () => {
     };
 
     const platformLinks = [
-        { name: 'Home', href: '#home' },
-        { name: 'Courses', href: '#courses' },
-        { name: 'About', href: '#about' },
-        { name: 'Contact', href: '#contact' },
+        { name: 'Home', href: '/' },
+        { name: 'Courses', href: '/courses' },
+        { name: 'About', href: '/about' },
+        { name: 'Contact', href: '/contact' },
     ];
 
     const resourceLinks = [
-        { name: 'FAQs', href: '#faqs' },
-        { name: 'Help Center', href: '#help' },
-        { name: 'Privacy Policy', href: '#privacy' },
-        { name: 'Terms & Conditions', href: '#terms' },
+        { name: 'FAQs', href: '/faqs' },
+        { name: 'Help Center', href: '/help' },
+        { name: 'Privacy Policy', href: '/privacy' },
+        { name: 'Terms & Conditions', href: '/terms' },
     ];
 
     const socialLinks = [
@@ -63,13 +64,19 @@ const Footer = () => {
                         <div className="space-y-4">
                             {/* Logo */}
                             <div className="flex items-center space-x-2">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-105">
-                                    <span className="text-white font-bold text-xl">M</span>
+                                <div className="w-10 h-10  rounded-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-105">
+                                    <img
+                                        src={logoUrl}
+                                        alt="MDAI Logo"
+                                        className="w-10 h-10 object-contain rounded-xl"
+                                    />
                                 </div>
+
                                 <span className="text-2xl font-semibold text-gray-900 tracking-tight">
                                     MDAI
                                 </span>
                             </div>
+
 
                             {/* Tagline */}
                             <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
@@ -104,8 +111,8 @@ const Footer = () => {
                                             onClick={handleNewsletterSubmit}
                                             disabled={isSubmitted}
                                             className={`px-4 py-2.5 rounded-r-lg font-medium text-sm transition-all duration-300 ${isSubmitted
-                                                    ? 'bg-green-600 text-white'
-                                                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
                                                 }`}
                                         >
                                             {isSubmitted ? (
