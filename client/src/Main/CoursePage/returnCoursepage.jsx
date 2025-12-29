@@ -7,6 +7,7 @@ import LiveClassesSection from './LiveClassesSection'
 import ResourcesMaterialsSection from './ResourcesMaterialsSection'
 import InstructorTeacherProfile from './InstructorTeacherProfile'
 import ReviewsRatings from './ReviewsRatings'
+import CourseProgress from './CourseProgress'
 
 const returnCoursepage = () => {
     return (
@@ -19,6 +20,7 @@ const returnCoursepage = () => {
             <ResourcesMaterialsSection />
             <InstructorTeacherProfile />
             <ReviewsRatings />
+            <CourseProgress />
         </div>
     )
 }
