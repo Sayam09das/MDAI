@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, GraduationCap, BookOpen, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, GraduationCap, BookOpen, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin } from 'lucide-react';
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -357,6 +357,70 @@ const Registration = () => {
                                         </div>
                                     )}
                                 </div>
+                                {/* Phone Number */}
+                                <div className="animate-fadeInUp" style={{ animationDelay: "0.5s" }}>
+                                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Phone Number
+                                    </label>
+
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <Phone className="w-5 h-5 text-gray-400" />
+                                        </div>
+
+                                        <input
+                                            type="tel"
+                                            id="phone"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 rounded-xl focus:outline-none input-focus-ring transition-all duration-300 ${errors.phone
+                                                ? "border-red-300 focus:border-red-500"
+                                                : "border-gray-200 focus:border-indigo-500"
+                                                }`}
+                                            placeholder="+91 98765 43210"
+                                        />
+                                    </div>
+
+                                    {errors.phone && (
+                                        <div className="flex items-center gap-1 mt-2 text-red-600 text-sm animate-slideInRight">
+                                            <AlertCircle className="w-4 h-4" />
+                                            <span>{errors.phone}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Full Address */}
+                                <div className="animate-fadeInUp" style={{ animationDelay: "0.6s" }}>
+                                    <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Full Address
+                                    </label>
+
+                                    <div className="relative">
+                                        <div className="absolute top-3 left-0 pl-4 flex items-start pointer-events-none">
+                                            <MapPin className="w-5 h-5 text-gray-400" />
+                                        </div>
+
+                                        <textarea
+                                            id="address"
+                                            name="address"
+                                            rows={3}
+                                            value={formData.address}
+                                            onChange={handleChange}
+                                            className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 rounded-xl focus:outline-none input-focus-ring transition-all duration-300 resize-none ${errors.address
+                                                    ? "border-red-300 focus:border-red-500"
+                                                    : "border-gray-200 focus:border-indigo-500"
+                                                }`}
+                                            placeholder="Street, City, State, Country, ZIP Code"
+                                        />
+                                    </div>
+
+                                    {errors.address && (
+                                        <div className="flex items-center gap-1 mt-2 text-red-600 text-sm animate-slideInRight">
+                                            <AlertCircle className="w-4 h-4" />
+                                            <span>{errors.address}</span>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Role Selection */}
                                 <div className="animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
@@ -368,14 +432,14 @@ const Registration = () => {
                                             type="button"
                                             onClick={() => handleRoleSelect('student')}
                                             className={`relative p-4 border-2 rounded-xl transition-all duration-300 cursor-pointer group ${formData.role === 'student'
-                                                    ? 'border-indigo-500 bg-indigo-50'
-                                                    : 'border-gray-200 hover:border-indigo-200 bg-white'
+                                                ? 'border-indigo-500 bg-indigo-50'
+                                                : 'border-gray-200 hover:border-indigo-200 bg-white'
                                                 }`}
                                         >
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className={`p-3 rounded-full transition-all duration-300 ${formData.role === 'student'
-                                                        ? 'bg-indigo-600'
-                                                        : 'bg-gray-100 group-hover:bg-indigo-100'
+                                                    ? 'bg-indigo-600'
+                                                    : 'bg-gray-100 group-hover:bg-indigo-100'
                                                     }`}>
                                                     <GraduationCap className={`w-6 h-6 ${formData.role === 'student' ? 'text-white' : 'text-gray-600 group-hover:text-indigo-600'
                                                         }`} />
@@ -396,14 +460,14 @@ const Registration = () => {
                                             type="button"
                                             onClick={() => handleRoleSelect('teacher')}
                                             className={`relative p-4 border-2 rounded-xl transition-all duration-300 cursor-pointer group ${formData.role === 'teacher'
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-gray-200 hover:border-purple-200 bg-white'
+                                                ? 'border-purple-500 bg-purple-50'
+                                                : 'border-gray-200 hover:border-purple-200 bg-white'
                                                 }`}
                                         >
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className={`p-3 rounded-full transition-all duration-300 ${formData.role === 'teacher'
-                                                        ? 'bg-purple-600'
-                                                        : 'bg-gray-100 group-hover:bg-purple-100'
+                                                    ? 'bg-purple-600'
+                                                    : 'bg-gray-100 group-hover:bg-purple-100'
                                                     }`}>
                                                     <BookOpen className={`w-6 h-6 ${formData.role === 'teacher' ? 'text-white' : 'text-gray-600 group-hover:text-purple-600'
                                                         }`} />
