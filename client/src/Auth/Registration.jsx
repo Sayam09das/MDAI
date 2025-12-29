@@ -448,7 +448,7 @@ const Registration = () => {
                                     <p className="text-gray-600 text-sm">
                                         Already have an account?{' '}
                                         <a
-                                            href="#login"
+                                            href="/login"
                                             className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
                                         >
                                             Sign In
@@ -464,9 +464,9 @@ const Registration = () => {
                 <div className="text-center mt-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
                     <p className="text-gray-600 text-sm">
                         By signing up, you agree to our{' '}
-                        <a href="#terms" className="text-indigo-600 hover:underline">Terms</a>
+                        <a href="/terms" className="text-indigo-600 hover:underline">Terms</a>
                         {' '}and{' '}
-                        <a href="#privacy" className="text-indigo-600 hover:underline">Privacy Policy</a>
+                        <a href="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</a>
                     </p>
                 </div>
             </div>
