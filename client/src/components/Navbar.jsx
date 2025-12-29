@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import brandLogo from "../assets/logo.jpeg";
 
 const Navbar = () => {
+    const logoUrl = import.meta.env.VITE_LOGO_URL;
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -33,7 +33,7 @@ const Navbar = () => {
                         <a href="/" className="flex items-center space-x-2 group">
                             <div className="w-9 h-9 rounded-lg overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-500 flex items-center justify-center">
                                 <img
-                                    src={brandLogo}   // change to your image path
+                                    src={logoUrl}
                                     alt="Teacher"
                                     className="w-full h-full object-cover"
                                     loading="lazy"

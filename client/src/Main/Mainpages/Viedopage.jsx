@@ -4,8 +4,9 @@ import { BookOpen, Play, CheckCircle, X } from "lucide-react";
 const Viedopage = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [showVideo, setShowVideo] = useState(false);
+    const MdaiVideo  = import.meta.env.VITE_MdaiVideo_URL;
+    const MdaiVideoThumb = import.meta.env.VITE_MDAIVIDEO_THUMB_URL;
 
-    const videoId = "dQw4w9WgXcQ"; // change this
 
     useEffect(() => {
         setIsVisible(true);
@@ -49,7 +50,7 @@ const Viedopage = () => {
                         {/* Video */}
                         <iframe
                             className="w-full h-full"
-                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                            src={MdaiVideo}
                             title="Course Video"
                             allow="autoplay; fullscreen"
                             allowFullScreen
@@ -69,7 +70,7 @@ const Viedopage = () => {
                     >
                         {/* Thumbnail */}
                         <img
-                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                            src={MdaiVideoThumb}
                             alt="Video Preview"
                             className="absolute inset-0 w-full h-full object-cover"
                         />
