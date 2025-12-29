@@ -30,7 +30,7 @@ const Navbar = () => {
                 <div className="flex items-center justify-between h-16 md:h-20">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <a href="#" className="flex items-center space-x-2 group">
+                        <a href="/" className="flex items-center space-x-2 group">
                             <div className="w-9 h-9 rounded-lg overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-500 flex items-center justify-center">
                                 <img
                                     src={brandLogo}   // change to your image path
@@ -63,13 +63,16 @@ const Navbar = () => {
                     {/* Desktop Auth Buttons */}
                     <div className="hidden md:flex md:items-center md:space-x-3 lg:space-x-4">
                         <a
-                            href="#login"
-                            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors duration-200"
+                            href="/login"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 
+             hover:text-indigo-600 transition-colors duration-200 
+             border border-indigo-500  rounded-md"
                         >
                             Login
                         </a>
+
                         <a
-                            href="#register"
+                            href="/register"
                             className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors duration-200 shadow-sm"
                         >
                             Register
@@ -114,7 +117,7 @@ const Navbar = () => {
                     <div className="pt-4 space-y-2 border-t border-gray-100 mt-2">
                         <a
                             href="#login"
-                            className="block px-4 py-3 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center"
+                            className="block px-4 py-3 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors duration-200 text-center border border-indigo-500 "
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             Login
