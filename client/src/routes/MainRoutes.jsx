@@ -1,11 +1,14 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
-import ReturnMainPages from '../Main/Mainpages/returnMainpages'
+import React from "react"
+import { Routes, Route } from "react-router-dom"
+import MainLayout from "../layouts/MainLayout"
+import ReturnMainPages from "../Main/Mainpages/returnMainpages"
 
 const MainRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<ReturnMainPages />} />
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<ReturnMainPages />} />
+      </Route>
     </Routes>
   )
 }
