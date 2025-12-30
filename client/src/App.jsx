@@ -5,13 +5,17 @@ import "react-toastify/dist/ReactToastify.css"
 import MainRoutes from "./routes/MainRoutes"
 import CourseRoutes from "./routes/CourseRoutes"
 import AuthRoutes from "./routes/AuthRoutes"
+import AboutRoutes from "./routes/AboutRoutes"
+import ContactRoutes from "./routes/ContactRoutes"
 
 const App = () => {
   return (
     <>
-     <ToastContainer />
+      <ToastContainer />
       <MainRoutes />
       <CourseRoutes />
+      <AboutRoutes />
+      <ContactRoutes />
       <AuthRoutes />
     </>
   )
