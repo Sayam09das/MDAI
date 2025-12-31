@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FileText, Download, ExternalLink, Video, Link2, 
+import {
+  FileText, Download, ExternalLink, Video, Link2,
   BookOpen, CheckCircle, Lock, Search, Filter,
   Folder, Star, Calendar, Eye, TrendingUp,
   File, Archive, Code, Clock
 } from 'lucide-react';
+import { toast } from "react-toastify";
+
 
 const ResourcesMaterialsSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -98,7 +100,6 @@ const ResourcesMaterialsSection = () => {
         points: 50,
         dueDate: 'Dec 31, 2025',
         locked: false,
-        submissionUrl: 'https://example.com/submit/1',
         completed: false
       },
       {
@@ -110,7 +111,6 @@ const ResourcesMaterialsSection = () => {
         points: 100,
         dueDate: 'Jan 5, 2026',
         locked: false,
-        submissionUrl: 'https://example.com/submit/2',
         completed: false
       },
       {
@@ -122,7 +122,6 @@ const ResourcesMaterialsSection = () => {
         points: 150,
         dueDate: 'Jan 10, 2026',
         locked: true,
-        submissionUrl: 'https://example.com/submit/3',
         completed: false
       }
     ],
@@ -131,7 +130,6 @@ const ResourcesMaterialsSection = () => {
         id: 'link-1',
         title: 'Scikit-learn Official Documentation',
         description: 'Complete reference for machine learning algorithms',
-        url: 'https://scikit-learn.org',
         category: 'Documentation',
         icon: 'docs',
         visits: 1234
@@ -140,7 +138,6 @@ const ResourcesMaterialsSection = () => {
         id: 'link-2',
         title: 'TensorFlow Tutorials',
         description: 'Step-by-step guides for deep learning with TensorFlow',
-        url: 'https://tensorflow.org/tutorials',
         category: 'Tutorial',
         icon: 'tutorial',
         visits: 2156
@@ -149,7 +146,6 @@ const ResourcesMaterialsSection = () => {
         id: 'link-3',
         title: 'Kaggle ML Competitions',
         description: 'Practice your skills with real-world datasets',
-        url: 'https://kaggle.com/competitions',
         category: 'Practice',
         icon: 'practice',
         visits: 3421
@@ -158,7 +154,6 @@ const ResourcesMaterialsSection = () => {
         id: 'link-4',
         title: 'Papers With Code',
         description: 'Latest ML research papers with implementation',
-        url: 'https://paperswithcode.com',
         category: 'Research',
         icon: 'research',
         visits: 987
@@ -167,7 +162,6 @@ const ResourcesMaterialsSection = () => {
         id: 'link-5',
         title: 'Google Colab',
         description: 'Free cloud-based Jupyter notebook environment',
-        url: 'https://colab.research.google.com',
         category: 'Tools',
         icon: 'tool',
         visits: 4532
@@ -182,7 +176,7 @@ const ResourcesMaterialsSection = () => {
         views: 5847,
         uploadDate: '3 days ago',
         thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&h=500&fit=crop',
-        videoUrl: 'https://youtube.com/watch?v=example1',
+        videoUrl: 'https://www.youtube.com/watch?v=i_LwzRVP7bg',
         locked: false,
         rating: 4.9
       },
@@ -194,7 +188,7 @@ const ResourcesMaterialsSection = () => {
         views: 4231,
         uploadDate: '5 days ago',
         thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=500&fit=crop',
-        videoUrl: 'https://youtube.com/watch?v=example2',
+        videoUrl: 'https://www.youtube.com/watch?v=aircAruvnKk',
         locked: false,
         rating: 4.8
       },
@@ -206,7 +200,7 @@ const ResourcesMaterialsSection = () => {
         views: 3156,
         uploadDate: '1 week ago',
         thumbnail: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=800&h=500&fit=crop',
-        videoUrl: 'https://youtube.com/watch?v=example3',
+        videoUrl: 'https://www.youtube.com/watch?v=P4Z8_qe2Cu0',
         locked: true,
         rating: 4.7
       }
@@ -214,29 +208,68 @@ const ResourcesMaterialsSection = () => {
   };
 
   const handleDownload = (item) => {
+    // 🔒 Demo: Locked content
     if (!isPaid && item.locked) {
-      alert('Please purchase this course to download locked materials');
-      window.location.href = '#enroll';
+      toast.warning(
+        "🔒 Demo Mode: This material is locked. Please enroll to unlock downloads.",
+        {
+          position: "top-right",
+          autoClose: 3500,
+        }
+      );
+
+      // Scroll to enroll section (demo UX)
+      document.getElementById("enroll")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    setDownloadedItems(prev => [...prev, item.id]);
-    console.log('Downloading:', item.title);
-    alert('Download started!');
+
+    // ✅ Demo: Successful download
+    setDownloadedItems((prev) => [...prev, item.id]);
+
+    toast.success(
+      "⬇️ Demo Download Started! Your file is being prepared.",
+      {
+        position: "top-right",
+        autoClose: 2500,
+      }
+    );
+
+    console.log("Demo downloading:", item.title);
   };
+
 
   const handleExternalLink = (url) => {
     if (!isPaid) {
-      alert('Please purchase this course to access external resources');
-      window.location.href = '#enroll';
+      toast.warning(
+        "Demo Mode: Please enroll in the course to access external resources.",
+        {
+          position: "top-right",
+          autoClose: 3500,
+        }
+      );
+
+      // Redirect to register after short delay
+      setTimeout(() => {
+        navigate("/register");
+      }, 1500);
+
       return;
     }
-    window.open(url, '_blank');
+
+    // Optional: Demo message even for paid users
+    toast.info(
+      "External resource access is available after enrollment.",
+      {
+        position: "top-right",
+        autoClose: 2500,
+      }
+    );
   };
 
   const handleWatchRecording = (recording) => {
     if (!isPaid && recording.locked) {
       alert('Please purchase this course to watch this recording');
-      window.location.href = '#enroll';
+      window.location.href = '/register';
       return;
     }
     window.open(recording.videoUrl, '_blank');
@@ -247,9 +280,8 @@ const ResourcesMaterialsSection = () => {
 
     return (
       <div
-        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
-          isVisible ? 'animate-slideUp' : 'opacity-0'
-        }`}
+        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${isVisible ? 'animate-slideUp' : 'opacity-0'
+          }`}
         style={{ animationDelay: `${index * 0.1}s` }}
       >
         <div className="p-6">
@@ -263,7 +295,7 @@ const ResourcesMaterialsSection = () => {
                 {item.locked && <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />}
               </div>
               <p className="text-sm text-gray-600 line-clamp-2 mb-3">{item.description}</p>
-              
+
               <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-3">
                 <span className="flex items-center gap-1">
                   <File className="w-3.5 h-3.5" />
@@ -295,13 +327,12 @@ const ResourcesMaterialsSection = () => {
           <button
             onClick={() => handleDownload(item)}
             disabled={!isPaid && item.locked}
-            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-              isDownloaded
-                ? 'bg-green-100 text-green-700 cursor-default'
-                : isPaid || !item.locked
-                  ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-md hover:shadow-lg cursor-pointer'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${isDownloaded
+              ? 'bg-green-100 text-green-700 cursor-default'
+              : isPaid || !item.locked
+                ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-md hover:shadow-lg cursor-pointer'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
           >
             {isDownloaded ? (
               <>
@@ -334,9 +365,8 @@ const ResourcesMaterialsSection = () => {
 
     return (
       <div
-        className={`bg-white rounded-2xl shadow-lg border-2 ${item.locked ? 'border-gray-200' : 'border-indigo-200'} overflow-hidden hover:shadow-2xl transition-all duration-500 ${
-          isVisible ? 'animate-slideUp' : 'opacity-0'
-        }`}
+        className={`bg-white rounded-2xl shadow-lg border-2 ${item.locked ? 'border-gray-200' : 'border-indigo-200'} overflow-hidden hover:shadow-2xl transition-all duration-500 ${isVisible ? 'animate-slideUp' : 'opacity-0'
+          }`}
         style={{ animationDelay: `${index * 0.1}s` }}
       >
         <div className="p-6">
@@ -370,20 +400,36 @@ const ResourcesMaterialsSection = () => {
           <button
             onClick={() => {
               if (!isPaid && item.locked) {
-                alert('Please purchase this course to access assignments');
-                window.location.href = '#enroll';
+                toast.warning(
+                  "🔒 Demo Mode: Please enroll in the course to access assignments.",
+                  {
+                    position: "top-right",
+                    autoClose: 3500,
+                  }
+                );
+
+                // Optional redirect after toast
+                setTimeout(() => {
+                  window.location.href = "/register";
+                }, 1500);
+
               } else {
-                window.open(item.submissionUrl, '_blank');
+                toast.info(
+                  "Demo Mode: Assignment access will be available after enrollment.",
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                  }
+                );
               }
             }}
             disabled={!isPaid && item.locked}
-            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-              item.completed
-                ? 'bg-green-100 text-green-700 cursor-default'
-                : isPaid || !item.locked
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-md hover:shadow-lg cursor-pointer'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${item.completed
+              ? 'bg-green-100 text-green-700 cursor-default'
+              : isPaid || !item.locked
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-md hover:shadow-lg cursor-pointer'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
           >
             {item.completed ? (
               <>
@@ -392,7 +438,7 @@ const ResourcesMaterialsSection = () => {
               </>
             ) : isPaid || !item.locked ? (
               <>
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 " />
                 Start Assignment
               </>
             ) : (
@@ -419,9 +465,8 @@ const ResourcesMaterialsSection = () => {
 
     return (
       <div
-        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 group cursor-pointer ${
-          isVisible ? 'animate-slideUp' : 'opacity-0'
-        }`}
+        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 group cursor-pointer ${isVisible ? 'animate-slideUp' : 'opacity-0'
+          }`}
         style={{ animationDelay: `${index * 0.1}s` }}
         onClick={() => handleExternalLink(item.url)}
       >
@@ -435,7 +480,7 @@ const ResourcesMaterialsSection = () => {
                 {item.title}
               </h3>
               <p className="text-sm text-gray-600 line-clamp-2 mb-3">{item.description}</p>
-              
+
               <div className="flex items-center justify-between">
                 <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full">
                   {item.category}
@@ -449,7 +494,6 @@ const ResourcesMaterialsSection = () => {
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <span className="text-sm text-gray-500 truncate flex-1">{item.url.replace('https://', '')}</span>
             <ExternalLink className="w-4 h-4 text-indigo-600 flex-shrink-0 ml-2 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
@@ -460,9 +504,8 @@ const ResourcesMaterialsSection = () => {
   const RecordingCard = ({ item, index }) => {
     return (
       <div
-        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 group ${
-          isVisible ? 'animate-slideUp' : 'opacity-0'
-        }`}
+        className={`bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 group ${isVisible ? 'animate-slideUp' : 'opacity-0'
+          }`}
         style={{ animationDelay: `${index * 0.1}s` }}
       >
         <div className="relative h-48 overflow-hidden bg-gray-900 cursor-pointer" onClick={() => handleWatchRecording(item)}>
@@ -472,7 +515,7 @@ const ResourcesMaterialsSection = () => {
             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
             loading="lazy"
           />
-          
+
           {item.locked && (
             <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
               <Lock className="w-3 h-3" />
@@ -513,11 +556,10 @@ const ResourcesMaterialsSection = () => {
           <button
             onClick={() => handleWatchRecording(item)}
             disabled={!isPaid && item.locked}
-            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-              isPaid || !item.locked
-                ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black shadow-md hover:shadow-lg cursor-pointer'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${isPaid || !item.locked
+              ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black shadow-md hover:shadow-lg cursor-pointer'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
           >
             {isPaid || !item.locked ? (
               <>
@@ -580,11 +622,11 @@ const ResourcesMaterialsSection = () => {
               Resources & Materials
             </span>
           </div>
-          
+
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             Learning <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Resources</span>
           </h2>
-          
+
           <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
             Access comprehensive materials to enhance your learning experience
           </p>
@@ -595,11 +637,10 @@ const ResourcesMaterialsSection = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 md:px-6 py-2 md:py-3 rounded-xl font-semibold text-sm md:text-base transition-all duration-300 cursor-pointer ${
-                activeTab === tab.key
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
-              }`}
+              className={`px-4 md:px-6 py-2 md:py-3 rounded-xl font-semibold text-sm md:text-base transition-all duration-300 cursor-pointer ${activeTab === tab.key
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
+                : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                }`}
             >
               {tab.label} <span className="ml-1 md:ml-2 text-xs md:text-sm opacity-75">({tab.count})</span>
             </button>

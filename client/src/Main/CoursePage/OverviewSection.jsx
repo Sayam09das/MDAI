@@ -4,6 +4,8 @@ import {
     Award, Clock, TrendingUp, Sparkles, Star, Play,
     AlertCircle, Zap, Code, Brain, Rocket
 } from 'lucide-react';
+import { Link } from "react-router-dom";
+
 
 const OverviewSection = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -413,8 +415,8 @@ const OverviewSection = () => {
                                         <div
                                             key={index}
                                             className={`rounded-2xl p-5 md:p-6 border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${req.level === 'essential'
-                                                    ? 'bg-red-50 border-red-200 hover:border-red-300'
-                                                    : 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                                                ? 'bg-red-50 border-red-200 hover:border-red-300'
+                                                : 'bg-blue-50 border-blue-200 hover:border-blue-300'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-4">
@@ -428,8 +430,8 @@ const OverviewSection = () => {
                                                             {req.title}
                                                         </h3>
                                                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${req.level === 'essential'
-                                                                ? 'bg-red-500 text-white'
-                                                                : 'bg-blue-500 text-white'
+                                                            ? 'bg-red-500 text-white'
+                                                            : 'bg-blue-500 text-white'
                                                             }`}>
                                                             {req.level.toUpperCase()}
                                                         </span>
@@ -515,14 +517,20 @@ const OverviewSection = () => {
                                 Join 50,000+ students who are already mastering machine learning and transforming their careers
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button className="group px-8 py-4 bg-white text-indigo-600 text-base md:text-lg font-bold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-2xl inline-flex items-center gap-3 cursor-pointer transform hover:scale-105 w-full sm:w-auto">
+                                <Link
+                                    to="/register"
+                                    className="group px-8 py-4 bg-white text-indigo-600 text-base md:text-lg font-bold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-2xl inline-flex items-center gap-3 cursor-pointer transform hover:scale-105 w-full sm:w-auto justify-center"
+                                >
                                     Enroll Now
                                     <Rocket className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                </button>
-                                <button className="px-8 py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-xl hover:bg-white/20 transition-all duration-300 inline-flex items-center gap-3 cursor-pointer w-full sm:w-auto">
+                                </Link>
+                                <Link
+                                    to="/watch-preview"
+                                    className="px-8 py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-xl hover:bg-white/20 transition-all duration-300 inline-flex items-center gap-3 cursor-pointer w-full sm:w-auto justify-center"
+                                >
                                     <Play className="w-5 h-5 fill-white" />
                                     Watch Preview
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

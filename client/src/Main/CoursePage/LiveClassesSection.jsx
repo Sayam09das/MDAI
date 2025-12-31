@@ -67,7 +67,7 @@ const LiveClassesSection = () => {
             duration: 90,
             currentViewers: 234,
             maxViewers: 500,
-            thumbnail: 'from-blue-500 to-indigo-600',
+            thumbnail: 'https://media2.dev.to/dynamic/image/width=1000,height=420,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fsv3gpvwpc47gbm3zkd4u.jpg',
             topic: 'React Advanced',
             isRecording: true,
         },
@@ -83,7 +83,7 @@ const LiveClassesSection = () => {
             duration: 120,
             currentViewers: 189,
             maxViewers: 300,
-            thumbnail: 'from-purple-500 to-pink-600',
+            thumbnail: 'https://capabilitydevelopment.org/assets/upload/Course/0a2636de86fbddac950f96d0589d9968.jpg',
             topic: 'Data Science',
             isRecording: true,
         },
@@ -209,8 +209,8 @@ const LiveClassesSection = () => {
                         <button
                             onClick={() => setActiveTab('live')}
                             className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center space-x-2 ${activeTab === 'live'
-                                    ? 'bg-white text-red-600 shadow-md'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                ? 'bg-white text-red-600 shadow-md'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             <Radio className={`w-4 h-4 ${activeTab === 'live' ? 'animate-pulse' : ''}`} />
@@ -223,8 +223,8 @@ const LiveClassesSection = () => {
                         <button
                             onClick={() => setActiveTab('upcoming')}
                             className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center space-x-2 ${activeTab === 'upcoming'
-                                    ? 'bg-white text-indigo-600 shadow-md'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                ? 'bg-white text-indigo-600 shadow-md'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             <Calendar className="w-4 h-4" />
@@ -243,8 +243,8 @@ const LiveClassesSection = () => {
                         <button
                             onClick={() => setUserPaymentStatus('paid')}
                             className={`px-4 py-2 rounded text-sm font-semibold transition-all duration-300 ${userPaymentStatus === 'paid'
-                                    ? 'bg-green-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'bg-green-500 text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             ✅ Payment Success
@@ -252,8 +252,8 @@ const LiveClassesSection = () => {
                         <button
                             onClick={() => setUserPaymentStatus('pending')}
                             className={`px-4 py-2 rounded text-sm font-semibold transition-all duration-300 ${userPaymentStatus === 'pending'
-                                    ? 'bg-orange-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'bg-orange-500 text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             ⏳ Payment Pending
@@ -272,8 +272,8 @@ const LiveClassesSection = () => {
                                 <div
                                     key={liveClass.id}
                                     className={`group transition-all duration-700 ${isVisible
-                                            ? 'opacity-100 translate-y-0'
-                                            : 'opacity-0 translate-y-20'
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-20'
                                         }`}
                                     style={{ transitionDelay: `${(index + 2) * 150}ms` }}
                                 >
@@ -295,9 +295,21 @@ const LiveClassesSection = () => {
                                         )}
 
                                         {/* Thumbnail */}
-                                        <div className={`relative h-48 bg-gradient-to-br ${liveClass.thumbnail} transition-transform duration-500 group-hover:scale-105`}>
+                                        <div className="relative h-48 overflow-hidden group">
+
+                                            {/* Image */}
+                                            <img
+                                                src={liveClass.thumbnail}
+                                                alt={liveClass.title}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+
+                                            {/* Dark overlay */}
+                                            <div className="absolute inset-0 bg-black/40" />
+
+                                            {/* Center Icon */}
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <Video className="w-20 h-20 text-white opacity-20" />
+                                                <Video className="w-20 h-20 text-white opacity-40" />
                                             </div>
 
                                             {/* Progress Bar */}
@@ -308,6 +320,7 @@ const LiveClassesSection = () => {
                                                 />
                                             </div>
                                         </div>
+
 
                                         {/* Content */}
                                         <div className="p-6">
@@ -323,7 +336,7 @@ const LiveClassesSection = () => {
 
                                             {/* Teacher */}
                                             <div className="flex items-center space-x-3 mb-4">
-                                                <div className={`w-10 h-10 bg-gradient-to-br ${liveClass.thumbnail} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+                                                <div className={`w-10 h-10 bg-gradient-to-br ${liveClass.thumbnail} rounded-full flex items-center justify-center text-white bg-indigo-500  font-bold text-sm`}>
                                                     {liveClass.teacher.avatar}
                                                 </div>
                                                 <div>
@@ -392,8 +405,8 @@ const LiveClassesSection = () => {
                             <div
                                 key={upcomingClass.id}
                                 className={`group transition-all duration-700 ${isVisible
-                                        ? 'opacity-100 translate-y-0'
-                                        : 'opacity-0 translate-y-20'
+                                    ? 'opacity-100 translate-y-0'
+                                    : 'opacity-0 translate-y-20'
                                     }`}
                                 style={{ transitionDelay: `${(index + 2) * 150}ms` }}
                             >
@@ -453,13 +466,13 @@ const LiveClassesSection = () => {
                                         <div className="space-y-2">
                                             {userPaymentStatus === 'paid' ? (
                                                 <>
-                                                    <button className="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                                                    <button className="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center space-x-2 cursor-not-allowed">
                                                         <Bell className="w-4 h-4" />
                                                         <span>Set Reminder</span>
                                                     </button>
-                                                    <button className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 flex items-center justify-center space-x-2">
+                                                    <button className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 flex items-center justify-center space-x-2 cursor-not-allowed">
                                                         <PlayCircle className="w-4 h-4" />
-                                                        <span>View Details</span>
+                                                        <span className='cursor-not-allowed'>View Details</span>
                                                     </button>
                                                 </>
                                             ) : (

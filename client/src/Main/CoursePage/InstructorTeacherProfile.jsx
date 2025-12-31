@@ -33,25 +33,30 @@ const InstructorTeacherProfile = () => {
     rating: 0,
   });
   const sectionRef = useRef(null);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const whatsappNumber = import.meta.env.VITE_PROFESSOR_WHATSAPP;
+  const linkedinProfile = import.meta.env.VITE_PROFESSOR_LINKEDIN;
+
+
 
   const instructorData = {
-    name: 'Dr. Sarah Johnson',
-    title: 'Senior Full Stack Developer & AI Specialist',
-    avatar: 'SJ',
-    photo: null,
-    bio: 'Passionate educator with 15+ years of experience in web development and artificial intelligence. I\'ve helped over 45,000 students worldwide achieve their career goals through practical, project-based learning. My mission is to make complex concepts accessible and help you build real-world skills.',
+    name: 'Pyana Mwamba Symphorien',
+    title: 'Senior Full Stack Developer',
+    avatar: 'PS',
+    photo: "https://res.cloudinary.com/dp4ohisdc/image/upload/v1767198306/AdminPic_klsu4w.png",
+    bio: 'Passionate educator with 2+ years of experience in web development and artificial intelligence. I\'ve helped over 45,000 students worldwide achieve their career goals through practical, project-based learning. My mission is to make complex concepts accessible and help you build real-world skills.',
     longBio: 'I started my journey as a software engineer at Google, where I led teams building scalable applications. After realizing my passion for teaching, I transitioned to education and have since created comprehensive courses that have transformed thousands of careers. My teaching philosophy focuses on hands-on learning, real-world projects, and continuous mentorship.',
     expertise: [
       { icon: Code, name: 'Web Development', level: 95 },
       { icon: Database, name: 'Backend & APIs', level: 90 },
       { icon: Palette, name: 'UI/UX Design', level: 85 },
-      { icon: BarChart, name: 'Data Science', level: 88 },
+      { icon: BarChart, name: 'Data Science', level: 70 },
     ],
     achievements: [
       { icon: Trophy, text: 'Google Developer Expert' },
-      { icon: Award, text: 'Best Instructor Award 2024' },
-      { icon: Star, text: 'Top 1% Educator Worldwide' },
-      { icon: GraduationCap, text: 'PhD in Computer Science - MIT' },
+      { icon: Award, text: 'Best Instructor Award 2025' },
+      { icon: Star, text: 'Practical, Project-Focused Teaching' },
+      { icon: GraduationCap, text: 'BCA - Adamas University' },
     ],
     stats: {
       totalCourses: 24,
@@ -168,15 +173,34 @@ const InstructorTeacherProfile = () => {
           }`}>
 
           {/* Cover Background */}
-          <div className="relative h-48 md:h-64 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+          <div className="relative h-48 md:h-64 overflow-hidden">
+
+            {/* Background Image */}
+            <img
+              src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1767197721/1760262506349_dfgpzg.jpg"   // 👈 put your image path here
+              alt="Course background"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            {/* Optional Dark Overlay (for readability) */}
+            <div className="absolute inset-0 bg-black/40" />
+
+            {/* Pattern Overlay */}
             <div className="absolute inset-0 opacity-20">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-                backgroundSize: '40px 40px',
-              }} />
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+                  backgroundSize: "40px 40px",
+                }}
+              />
             </div>
+
+            {/* Decorative Icons */}
             <Sparkles className="absolute top-10 right-20 w-12 h-12 text-white opacity-30 animate-pulse" />
             <Target className="absolute bottom-10 left-20 w-16 h-16 text-white opacity-20" />
+
           </div>
 
           <div className="relative px-6 md:px-12 pb-8">
@@ -185,16 +209,36 @@ const InstructorTeacherProfile = () => {
             <div className="relative -mt-20 md:-mt-24 mb-6">
               <div className="inline-block">
                 <div className="relative">
-                  <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-5xl md:text-6xl shadow-2xl border-8 border-white">
-                    {instructorData.avatar}
+
+                  {/* Avatar Container */}
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+
+                    {instructorData.photo ? (
+                      <img
+                        src={instructorData.photo}
+                        alt={instructorData.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-5xl md:text-6xl">
+                        {instructorData.avatar}
+                      </span>
+                    )}
+
                   </div>
+
                   {/* Verified Badge */}
                   <div className="absolute bottom-2 right-2 w-10 h-10 md:w-12 md:h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
                     <CheckCircle className="w-6 h-6 md:w-7 md:h-7 text-white" />
                   </div>
+
                 </div>
               </div>
             </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -213,20 +257,112 @@ const InstructorTeacherProfile = () => {
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3">
                     <button
-                      onClick={() => setIsFollowing(!isFollowing)}
-                      className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg flex items-center space-x-2 ${isFollowing
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                        }`}
+                      onClick={() => {
+                        window.open(
+                          "https://www.linkedin.com/in/symphorien-pyana/",
+                          "_blank"
+                        );
+                      }}
+                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer"
                     >
-                      <Heart className={`w-5 h-5 ${isFollowing ? 'fill-current text-red-500' : ''}`} />
-                      <span>{isFollowing ? 'Following' : 'Follow'}</span>
+                      <Heart className="w-5 h-5" />
+                      <span>Follow</span>
                     </button>
 
-                    <button className="px-6 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg flex items-center space-x-2">
-                      <MessageCircle className="w-5 h-5" />
-                      <span>Message</span>
-                    </button>
+
+                    <>
+                      {/* Message Button */}
+                      <button
+                        onClick={() => setShowMessageDialog(true)}
+                        className="px-6 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg flex items-center space-x-2 cursor-pointer"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span>Message</span>
+                      </button>
+
+                      {/* Advanced Overlay Dialog */}
+                      {showMessageDialog && (
+                        <div
+                          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                          onClick={() => setShowMessageDialog(false)}
+                        >
+                          {/* Dialog Card */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-[90%] max-w-md bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 animate-[scaleIn_0.25s_ease-out]"
+                          >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-5">
+                              <h3 className="text-xl font-bold text-gray-900">
+                                Contact Instructor
+                              </h3>
+                              <button
+                                onClick={() => setShowMessageDialog(false)}
+                                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 transition"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            <p className="text-sm text-gray-600 mb-6">
+                              Choose how you’d like to connect with the instructor.
+                            </p>
+
+                            {/* Options */}
+                            <div className="space-y-4">
+
+                              {/* WhatsApp */}
+                              <button
+                                onClick={() => {
+                                  const msg = encodeURIComponent(
+                                    "Hello Professor, I found your course on MDAI Learning Platform and would like to connect."
+                                  );
+                                  window.open(
+                                    `https://wa.me/${whatsappNumber}?text=${msg}`,
+                                    "_blank"
+                                  );
+                                  setShowMessageDialog(false);
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-green-500/10 hover:bg-green-500/20 transition group cursor-pointer"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center text-white text-lg font-bold">
+                                  W
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-semibold text-gray-900">WhatsApp</p>
+                                  <p className="text-sm text-gray-600">
+                                    Instant chat with pre-filled message
+                                  </p>
+                                </div>
+                              </button>
+
+                              {/* LinkedIn */}
+                              <button
+                                onClick={() => {
+                                  window.open(linkedinProfile, "_blank");
+                                  setShowMessageDialog(false);
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-blue-500/10 hover:bg-blue-500/20 transition group cursor-pointer"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white text-lg font-bold">
+                                  in
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-semibold text-gray-900">LinkedIn</p>
+                                  <p className="text-sm text-gray-600">
+                                    View profile & send message
+                                  </p>
+                                </div>
+                              </button>
+
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+
+
+
 
                     <button className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg">
                       <Share2 className="w-5 h-5" />
@@ -240,8 +376,8 @@ const InstructorTeacherProfile = () => {
                     <button
                       onClick={() => setActiveTab('about')}
                       className={`pb-4 font-semibold transition-all duration-300 border-b-2 ${activeTab === 'about'
-                          ? 'text-indigo-600 border-indigo-600'
-                          : 'text-gray-600 border-transparent hover:text-gray-900'
+                        ? 'text-indigo-600 border-indigo-600'
+                        : 'text-gray-600 border-transparent hover:text-gray-900'
                         }`}
                     >
                       About
@@ -249,8 +385,8 @@ const InstructorTeacherProfile = () => {
                     <button
                       onClick={() => setActiveTab('courses')}
                       className={`pb-4 font-semibold transition-all duration-300 border-b-2 ${activeTab === 'courses'
-                          ? 'text-indigo-600 border-indigo-600'
-                          : 'text-gray-600 border-transparent hover:text-gray-900'
+                        ? 'text-indigo-600 border-indigo-600'
+                        : 'text-gray-600 border-transparent hover:text-gray-900'
                         }`}
                     >
                       Courses ({instructorData.stats.totalCourses})

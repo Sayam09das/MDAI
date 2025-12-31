@@ -11,7 +11,7 @@ import CourseProgress from './CourseProgress'
 import CourseFAQ from './CourseFAQ'
 import RelatedCourses from './RelatedCourses'
 
-const returnCoursepage = () => {
+const ReturnCoursepage = () => {
     return (
         <div>
             <CourseHeader />
@@ -29,4 +29,4 @@ const returnCoursepage = () => {
     )
 }
 
-export default returnCoursepage
+export default ReturnCoursepage

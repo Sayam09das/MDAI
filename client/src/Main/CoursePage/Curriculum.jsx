@@ -4,6 +4,7 @@ import {
     Clock, Lock, Download, ExternalLink, CheckCircle,
     BookOpen, Award, TrendingUp, Zap, Youtube
 } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const Curriculum = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -484,10 +485,10 @@ const Curriculum = () => {
                             <div
                                 key={module.id}
                                 className={`bg-white rounded-2xl shadow-lg border-2 overflow-hidden transition-all duration-300 ${module.locked
-                                        ? 'border-gray-200 opacity-75'
-                                        : isExpanded
-                                            ? 'border-indigo-300 shadow-xl'
-                                            : 'border-gray-200 hover:border-indigo-200 hover:shadow-xl'
+                                    ? 'border-gray-200 opacity-75'
+                                    : isExpanded
+                                        ? 'border-indigo-300 shadow-xl'
+                                        : 'border-gray-200 hover:border-indigo-200 hover:shadow-xl'
                                     } ${isVisible ? 'animate-fadeInUp' : 'opacity-0'}`}
                                 style={{ animationDelay: `${0.3 + moduleIndex * 0.1}s` }}
                             >
@@ -579,8 +580,8 @@ const Curriculum = () => {
                                                     <div
                                                         key={lesson.id}
                                                         className={`bg-white rounded-xl p-4 md:p-5 shadow-sm border transition-all duration-300 ${isCompleted
-                                                                ? 'border-green-200 bg-green-50/50'
-                                                                : 'border-gray-200 hover:border-indigo-200 hover:shadow-md'
+                                                            ? 'border-green-200 bg-green-50/50'
+                                                            : 'border-gray-200 hover:border-indigo-200 hover:shadow-md'
                                                             }`}
                                                     >
                                                         <div className="flex items-start gap-4">
@@ -588,10 +589,10 @@ const Curriculum = () => {
                                                             <button
                                                                 onClick={() => !isLocked && toggleLessonComplete(lesson.id)}
                                                                 className={`flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center ${isCompleted
-                                                                        ? 'bg-green-500 border-green-500'
-                                                                        : isLocked
-                                                                            ? 'border-gray-300 cursor-not-allowed'
-                                                                            : 'border-gray-300 hover:border-indigo-500 cursor-pointer'
+                                                                    ? 'bg-green-500 border-green-500'
+                                                                    : isLocked
+                                                                        ? 'border-gray-300 cursor-not-allowed'
+                                                                        : 'border-gray-300 hover:border-indigo-500 cursor-pointer'
                                                                     }`}
                                                                 disabled={isLocked}
                                                             >
@@ -636,8 +637,8 @@ const Curriculum = () => {
                                                                             onClick={() => handleYoutubeClick(lesson.id, lesson.youtubeUrl)}
                                                                             disabled={isLocked}
                                                                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${isLocked
-                                                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                                                    : 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
+                                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                                : 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
                                                                                 }`}
                                                                         >
                                                                             <Youtube className="w-4 h-4" />
@@ -650,8 +651,8 @@ const Curriculum = () => {
                                                                             onClick={() => handlePdfDownload(lesson.id, lesson.pdfUrl)}
                                                                             disabled={isLocked}
                                                                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${isLocked
-                                                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                                                    : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
+                                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
                                                                                 }`}
                                                                         >
                                                                             <Download className="w-4 h-4" />
@@ -664,8 +665,8 @@ const Curriculum = () => {
                                                                             onClick={() => handleLiveClass(lesson.id, lesson.liveUrl)}
                                                                             disabled={isLocked}
                                                                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${isLocked
-                                                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                                                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
+                                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105'
                                                                                 }`}
                                                                         >
                                                                             <Play className="w-4 h-4 fill-white" />
@@ -737,10 +738,14 @@ const Curriculum = () => {
                                 Get instant access to all {curriculumData.totalLessons} lessons, downloadable resources, and live sessions
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button className="px-8 py-4 bg-white text-indigo-600 text-base md:text-lg font-bold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-2xl cursor-pointer transform hover:scale-105 w-full sm:w-auto">
+
+                                <Link
+                                    to="/register"
+                                    className="px-8 py-4 bg-white text-indigo-600 text-base md:text-lg font-bold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-2xl cursor-pointer transform hover:scale-105 w-full sm:w-auto inline-block text-center"
+                                >
                                     Enroll Now - $99
-                                </button>
-                                <button className="px-8 py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-xl hover:bg-white/20 transition-all duration-300 cursor-pointer w-full sm:w-auto">
+                                </Link>
+                                <button className="px-8 py-4 bg-white/10 backdrop-blur-md border-2 border-white text-white text-base md:text-lg font-bold rounded-xl hover:bg-white/20 transition-all duration-300 cursor-not-allowed w-full sm:w-auto">
                                     Try Free Lessons
                                 </button>
                             </div>
