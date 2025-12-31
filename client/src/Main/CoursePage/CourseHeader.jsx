@@ -18,6 +18,8 @@ import {
     Download
 } from 'lucide-react';
 import CoursePreview from './CoursePreview';
+import { Link } from "react-router-dom";
+
 
 const CourseHeader = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -169,8 +171,8 @@ const CourseHeader = () => {
                                         <Star
                                             key={i}
                                             className={`w-5 h-5 ${i < Math.floor(courseData.rating)
-                                                    ? 'text-yellow-400 fill-yellow-400'
-                                                    : 'text-gray-300'
+                                                ? 'text-yellow-400 fill-yellow-400'
+                                                : 'text-gray-300'
                                                 }`}
                                         />
                                     ))}
@@ -245,19 +247,28 @@ const CourseHeader = () => {
                             })}
                         </div>
 
-                        {/* CTA Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button className="group relative flex-1 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+
+                            {/* Enroll Now Button */}
+                            <Link
+                                to="/login"
+                                className="group relative flex-1 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden text-center"
+                            >
                                 <span className="relative z-10 flex items-center justify-center space-x-2">
                                     <span>Enroll Now - ${courseData.price}</span>
                                     <Target className="w-5 h-5" />
                                 </span>
                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            </button>
+                            </Link>
 
-                            <button className="px-6 py-4 bg-white border-2 border-indigo-600 text-indigo-600 font-semibold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-md hover:shadow-lg">
+                            {/* Preview Course Button */}
+                            <Link
+                                to="/preview-course"
+                                className="px-6 py-4 bg-white border-2 border-indigo-600 text-indigo-600 font-semibold rounded-xl hover:bg-indigo-50 transition-all duration-300 shadow-md hover:shadow-lg text-center"
+                            >
                                 Preview This Course
-                            </button>
+                            </Link>
+
                         </div>
 
                         {/* Price & Discount */}

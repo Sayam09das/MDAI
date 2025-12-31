@@ -6,11 +6,14 @@ import {
     Share2,
     Heart,
 } from 'lucide-react'
+import { toast } from "react-toastify";
 
 const CoursePreview = () => {
     const [isPlaying, setIsPlaying] = useState(false)
     const [isLiked, setIsLiked] = useState(false)
     const [isVisible, setIsVisible] = useState(false)
+    const FSD_URL = import.meta.env.VITE_FSD_URL;
+    const FSD_Thumb_URL = import.meta.env.VITE_FSD_THUMB_URL;
 
     // ✅ Course data
     const courseData = {
@@ -18,8 +21,6 @@ const CoursePreview = () => {
         duration: '6h 30m',
         totalLessons: 42,
         rating: 4.8,
-        videoId: 'dQw4w9WgXcQ', // 🔴 replace with real YouTube video ID
-        thumbnail: `https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
     }
 
     useEffect(() => {
@@ -28,18 +29,23 @@ const CoursePreview = () => {
 
     // ✅ Share handler (YouTube-style)
     const handleShare = async () => {
-        const shareUrl = `https://www.youtube.com/watch?v=${courseData.videoId}`
+        const shareUrl = FSD_URL;
 
-        if (navigator.share) {
-            await navigator.share({
-                title: courseData.title,
-                url: shareUrl,
-            })
-        } else {
-            await navigator.clipboard.writeText(shareUrl)
-            alert('Link copied to clipboard!')
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: courseData.title,
+                    url: shareUrl,
+                });
+                toast.success("Course link shared successfully!");
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                toast.success("Link copied to clipboard!");
+            }
+        } catch (error) {
+            toast.error("Something went wrong while sharing!");
         }
-    }
+    };
 
     return (
         <div
@@ -55,7 +61,7 @@ const CoursePreview = () => {
                         <>
                             {/* Thumbnail */}
                             <img
-                                src={courseData.thumbnail}
+                                src={FSD_Thumb_URL}
                                 alt="Course Thumbnail"
                                 className="w-full h-full object-cover"
                             />
@@ -84,7 +90,7 @@ const CoursePreview = () => {
                         // 🎥 REAL YOUTUBE VIDEO
                         <iframe
                             className="w-full h-full"
-                            src={`https://www.youtube.com/embed/${courseData.videoId}?autoplay=1`}
+                            src={FSD_URL}
                             title="Course Preview"
                             allow="autoplay; encrypted-media"
                             allowFullScreen
