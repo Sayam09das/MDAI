@@ -12,7 +12,6 @@ const ReturnContactpage = () => {
         <div>
             <ContactHero />
             <ContactInfo />
-            <ContactInfo />
             <ContactForm />
             <SupportCategories />
             <MapSection />
