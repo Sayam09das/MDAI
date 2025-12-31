@@ -404,7 +404,7 @@ const InstructorTeacherProfile = () => {
                               <button
                                 onClick={() =>
                                   window.open(
-                                    `https://wa.me/?text=${encodeURIComponent(linkedinProfile)}`,
+                                    `https://wa.me/?text=${encodeURIComponent(window.location.href)}`,
                                     "_blank"
                                   )
                                 }
@@ -436,27 +436,9 @@ const InstructorTeacherProfile = () => {
 
                               {/* Copy Link */}
                               <button
-                                onClick={async () => {
-                                  if (!linkedinProfile) {
-                                    toast.error("❌ Profile link not available");
-                                    return;
-                                  }
-
-                                  try {
-                                    // Modern clipboard API
-                                    await navigator.clipboard.writeText(linkedinProfile);
-                                    toast.success("🔗 LinkedIn profile link copied!");
-                                  } catch (err) {
-                                    // Fallback for older browsers / localhost
-                                    const textarea = document.createElement("textarea");
-                                    textarea.value = linkedinProfile;
-                                    document.body.appendChild(textarea);
-                                    textarea.select();
-                                    document.execCommand("copy");
-                                    document.body.removeChild(textarea);
-
-                                    toast.success("🔗 LinkedIn profile link copied!");
-                                  }
+                                onClick={() => {
+                                  navigator.clipboard.writeText(window.location.href);
+                                  toast.success("🔗 LinkedIn profile link copied!");
                                 }}
                                 className="flex flex-col items-center gap-2"
                               >
@@ -465,7 +447,6 @@ const InstructorTeacherProfile = () => {
                                 </div>
                                 <span className="text-xs font-medium">Copy link</span>
                               </button>
-
 
                             </div>
 
@@ -477,7 +458,7 @@ const InstructorTeacherProfile = () => {
                                 className="flex-1 bg-transparent text-sm outline-none"
                               />
                               <button
-                                onClick={() => navigator.clipboard.writeText(linkedinProfile)}
+                                onClick={() => navigator.clipboard.writeText(window.location.href)}
                                 className="text-indigo-600 font-semibold text-sm"
                               >
                                 Copy
