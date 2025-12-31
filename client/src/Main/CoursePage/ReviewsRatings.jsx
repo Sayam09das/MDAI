@@ -15,7 +15,6 @@ import {
   MoreVertical,
   Search
 } from 'lucide-react';
-
 const ReviewsRatings = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -113,6 +112,45 @@ const ReviewsRatings = () => {
       courseTaken: 'UI/UX Design Mastery',
       badge: 'Verified Purchase',
       progress: 'Completed',
+    },
+    {
+      id: 7,
+      author: 'Mark Johnson',
+      avatar: 'MJ',
+      rating: 3,
+      date: '3 days ago',
+      verified: true,
+      helpful: 18,
+      review: 'Good course with solid fundamentals but could use more practical projects and clearer explanations in some modules.',
+      courseTaken: 'Frontend Basics',
+      badge: 'Verified Purchase',
+      progress: 'In Progress',
+    },
+    {
+      id: 8,
+      author: 'Aisha Khan',
+      avatar: 'AK',
+      rating: 2,
+      date: '2 months ago',
+      verified: true,
+      helpful: 9,
+      review: 'Content was okay but pacing felt rushed and several examples were not fully explained.',
+      courseTaken: 'Data Structures',
+      badge: 'Verified Purchase',
+      progress: 'In Progress',
+    },
+    {
+      id: 9,
+      author: 'Carlos Mendes',
+      avatar: 'CM',
+      rating: 1,
+      date: '3 months ago',
+      verified: false,
+      helpful: 3,
+      review: 'Disappointed by the lack of depth. Slides felt outdated and exercises were too trivial for the advertised level.',
+      courseTaken: 'Intro to Algorithms',
+      badge: 'Refunded',
+      progress: 'Incomplete',
     },
   ];
 
