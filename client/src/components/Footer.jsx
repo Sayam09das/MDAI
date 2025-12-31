@@ -229,8 +229,9 @@ const Footer = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
                         <p className="text-sm text-gray-600 text-center sm:text-left">
-                            © 2025 MDAI. All rights reserved.
+                            © {new Date().getFullYear()} MDAI. All rights reserved.
                         </p>
+
                         <div className="flex items-center space-x-6">
                             <a
                                 href="#privacy"
