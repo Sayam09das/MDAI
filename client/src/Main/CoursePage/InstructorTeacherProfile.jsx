@@ -22,6 +22,7 @@ import {
   Trophy,
   Calendar
 } from 'lucide-react';
+import { toast } from "react-toastify";
 
 const InstructorTeacherProfile = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,6 +35,7 @@ const InstructorTeacherProfile = () => {
   });
   const sectionRef = useRef(null);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const whatsappNumber = import.meta.env.VITE_PROFESSOR_WHATSAPP;
   const linkedinProfile = import.meta.env.VITE_PROFESSOR_LINKEDIN;
 
@@ -364,9 +366,128 @@ const InstructorTeacherProfile = () => {
 
 
 
-                    <button className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg">
-                      <Share2 className="w-5 h-5" />
-                    </button>
+                    <>
+                      {/* Share Button */}
+                      <button
+                        onClick={() => setShowShareDialog(true)}
+                        className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+                      >
+                        <Share2 className="w-5 h-5" />
+                      </button>
+
+                      {/* YouTube-Style Share Dialog */}
+                      {showShareDialog && (
+                        <div
+                          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+                          onClick={() => setShowShareDialog(false)}
+                        >
+                          {/* Dialog Card */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-[slideUp_0.25s_ease-out]"
+                          >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-bold text-gray-900">Share</h3>
+                              <button
+                                onClick={() => setShowShareDialog(false)}
+                                className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Share Options */}
+                            <div className="grid grid-cols-3 gap-4 mb-5">
+
+                              {/* WhatsApp */}
+                              <button
+                                onClick={() =>
+                                  window.open(
+                                    `https://wa.me/?text=${encodeURIComponent(linkedinProfile)}`,
+                                    "_blank"
+                                  )
+                                }
+                                className="flex flex-col items-center gap-2"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
+                                  W
+                                </div>
+                                <span className="text-xs font-medium">WhatsApp</span>
+                              </button>
+
+                              {/* LinkedIn */}
+                              <button
+                                onClick={() =>
+                                  window.open(
+                                    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                                      window.location.href
+                                    )}`,
+                                    "_blank"
+                                  )
+                                }
+                                className="flex flex-col items-center gap-2"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                                  in
+                                </div>
+                                <span className="text-xs font-medium">LinkedIn</span>
+                              </button>
+
+                              {/* Copy Link */}
+                              <button
+                                onClick={async () => {
+                                  if (!linkedinProfile) {
+                                    toast.error("❌ Profile link not available");
+                                    return;
+                                  }
+
+                                  try {
+                                    // Modern clipboard API
+                                    await navigator.clipboard.writeText(linkedinProfile);
+                                    toast.success("🔗 LinkedIn profile link copied!");
+                                  } catch (err) {
+                                    // Fallback for older browsers / localhost
+                                    const textarea = document.createElement("textarea");
+                                    textarea.value = linkedinProfile;
+                                    document.body.appendChild(textarea);
+                                    textarea.select();
+                                    document.execCommand("copy");
+                                    document.body.removeChild(textarea);
+
+                                    toast.success("🔗 LinkedIn profile link copied!");
+                                  }
+                                }}
+                                className="flex flex-col items-center gap-2"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold">
+                                  🔗
+                                </div>
+                                <span className="text-xs font-medium">Copy link</span>
+                              </button>
+
+
+                            </div>
+
+                            {/* Link Preview */}
+                            <div className="flex items-center gap-3 bg-gray-100 rounded-xl p-3">
+                              <input
+                                value={window.location.href}
+                                readOnly
+                                className="flex-1 bg-transparent text-sm outline-none"
+                              />
+                              <button
+                                onClick={() => navigator.clipboard.writeText(linkedinProfile)}
+                                className="text-indigo-600 font-semibold text-sm"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+
                   </div>
                 </div>
 
