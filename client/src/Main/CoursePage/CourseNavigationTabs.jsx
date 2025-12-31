@@ -506,7 +506,7 @@ const CourseNavigationTabs = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Download className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                            <Download className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors cursor-not-allowed" />
                                         </div>
                                     </div>
                                 ))}
@@ -534,7 +534,7 @@ const CourseNavigationTabs = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <button className="px-5 py-2 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-100 transition-colors">
+                                            <button className="px-5 py-2 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-100 transition-colors cursor-not-allowed">
                                                 View on GitHub
                                             </button>
                                         </div>
