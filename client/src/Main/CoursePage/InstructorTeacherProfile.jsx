@@ -600,7 +600,7 @@ const InstructorTeacherProfile = () => {
                             </div>
                           </div>
                         </div>
-                        <button className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300">
+                        <button className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300 cursor-not-allowed">
                           View
                         </button>
                       </div>
