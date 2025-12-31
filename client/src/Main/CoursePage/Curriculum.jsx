@@ -95,7 +95,6 @@ const Curriculum = () => {
                         title: "What is Machine Learning?",
                         duration: "25 min",
                         type: "video",
-                        youtubeUrl: "https://youtube.com/watch?v=example1",
                         locked: false
                     },
                     {
@@ -103,7 +102,6 @@ const Curriculum = () => {
                         title: "Types of ML Algorithms",
                         duration: "30 min",
                         type: "video",
-                        youtubeUrl: "https://youtube.com/watch?v=example2",
                         locked: false
                     },
                     {
@@ -111,7 +109,6 @@ const Curriculum = () => {
                         title: "ML Fundamentals Cheat Sheet",
                         duration: "5 min",
                         type: "pdf",
-                        pdfUrl: "https://example.com/ml-fundamentals.pdf",
                         locked: false
                     },
                     {
@@ -119,7 +116,6 @@ const Curriculum = () => {
                         title: "Setting Up Python Environment",
                         duration: "35 min",
                         type: "video",
-                        youtubeUrl: "https://youtube.com/watch?v=example3",
                         locked: false
                     },
                     {
@@ -127,7 +123,6 @@ const Curriculum = () => {
                         title: "Live Q&A: Getting Started with ML",
                         duration: "60 min",
                         type: "live",
-                        liveUrl: "https://meet.google.com/example",
                         locked: false,
                         liveDate: "Dec 28, 2025 - 10:00 AM EST"
                     },
@@ -136,7 +131,6 @@ const Curriculum = () => {
                         title: "Introduction to NumPy",
                         duration: "40 min",
                         type: "video",
-                        youtubeUrl: "https://youtube.com/watch?v=example4",
                         locked: false
                     },
                     {
@@ -152,7 +146,6 @@ const Curriculum = () => {
                         title: "Module 1 Assessment",
                         duration: "20 min",
                         type: "pdf",
-                        pdfUrl: "https://example.com/assessment-1.pdf",
                         locked: false
                     }
                 ]

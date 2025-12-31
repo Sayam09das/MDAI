@@ -4,6 +4,8 @@ import {
     Clock, Users, Award, Download, Play,
     CheckCircle, Lock, Calendar, MessageSquare
 } from 'lucide-react';
+import { Link } from "react-router-dom";
+
 
 const CourseNavigationTabs = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -160,16 +162,19 @@ const CourseNavigationTabs = () => {
                     instructor: "Emma Williams",
                     duration: "1h 45m",
                     views: 1240,
-                    date: "Dec 20, 2025"
+                    date: "Dec 20, 2025",
+                    thumbnail: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 },
                 {
                     title: "Data Preprocessing Techniques",
                     instructor: "Dr. James Rodriguez",
                     duration: "2h 15m",
                     views: 980,
-                    date: "Dec 18, 2025"
+                    date: "Dec 18, 2025",
+                    thumbnail: "https://media.licdn.com/dms/image/v2/D4D12AQH0MZe1QODJkA/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1726330706046?e=2147483647&v=beta&t=4a_iiNR7nseIHgxO7lVJ7LeHmPoTZ4DCiHPSK0IyJfk"
                 }
             ]
+
         },
         resources: {
             materials: [
@@ -322,8 +327,8 @@ const CourseNavigationTabs = () => {
                                         <div
                                             key={tIndex}
                                             className={`flex items-center justify-between p-4 rounded-lg transition-all duration-200 ${module.locked
-                                                    ? 'bg-gray-50 cursor-not-allowed'
-                                                    : 'bg-gray-50 hover:bg-indigo-50 cursor-pointer hover:shadow-md'
+                                                ? 'bg-gray-50 cursor-not-allowed'
+                                                : 'bg-gray-50 hover:bg-indigo-50 cursor-pointer hover:shadow-md'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3 flex-1">
@@ -388,14 +393,18 @@ const CourseNavigationTabs = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <button className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer whitespace-nowrap">
+                                            <Link
+                                                to="/register"
+                                                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer whitespace-nowrap inline-block text-center"
+                                            >
                                                 Register Now
-                                            </button>
+                                            </Link>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
+
 
                         {/* Recorded Classes */}
                         <div>
@@ -403,18 +412,51 @@ const CourseNavigationTabs = () => {
                                 <Video className="w-6 h-6 text-indigo-600" />
                                 Recorded Sessions
                             </h3>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {courseData.liveClasses.recorded.map((session, index) => (
                                     <div
                                         key={index}
-                                        className="bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                                        className="bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 cursor-not-allowed opacity-90"
                                     >
-                                        <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                            <Play className="w-16 h-16 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 fill-white" />
+                                        {/* Thumbnail */}
+                                        <div className="relative h-48 overflow-hidden pointer-events-none">
+
+                                            <img
+                                                src={session.thumbnail}
+                                                alt={session.title}
+                                                className="w-full h-full object-cover"
+                                            />
+
+                                            {/* Dark overlay */}
+                                            <div className="absolute inset-0 bg-black/40" />
+
+                                            {/* Play icon */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <Play className="w-16 h-16 text-white opacity-70 fill-white" />
+                                            </div>
+
+                                            {/* Duration */}
+                                            <div className="absolute top-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                                {session.duration}
+                                            </div>
+
+                                            {/* Badge */}
+                                            <div className="absolute top-3 left-3 bg-gray-500 text-white text-xs px-2 py-1 rounded">
+                                                Locked
+                                            </div>
                                         </div>
-                                        <div className="p-5">
-                                            <h4 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{session.title}</h4>
-                                            <p className="text-sm text-gray-600 mb-3">By {session.instructor}</p>
+
+                                        {/* Content */}
+                                        <div className="p-5 pointer-events-none">
+                                            <h4 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
+                                                {session.title}
+                                            </h4>
+
+                                            <p className="text-sm text-gray-600 mb-3">
+                                                By {session.instructor}
+                                            </p>
+
                                             <div className="flex items-center justify-between text-sm text-gray-600">
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-4 h-4" />
@@ -519,8 +561,8 @@ const CourseNavigationTabs = () => {
                                             <Star
                                                 key={i}
                                                 className={`w-6 h-6 ${i < Math.floor(courseData.reviews.rating)
-                                                        ? 'fill-yellow-400 text-yellow-400'
-                                                        : 'text-gray-300'
+                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                    : 'text-gray-300'
                                                     }`}
                                             />
                                         ))}
@@ -574,8 +616,8 @@ const CourseNavigationTabs = () => {
                                                         <Star
                                                             key={i}
                                                             className={`w-4 h-4 ${i < review.rating
-                                                                    ? 'fill-yellow-400 text-yellow-400'
-                                                                    : 'text-gray-300'
+                                                                ? 'fill-yellow-400 text-yellow-400'
+                                                                : 'text-gray-300'
                                                                 }`}
                                                         />
                                                     ))}
