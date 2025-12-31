@@ -354,7 +354,7 @@ const CourseProgress = () => {
                 </div>
               </div>
               
-              <button className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex items-center space-x-3">
+              <button className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex items-center space-x-3 cursor-not-allowed">
                 <PlayCircle className="w-6 h-6" />
                 <span>Continue Learning</span>
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" />
@@ -502,11 +502,11 @@ const CourseProgress = () => {
 
               {/* Quick Actions */}
               <div className="space-y-3 pt-6 border-t border-gray-200">
-                <button className="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors duration-300 flex items-center justify-center space-x-2">
+                <button className="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors duration-300 flex items-center justify-center space-x-2 cursor-not-allowed">
                   <Download className="w-5 h-5" />
                   <span>Download Certificate</span>
                 </button>
-                <button className="w-full px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center space-x-2">
+                <button className="w-full px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center space-x-2  cursor-not-allowed">
                   <Share2 className="w-5 h-5" />
                   <span>Share Progress</span>
                 </button>

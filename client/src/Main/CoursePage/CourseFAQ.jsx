@@ -14,6 +14,8 @@ import {
     MessageCircle,
     Sparkles
 } from 'lucide-react';
+import { NumberTicker } from "@/components/ui/number-ticker";
+
 
 const CourseFAQ = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -226,8 +228,8 @@ const CourseFAQ = () => {
                             <div
                                 key={faq.id}
                                 className={`group bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden ${isVisible
-                                        ? 'opacity-100 translate-y-0'
-                                        : 'opacity-0 translate-y-10'
+                                    ? 'opacity-100 translate-y-0'
+                                    : 'opacity-0 translate-y-10'
                                     }`}
                                 style={{ transitionDelay: `${index * 50}ms` }}
                             >
@@ -317,24 +319,40 @@ const CourseFAQ = () => {
                 </div>
 
                 {/* Quick Stats */}
-                <div className={`mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                    }`}>
+                <div
+                    className={`mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-1000 delay-900 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                        }`}
+                >
                     {[
-                        { icon: CheckCircle, value: '24/7', label: 'Support' },
-                        { icon: Users, value: '10K+', label: 'Students' },
-                        { icon: Award, value: '4.9', label: 'Rating' },
-                        { icon: MessageCircle, value: '<2h', label: 'Response' },
+                        { icon: CheckCircle, value: "24/7", label: "Support", type: "text" },
+                        { icon: Users, value: 10000, label: "Students", suffix: "+", type: "number" },
+                        { icon: Award, value: 4.9, label: "Rating", decimals: 1, type: "number" },
+                        { icon: MessageCircle, value: 2, label: "Response", prefix: "<", suffix: "h", type: "number" },
                     ].map((stat, index) => {
                         const Icon = stat.icon;
+
                         return (
                             <div
                                 key={index}
                                 className="bg-white rounded-xl p-4 text-center border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                             >
                                 <Icon className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+
                                 <div className="text-2xl font-bold text-gray-900">
-                                    {stat.value}
+                                    {stat.type === "number" ? (
+                                        <>
+                                            {stat.prefix}
+                                            <NumberTicker
+                                                value={stat.value}
+                                                decimalPlaces={stat.decimals || 0}
+                                            />
+                                            {stat.suffix}
+                                        </>
+                                    ) : (
+                                        stat.value
+                                    )}
                                 </div>
+
                                 <div className="text-sm text-gray-600">
                                     {stat.label}
                                 </div>
@@ -342,6 +360,7 @@ const CourseFAQ = () => {
                         );
                     })}
                 </div>
+
             </div>
         </div>
     );
