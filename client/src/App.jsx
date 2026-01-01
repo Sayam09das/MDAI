@@ -7,6 +7,7 @@ import CourseRoutes from "./routes/CourseRoutes"
 import AuthRoutes from "./routes/AuthRoutes"
 import AboutRoutes from "./routes/AboutRoutes"
 import ContactRoutes from "./routes/ContactRoutes"
+import TeacherRoutes from "./routes/TeacherRoutes"
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
       <AboutRoutes />
       <ContactRoutes />
       <AuthRoutes />
+      <TeacherRoutes />
     </>
   )
 }
