@@ -6,6 +6,7 @@ import {
     Video,
     Wallet,
 } from "lucide-react";
+import { NumberTicker } from "@/components/ui/number-ticker";
 
 /* ===== Stats Data (replace with API later) ===== */
 const stats = [
@@ -20,7 +21,7 @@ const stats = [
     {
         id: 2,
         label: "Total Students",
-        value: "1,240",
+        value: 1240,
         icon: Users,
         bg: "bg-emerald-50",
         iconColor: "text-emerald-600",
@@ -36,12 +37,14 @@ const stats = [
     {
         id: 4,
         label: "Earnings",
-        value: "₹42,500",
+        value: 42500,
+        prefix: "₹",
         icon: Wallet,
         bg: "bg-amber-50",
         iconColor: "text-amber-600",
     },
 ];
+
 
 const TeacherStats = () => {
     return (
@@ -76,10 +79,17 @@ const TeacherStats = () => {
                                     <p className="text-sm text-gray-500">
                                         {stat.label}
                                     </p>
-                                    <h3 className="mt-2 text-2xl font-semibold text-gray-900">
-                                        {stat.value}
+
+                                    <h3 className="mt-2 text-2xl font-semibold text-gray-900 flex items-center">
+                                        {stat.prefix && <span className="mr-1">{stat.prefix}</span>}
+
+                                        <NumberTicker
+                                            value={stat.value}
+                                            className="tracking-tight"
+                                        />
                                     </h3>
                                 </div>
+
 
                                 {/* ICON */}
                                 <div
