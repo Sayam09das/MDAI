@@ -94,7 +94,7 @@ const TodayLectures = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-white rounded-2xl p-5 shadow-sm w-full"
+            className="bg-white rounded-2xl p-5 shadow-sm w-full h-full"
         >
             {/* HEADER */}
             <div className="flex items-center justify-between mb-4">
@@ -111,7 +111,7 @@ const TodayLectures = () => {
             </div>
 
             {/* SCROLLABLE FRAME */}
-            <div className="max-h-[320px] overflow-y-auto pr-2 custom-scroll">
+            <div className="max-h-[450px] overflow-y-auto pr-2 custom-scroll">
                 {lecturesData.map((lecture) => {
                     const isDone = completed.includes(lecture.id);
 

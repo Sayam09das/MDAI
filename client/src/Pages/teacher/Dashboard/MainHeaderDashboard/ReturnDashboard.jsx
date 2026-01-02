@@ -5,7 +5,8 @@ import DashboardCalendar from "./DashboardCalendar";
 import StudentPerformance from "./StudentPerformance";
 import StudentAttendance from "./StudentAttendance";
 import TodayLectures from "./TodayLectures";
-
+import Performance from "./Performance";
+import StudentGenderStats from "./StudentGenderStats";
 const ReturnDashboard = () => {
     return (
         <div className="px-4 md:px-6">
@@ -30,6 +31,20 @@ const ReturnDashboard = () => {
                             <StudentAttendance />
                         </div>
                     </div>
+
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Left */}
+                        <div className="w-full lg:w-1/2">
+                            <Performance />
+                        </div>
+
+                        {/* Right */}
+                        <div className="w-full lg:w-1/2">
+                            <StudentGenderStats />
+                        </div>
+                    </div>
+
+
                 </div>
 
 
