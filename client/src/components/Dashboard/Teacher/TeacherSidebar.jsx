@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -46,47 +46,86 @@ const otherMenu = [
 
 /* ================= SIDEBAR ================= */
 const TeacherSidebar = ({ isOpen, onClose }) => {
+    // Prevent body scroll when mobile sidebar is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    // Close sidebar on ESC key
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isOpen, onClose]);
+
     return (
         <>
+            {/* MOBILE OVERLAY */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+                    onClick={onClose}
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* SIDEBAR */}
             <aside
-                className={`fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white z-50
-                transition-all duration-300 overflow-hidden
-                ${isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full lg:w-64 lg:translate-x-0"}`}
+                className={`fixed top-0 lg:top-16 left-0 h-screen lg:h-[calc(100vh-4rem)] 
+                bg-white shadow-xl lg:shadow-none z-50
+                transition-transform duration-300 ease-in-out
+                w-full max-w-[280px] sm:max-w-xs lg:max-w-none lg:w-64
+                ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+                flex flex-col`}
             >
                 {/* HEADER */}
-                <div className="h-16 flex items-center justify-between px-4">
+                <div className="flex-shrink-0 h-16 flex items-center justify-between px-4 border-b border-gray-200 lg:border-b-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                             <img
                                 src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"
-                                alt="Logo"
+                                alt="MDAI Logo"
                                 className="w-full h-full object-contain"
                             />
                         </div>
-                        <span className="text-lg font-semibold text-gray-900">
+                        <span className="text-lg font-semibold text-gray-900 truncate">
                             MDAI
                         </span>
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="lg:hidden p-2 rounded-md hover:bg-gray-50"
+                        className="lg:hidden p-2 rounded-md hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                        aria-label="Close sidebar"
                     >
                         <X className="w-5 h-5 text-gray-700" />
                     </button>
                 </div>
 
-                {/* MENU */}
-                <nav className="h-full overflow-y-auto px-3 py-4 space-y-1">
+                {/* SCROLLABLE MENU */}
+                <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
 
-                    {/* MAIN */}
-                    {mainMenu.map(item => (
-                        <SidebarLink key={item.label} {...item} onClick={onClose} />
-                    ))}
+                    {/* MAIN MENU */}
+                    <div className="space-y-1">
+                        {mainMenu.map(item => (
+                            <SidebarLink key={item.label} {...item} onClick={onClose} />
+                        ))}
+                    </div>
 
-                    {/* EXTRA */}
-                    <div className="pt-5">
-                        <p className="px-4 text-sm font-medium text-gray-500 mb-2">
+                    {/* TOOLS SECTION */}
+                    <div className="pt-6 space-y-1">
+                        <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                             Tools
                         </p>
                         {extraMenu.map(item => (
@@ -94,10 +133,10 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
                         ))}
                     </div>
 
-                    {/* OTHERS */}
-                    <div className="pt-6">
-                        <p className="px-4 text-sm font-medium text-gray-500 mb-2">
-                            Others
+                    {/* OTHERS SECTION */}
+                    <div className="pt-6 pb-4 space-y-1">
+                        <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            Account
                         </p>
                         {otherMenu.map(item => (
                             <SidebarLink key={item.label} {...item} onClick={onClose} />
@@ -105,14 +144,6 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
                     </div>
                 </nav>
             </aside>
-
-            {/* MOBILE OVERLAY */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                    onClick={onClose}
-                />
-            )}
         </>
     );
 };
@@ -123,15 +154,27 @@ const SidebarLink = ({ icon: Icon, label, path, onClick }) => (
         to={path}
         onClick={onClick}
         className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 rounded-lg text-base transition
+            `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+            transition-all duration-200 group relative overflow-hidden
             ${isActive
-                ? "bg-gray-100 text-gray-900 font-medium"
-                : "text-gray-700 hover:bg-gray-50"
+                ? "bg-blue-50 text-blue-700 shadow-sm"
+                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
             }`
         }
     >
-        <Icon className="w-5 h-5" />
-        <span>{label}</span>
+        {({ isActive }) => (
+            <>
+                {/* Active indicator */}
+                {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
+                )}
+
+                <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110
+                    ${isActive ? "text-blue-600" : "text-gray-500"}`}
+                />
+                <span className="truncate">{label}</span>
+            </>
+        )}
     </NavLink>
 );
 

@@ -297,8 +297,8 @@ const CreateCourse = () => {
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                                                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                                                : "bg-gray-100 hover:bg-gray-200"
+                                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                                            : "bg-gray-100 hover:bg-gray-200"
                                             }`}
                                     >
                                         <tab.icon size={18} />
@@ -662,81 +662,171 @@ const CreateCourse = () => {
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <Sparkles className="animate-spin" />
-                                        Creating...
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        >
+                                            <Sparkles size={20} />
+                                        </motion.div>
+                                        Creating Course...
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle />
-                                        Publish Course
+                                        <CheckCircle size={20} /> Publish Course
                                     </>
                                 )}
                             </motion.button>
-
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleSaveDraft}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2"
+                                className="sm:w-auto px-8 py-4 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold text-lg transition-colors"
                             >
-                                <Save />
                                 Save as Draft
                             </motion.button>
                         </motion.div>
                     </motion.div>
 
-                    {/* Right Column – Live Preview Card */}
+                    {/* Right Column - Preview Card */}
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
                         className="hidden lg:block"
                     >
-                        <div className="sticky top-28 bg-white rounded-2xl shadow-xl overflow-hidden">
-                            {thumbnailPreview ? (
-                                <img
-                                    src={thumbnailPreview}
-                                    alt="preview"
-                                    className="w-full h-48 object-cover"
-                                />
-                            ) : (
-                                <div className="h-48 bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-                                    <ImageIcon size={48} className="text-gray-400" />
+                        <div className="sticky top-24 space-y-6">
+                            {/* Live Preview Card */}
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4">
+                                    <h3 className="font-bold flex items-center gap-2">
+                                        <Eye size={18} /> Live Preview
+                                    </h3>
                                 </div>
-                            )}
 
-                            <div className="p-6 space-y-4">
-                                <h3 className="text-lg font-bold">
-                                    {courseData.title || "Course Title"}
+                                <div className="p-4">
+                                    {thumbnailPreview ? (
+                                        <img
+                                            src={thumbnailPreview}
+                                            alt="Preview"
+                                            className="w-full h-40 object-cover rounded-lg mb-4"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                                            <ImageIcon size={48} className="text-gray-400" />
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h4 className="font-bold text-lg line-clamp-2">
+                                                {courseData.title || "Course Title"}
+                                            </h4>
+                                            <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                                                {courseData.description || "Course description will appear here..."}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                                            <span className="flex items-center gap-1">
+                                                <Clock size={14} />
+                                                {courseData.duration || "-- hours"}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <TrendingUp size={14} />
+                                                {courseData.level}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-3 border-t">
+                                            <span className="text-2xl font-bold text-green-600">
+                                                ${courseData.price || "0.00"}
+                                            </span>
+                                            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                                                {courseData.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stats Card */}
+                            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+                                <h3 className="font-bold flex items-center gap-2">
+                                    <Star size={18} className="text-yellow-500" />
+                                    Course Stats
                                 </h3>
 
-                                <p className="text-sm text-gray-600 line-clamp-3">
-                                    {courseData.description || "Course description preview..."}
-                                </p>
-
-                                <div className="flex justify-between text-sm text-gray-600">
-                                    <span className="flex items-center gap-1">
-                                        <Users size={14} /> 0 students
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <Star size={14} /> New
-                                    </span>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-600">Completion</span>
+                                        <span className="font-bold">
+                                            {Math.round((
+                                                (courseData.title ? 25 : 0) +
+                                                (courseData.description ? 25 : 0) +
+                                                (courseData.price ? 25 : 0) +
+                                                (thumbnailPreview ? 25 : 0)
+                                            ))}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-gray-200 h-2 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{
+                                                width: `${Math.round((
+                                                    (courseData.title ? 25 : 0) +
+                                                    (courseData.description ? 25 : 0) +
+                                                    (courseData.price ? 25 : 0) +
+                                                    (thumbnailPreview ? 25 : 0)
+                                                ))}%`
+                                            }}
+                                            className="bg-gradient-to-r from-green-500 to-emerald-500 h-full"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between items-center pt-3 border-t">
-                                    <span className="text-xl font-bold text-indigo-600">
-                                        ${courseData.price || "0.00"}
-                                    </span>
-                                    <span className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">
-                                        {courseData.level}
-                                    </span>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                        <p className="text-2xl font-bold text-blue-600">
+                                            {courseData.requirements.length}
+                                        </p>
+                                        <p className="text-xs text-gray-600">Requirements</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                                        <p className="text-2xl font-bold text-purple-600">
+                                            {courseData.learningOutcomes.length}
+                                        </p>
+                                        <p className="text-xs text-gray-600">Outcomes</p>
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Tips Card */}
+                            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-6">
+                                <h3 className="font-bold flex items-center gap-2 mb-4">
+                                    <Sparkles size={18} className="text-yellow-600" />
+                                    Quick Tips
+                                </h3>
+                                <ul className="space-y-3 text-sm">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                        <span>Write clear, compelling titles under 60 characters</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                        <span>Price competitively based on course length and depth</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                        <span>Add at least 3-5 learning outcomes for clarity</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </motion.div>
                 </div>
             </div>
 
-            {/* Preview Modal */}
+            {/* Preview Modal (Mobile) */}
             <AnimatePresence>
                 {showPreview && (
                     <>
@@ -745,58 +835,139 @@ const CreateCourse = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowPreview(false)}
-                            className="fixed inset-0 bg-black/50 z-50"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
                         />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        >
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
-                                {thumbnailPreview && (
-                                    <img
-                                        src={thumbnailPreview}
-                                        alt="preview"
-                                        className="w-full h-64 object-cover"
-                                    />
-                                )}
-
-                                <div className="p-6 space-y-4">
-                                    <h2 className="text-2xl font-bold">
-                                        {courseData.title || "Course Title"}
-                                    </h2>
-
-                                    <p className="text-gray-700">
-                                        {courseData.description || "Course description..."}
-                                    </p>
-
-                                    <div className="flex flex-wrap gap-3 text-sm">
-                                        <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">
-                                            {courseData.category}
-                                        </span>
-                                        <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
-                                            {courseData.level}
-                                        </span>
-                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                                            {courseData.language}
-                                        </span>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setShowPreview(false)}
-                                        className="w-full mt-4 bg-indigo-600 text-white py-3 rounded-xl font-semibold"
-                                    >
-                                        Close Preview
+                        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                            >
+                                <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 flex justify-between items-center">
+                                    <h3 className="font-bold flex items-center gap-2">
+                                        <Eye size={18} /> Course Preview
+                                    </h3>
+                                    <button onClick={() => setShowPreview(false)}>
+                                        <X size={24} />
                                     </button>
                                 </div>
-                            </div>
-                        </motion.div>
+
+                                <div className="p-6">
+                                    {thumbnailPreview ? (
+                                        <img
+                                            src={thumbnailPreview}
+                                            alt="Preview"
+                                            className="w-full h-48 object-cover rounded-lg mb-4"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                                            <ImageIcon size={64} className="text-gray-400" />
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="font-bold text-xl mb-2">
+                                                {courseData.title || "Course Title"}
+                                            </h4>
+                                            <p className="text-gray-600">
+                                                {courseData.description || "Course description will appear here..."}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                                            <span className="flex items-center gap-1">
+                                                <Clock size={14} />
+                                                {courseData.duration || "-- hours"}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <TrendingUp size={14} />
+                                                {courseData.level}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                🌐 {courseData.language}
+                                            </span>
+                                        </div>
+
+                                        {courseData.requirements.length > 0 && (
+                                            <div>
+                                                <h5 className="font-semibold mb-2">Requirements:</h5>
+                                                <ul className="space-y-1">
+                                                    {courseData.requirements.map((req, idx) => (
+                                                        <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                                                            <CheckCircle size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                                            {req}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {courseData.learningOutcomes.length > 0 && (
+                                            <div>
+                                                <h5 className="font-semibold mb-2">What you'll learn:</h5>
+                                                <ul className="space-y-1">
+                                                    {courseData.learningOutcomes.map((outcome, idx) => (
+                                                        <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                                                            <Star size={14} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+                                                            {outcome}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between pt-4 border-t">
+                                            <div>
+                                                <p className="text-sm text-gray-600">Course Price</p>
+                                                <span className="text-3xl font-bold text-green-600">
+                                                    ${courseData.price || "0.00"}
+                                                </span>
+                                            </div>
+                                            <span className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                                                {courseData.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Mobile Preview Button */}
+            <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowPreview(true)}
+                className="lg:hidden fixed bottom-20 right-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
+            >
+                <Eye size={24} />
+            </motion.button>
+
+            {/* Mobile Submit FAB */}
+            <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="lg:hidden fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 disabled:opacity-50"
+            >
+                {isSubmitting ? (
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                        <Sparkles size={24} />
+                    </motion.div>
+                ) : (
+                    <CheckCircle size={24} />
+                )}
+            </motion.button>
         </div>
     )
 }
 
-export default CreateCourse                                
+export default CreateCourse
