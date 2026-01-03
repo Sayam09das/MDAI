@@ -141,8 +141,13 @@ const Registration = () => {
                     </div>
                     <div className="relative z-10">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-6">
-                            <Sparkles className="w-8 h-8" />
+                            <img
+                                src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"  
+                                alt="logo"
+                                className="w-20 h-20 object-contain rounded-xl"
+                            />
                         </div>
+
                         <h2 className="text-4xl xl:text-5xl font-bold mb-4">Welcome to Learning Platform</h2>
                         <p className="text-lg text-indigo-100 mb-8">Join thousands of students and teachers in a journey of knowledge and growth</p>
                         <div className="space-y-4">
@@ -272,8 +277,8 @@ const Registration = () => {
                                                     <div
                                                         key={level}
                                                         className={`h-1 sm:h-1.5 flex-1 rounded-full transition-all ${passwordStrength >= level
-                                                                ? passwordStrength === 100 ? 'bg-green-500' : passwordStrength >= 75 ? 'bg-blue-500' : passwordStrength >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                                                : 'bg-gray-200'
+                                                            ? passwordStrength === 100 ? 'bg-green-500' : passwordStrength >= 75 ? 'bg-blue-500' : passwordStrength >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                                            : 'bg-gray-200'
                                                             }`}
                                                     />
                                                 ))}
