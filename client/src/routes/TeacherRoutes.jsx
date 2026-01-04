@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import TeacherLayout from "../components/Dashboard/Teacher/TeacherLayout";
 import PageLoader from "../components/common/PageLoader";
+import ReturneacherLiveSessions from "../Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -26,6 +27,7 @@ const TeacherRoutes = () => {
                     <Route path="mycourse" element={<ReturnCoursedashboard />} />
                     <Route path="create-course" element={<ReturnCreateCourse />} />
                     <Route path="lessons" element={<ReturnLessonManager />} />
+                    <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
                 </Route>
             </Routes>
         </Suspense>
