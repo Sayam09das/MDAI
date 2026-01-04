@@ -14,7 +14,7 @@ import StudentPerformanceGraph from "./StudenrPerformanceGraph";
 const ReturnDashboard = () => {
     return (
         <>
-            <div className="px-4 md:px-6">
+            <div className="md:px-6">
 
                 {/* TOP SECTION: Motivation + Calendar */}
                 <div className="flex flex-col md:flex-row gap-6 mt-6 items-start">

@@ -19,7 +19,7 @@ const TeacherLayout = () => {
             />
 
             {/* CONTENT AREA */}
-            <main className="pt-16 lg:ml-64 transition-all duration-300 p-6 relative">
+            <main className="pt-16 lg:ml-64 transition-all duration-300 relative">
                 {loading && <PageLoader />}
                 <Outlet />
             </main>
