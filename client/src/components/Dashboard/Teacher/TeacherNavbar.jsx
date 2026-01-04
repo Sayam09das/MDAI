@@ -50,7 +50,7 @@ const TeacherNavbar = ({ onMenuClick }) => {
     return (
         <>
             {/* NAVBAR */}
-            <nav className="fixed top-0 left-0 right-0 h-16 bg-white z-50">
+            <nav className="fixed top-0 left-0 right-0 h-16 bg-white z-50 border-b border-gray-200">
                 <div className="h-full max-w-7xl mx-auto px-4 flex items-center justify-between">
 
                     {/* LEFT */}
