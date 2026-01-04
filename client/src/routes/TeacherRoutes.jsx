@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import TeacherLayout from "../components/Dashboard/Teacher/TeacherLayout";
 import PageLoader from "../components/common/PageLoader";
 import ReturneacherLiveSessions from "../Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions";
+import ReturnEnrolledStudents from "../Pages/teacher/Dashboard/MainEnrolledStudents/ReturnEnrolledStudents";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -28,6 +29,7 @@ const TeacherRoutes = () => {
                     <Route path="create-course" element={<ReturnCreateCourse />} />
                     <Route path="lessons" element={<ReturnLessonManager />} />
                     <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
+                    <Route path="students" element={<ReturnEnrolledStudents />} />
                 </Route>
             </Routes>
         </Suspense>
