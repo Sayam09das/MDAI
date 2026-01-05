@@ -4,6 +4,9 @@ import TeacherLayout from "../components/Dashboard/Teacher/TeacherLayout";
 import PageLoader from "../components/common/PageLoader";
 import ReturneacherLiveSessions from "../Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions";
 import ReturnEnrolledStudents from "../Pages/teacher/Dashboard/MainEnrolledStudents/ReturnEnrolledStudents";
+import ReturnStudentAttendance from "../Pages/teacher/Dashboard/MainAttendance/ReturnStudentAttendance";
+import ReturnTeacherCalendar from "../Pages/teacher/Dashboard/MainTeacherCalendar/ReturnTeacherCalendar";
+import ReturnTeacherLibrary from "../Pages/teacher/Dashboard/MainTeacherLibrary/ReturnTeacherLibrary";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -30,6 +33,9 @@ const TeacherRoutes = () => {
                     <Route path="lessons" element={<ReturnLessonManager />} />
                     <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
                     <Route path="students" element={<ReturnEnrolledStudents />} />
+                    <Route path="attendance" element={<ReturnStudentAttendance />} />
+                    <Route path="calendar" element={<ReturnTeacherCalendar />} />
+                    <Route path="library" element={<ReturnTeacherLibrary />} />
                 </Route>
             </Routes>
         </Suspense>
