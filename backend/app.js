@@ -1,21 +1,26 @@
-const express = require('express');
+import express from "express";
+import path from "path";
+import cors from "cors";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import dotenv from "dotenv";
+
+import authRoutes from "./routes/auth.routes.js";
+import teacherRoutes from "./routes/teacher.routes.js";
+
+import database from "./database/db.js";
+
+dotenv.config();
+
 const app = express();
-const path = require('path');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const helmet = require('helmet');
 
-require('dotenv').config();
-
-// Database connection
-const database = require('./database/db');
-
-
-// Middleware
+/* =====================
+   MIDDLEWARES
+===================== */
 app.use(cors({
-    origin: 'http://localhost:5173/',
-    credentials: true
+  origin: "http://localhost:5173",
+  credentials: true,
 }));
 
 app.use(express.json());
@@ -23,9 +28,19 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(helmet());
 
+/* =====================
+   DATABASE
+===================== */
 database();
 
+/* =====================
+   ROUTES
+===================== */
+app.use("/api/auth", authRoutes);
+app.use("/api/teacher", teacherRoutes);
 
 
-
-module.exports = app;
+/* =====================
+   EXPORT APP
+===================== */
+export default app;
