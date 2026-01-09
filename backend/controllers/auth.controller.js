@@ -1,4 +1,5 @@
 import User from "../models/userModel.js";
+import Teacher from "../models/teacherModel.js";
 import { generateToken } from "../utils/generateToken.js";
 import { generateOTP } from "../utils/otp.js";
 import sendEmail from "../utils/sendEmail.js";
@@ -104,22 +105,56 @@ export const resendOtp = async (req, res) => {
   res.json({ message: "OTP resent to email" });
 };
 
-/* ================= LOGIN ================= */
-export const login = async (req, res) => {
-  const { email, password } = req.body;
 
-  const user = await User.findOne({ email }).select("+password");
-  if (!user || !(await user.comparePassword(password))) {
-    return res.status(401).json({ message: "Invalid credentials" });
+/* ================= UNIFIED LOGIN (USER + TEACHER) ================= */
+export const unifiedLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password required" });
+    }
+
+    /* ---------- CHECK USER ---------- */
+    let account = await User.findOne({ email }).select("+password");
+    let role = "user";
+
+    /* ---------- IF NOT USER, CHECK TEACHER ---------- */
+    if (!account) {
+      account = await Teacher.findOne({ email }).select("+password");
+      role = "teacher";
+    }
+
+    if (!account) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    /* ---------- PASSWORD CHECK ---------- */
+    const isMatch = await account.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    /* ---------- TEACHER OTP CHECK ONLY ---------- */
+    if (role === "teacher" && !account.isVerified) {
+      return res.status(403).json({ message: "Verify OTP first" });
+    }
+
+    /* ---------- GENERATE TOKEN ---------- */
+    generateToken(res, {
+      id: account._id,
+      role,
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      role,
+    });
+  } catch (error) {
+    console.error("Unified Login Error:", error);
+    res.status(500).json({ message: "Login failed" });
   }
-
-  if (!user.isVerified) {
-    return res.status(403).json({ message: "Verify your account" });
-  }
-
-  generateToken(res, user._id);
-
-  res.json({ message: "Login successful" });
 };
 
 /* ================= LOGOUT ================= */
@@ -132,49 +167,106 @@ export const logout = (req, res) => {
 
 
 /* ================= FORGOT PASSWORD ================= */
+/* ================= FORGOT PASSWORD (USER + TEACHER) ================= */
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // 🔍 Check User first
+    let account = await User.findOne({ email });
+    let role = "user";
+
+    // 🔍 If not user, check Teacher
+    if (!account) {
+      account = await Teacher.findOne({ email });
+      role = "teacher";
+    }
+
+    if (!account) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    // 🔐 Generate OTP (string)
+    const otp = generateOTP().toString();
+
+    account.otp = otp;
+    account.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+    await account.save();
+
+    // 📧 Send OTP email
+    await sendEmail({
+      to: account.email,
+      subject: "Password Reset OTP",
+      html: `
+        <h2>Password Reset (${role.toUpperCase()})</h2>
+        <h3>${otp}</h3>
+        <p>This OTP is valid for 10 minutes.</p>
+      `,
+    });
+
+    res.json({
+      success: true,
+      message: "OTP sent to email for password reset",
+    });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Forgot password failed" });
   }
-
-  const otp = generateOTP();
-  user.otp = otp;
-  user.otpExpiry = Date.now() + 10 * 60 * 1000;
-  await user.save();
-
-  // 📧 SEND OTP EMAIL
-  await sendEmail({
-    to: user.email,
-    subject: "Password Reset OTP",
-    html: `
-      <h2>Password Reset Request</h2>
-      <h3>${otp}</h3>
-      <p>This OTP is valid for 10 minutes.</p>
-    `,
-  });
-
-  res.json({ message: "OTP sent to email for password reset" });
 };
 
-/* ================= RESET PASSWORD ================= */
+
+/* ================= RESET PASSWORD (USER + TEACHER) ================= */
 export const resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  try {
+    let { email, otp, newPassword } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
+    if (!email || !otp || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Email, OTP and new password are required" });
+    }
+
+    otp = otp.toString();
+
+    // 🔍 Check User first
+    let account = await User.findOne({ email });
+    let role = "user";
+
+    // 🔍 If not user, check Teacher
+    if (!account) {
+      account = await Teacher.findOne({ email });
+      role = "teacher";
+    }
+
+    if (
+      !account ||
+      !account.otp ||
+      account.otp !== otp ||
+      account.otpExpiry < Date.now()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // 🔐 Update password
+    account.password = newPassword;
+    account.otp = null;
+    account.otpExpiry = null;
+    await account.save();
+
+    res.json({
+      success: true,
+      message: `Password reset successful for ${role}`,
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Reset password failed" });
   }
-
-  user.password = newPassword;
-  user.otp = null;
-  user.otpExpiry = null;
-  await user.save();
-
-  res.json({ message: "Password reset successful" });
 };
+
 
 /* ================= GET CURRENT USER ================= */
 export const getMe = async (req, res) => {

@@ -76,6 +76,13 @@ const teacherSchema = new mongoose.Schema(
       type: String, // image URL
       default: "",
     },
+    otp: {
+      type: String,
+    },
+    otpExpiry: {
+      type: Date,
+    },
+
   },
   {
     timestamps: true,

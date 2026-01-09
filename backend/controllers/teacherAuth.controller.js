@@ -62,11 +62,14 @@ export const registerTeacher = async (req, res) => {
 /* ================= TEACHER OTP VERIFY ================= */
 export const verifyTeacherOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    let { email, otp } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
+
+    // ✅ Convert OTP to string
+    otp = otp.toString();
 
     const teacher = await Teacher.findOne({ email });
 
@@ -96,6 +99,84 @@ export const verifyTeacherOtp = async (req, res) => {
     console.error("Teacher OTP Verify Error:", error);
     res.status(500).json({
       message: "OTP verification failed",
+    });
+  }
+};
+
+
+/* ================= TEACHER RESEND OTP ================= */
+export const resendTeacherOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const teacher = await Teacher.findOne({ email });
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    if (teacher.isVerified) {
+      return res.status(400).json({ message: "Teacher already verified" });
+    }
+
+    // 🔐 Generate new OTP (string)
+    const otp = generateOTP().toString();
+
+    teacher.otp = otp;
+    teacher.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await teacher.save();
+
+    // 📧 Send OTP email
+    await sendEmail({
+      to: teacher.email,
+      subject: "Resend Teacher Verification OTP",
+      html: `
+        <h2>Teacher Verification</h2>
+        <p>Your new OTP is:</p>
+        <h3>${otp}</h3>
+        <p>This OTP is valid for 10 minutes.</p>
+      `,
+    });
+
+    res.json({
+      success: true,
+      message: "OTP resent successfully",
+    });
+  } catch (error) {
+    console.error("Resend Teacher OTP Error:", error);
+    res.status(500).json({
+      message: "Failed to resend OTP",
+    });
+  }
+};
+
+/* ================= TEACHER LOGOUT ================= */
+export const teacherLogout = (req, res) => {
+  try {
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.json({
+      success: true,
+      message: "Teacher logged out successfully",
+    });
+  } catch (error) {
+    console.error("Teacher Logout Error:", error);
+    res.status(500).json({
+      message: "Logout failed",
     });
   }
 };
