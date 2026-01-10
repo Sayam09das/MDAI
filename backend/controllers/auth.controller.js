@@ -38,7 +38,7 @@ export const register = async (req, res) => {
 
     // 📧 SEND OTP EMAIL
     await sendEmail({
-      to: process.env.EMAIL_USER,
+      to: user.email,
       subject: "Your OTP Code",
       html: `
         <h2>Verify Your Account</h2>
@@ -95,42 +95,30 @@ export const verifyOtp = async (req, res) => {
 
 /* ================= RESEND OTP ================= */
 export const resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: "Email required" });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const otp = generateOTP();
-
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 10 * 60 * 1000;
-    await user.save();
-
-    // 🔥 DO NOT AWAIT EMAIL
-    sendEmail({
-      to: process.env.EMAIL_USER,
-      subject: "Resent OTP Code",
-      html: `
-        <h2>Your New OTP</h2>
-        <h3>${otp}</h3>
-        <p>Valid for 10 minutes.</p>
-      `,
-    }).catch(err => console.error("Resend OTP email error:", err));
-
-    return res.json({ message: "OTP resent to email" });
-
-  } catch (error) {
-    console.error("Resend OTP Error:", error);
-    return res.status(500).json({ message: "Failed to resend OTP" });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiry = Date.now() + 10 * 60 * 1000;
+  await user.save();
+
+  // 📧 SEND OTP EMAIL
+  await sendEmail({
+    to: user.email,
+    subject: "Resent OTP Code",
+    html: `
+      <h2>Your New OTP</h2>
+      <h3>${otp}</h3>
+      <p>Valid for 10 minutes.</p>
+    `,
+  });
+
+  res.json({ message: "OTP resent to email" });
 };
 
 
