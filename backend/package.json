@@ -28,6 +28,7 @@
     "rate-limit": "^0.1.1",
     "razorpay": "^2.9.6",
     "redis": "^5.10.0",
+    "resend": "^6.7.0",
     "socket.io": "^4.8.3",
     "stripe": "^20.1.0",
     "winston": "^3.19.0",

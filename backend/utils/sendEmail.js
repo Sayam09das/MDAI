@@ -1,30 +1,19 @@
-import sgMail from "@sendgrid/mail";
+import { Resend } from "resend";
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    // Plain-text fallback (important for deliverability)
-    const plainText = html.replace(/<[^>]+>/g, "");
-
-    await sgMail.send({
-      to,
-      from: {
-        name: "Schedulo",
-        email: process.env.SENDGRID_FROM_EMAIL || "sayamprogrammingworld@gmail.com",
-      },
+    await resend.emails.send({
+      from: "OTP <onboarding@resend.dev>", // works instantly
+      to, // normal Gmail, Outlook, etc.
       subject,
       html,
-      text: plainText,
     });
 
-    console.log(`✅ Email sent to ${to}`);
+    console.log("✅ OTP email sent via Resend");
   } catch (error) {
-    console.error(
-      "❌ SendGrid Error:",
-      error.response?.body || error.message
-    );
-    // IMPORTANT: do NOT throw — avoid breaking register flow
+    console.error("❌ Resend error:", error);
   }
 };
 
