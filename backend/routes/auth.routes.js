@@ -3,20 +3,19 @@ import {
   register,
   unifiedLogin,
   logout,
-  getMe,
   forgotPassword,
-  verifyEmailStatus,
+  getMe,
+  refreshToken,
 } from "../controllers/auth.controller.js";
-
 import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 router.post("/register", register);
-router.post("/verify-email", verifyEmailStatus);
 router.post("/login", unifiedLogin);
-router.post("/forgot-password", forgotPassword);
 router.post("/logout", logout);
+router.post("/forgot-password", forgotPassword);
 router.get("/me", protect, getMe);
+router.post("/refresh-token", refreshToken);
 
 export default router;

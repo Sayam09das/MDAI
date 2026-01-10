@@ -5,7 +5,6 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
-import "./config/firebase.js";
 import authRoutes from "./routes/auth.routes.js";
 import teacherRoutes from "./routes/teacher.routes.js";
 
