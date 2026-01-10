@@ -66,42 +66,58 @@ const Registration = () => {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
         if (!validateForm()) {
-            toast.error('Please fill all fields correctly', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-            });
+            toast.error("Please fill all fields correctly");
             return;
         }
+
         setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include", // VERY IMPORTANT (cookies)
+                    body: JSON.stringify({
+                        fullName: formData.fullName,
+                        email: formData.email,
+                        password: formData.password,
+                        phone: formData.phone,
+                        address: formData.address,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Registration failed");
+            }
+
+            toast.success("🎉 Registration successful!");
+
             setIsSuccess(true);
-            toast.success('🎉 Registration successful!', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-            });
+
+            // redirect to login after 2 seconds
             setTimeout(() => {
-                toast.info('Redirecting to login...', {
-                    position: "top-right",
-                    autoClose: 2000,
-                });
-            }, 1000);
-        }, 1500);
+                window.location.href = "/login";
+            }, 2000);
+
+        } catch (error) {
+            toast.error(error.message || "Something went wrong");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleRoleSelect = (role) => {
-        setFormData(prev => ({ ...prev, role }));
-    };
+
 
     const getPasswordStrength = () => {
         const password = formData.password;
@@ -142,7 +158,7 @@ const Registration = () => {
                     <div className="relative z-10">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-6">
                             <img
-                                src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"  
+                                src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"
                                 alt="logo"
                                 className="w-20 h-20 object-contain rounded-xl"
                             />
