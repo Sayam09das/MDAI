@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin, Check, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { auth } from '../firebase'
+
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -86,7 +85,7 @@ const Registration = () => {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    credentials: "include", // VERY IMPORTANT (cookies)
+                    credentials: "include",
                     body: JSON.stringify({
                         fullName: formData.fullName,
                         email: formData.email,
@@ -105,10 +104,8 @@ const Registration = () => {
             }
 
             toast.success("🎉 Registration successful!");
-
             setIsSuccess(true);
 
-            // redirect to login after 2 seconds
             setTimeout(() => {
                 window.location.href = "/login";
             }, 2000);
