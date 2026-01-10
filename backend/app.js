@@ -18,9 +18,15 @@ const app = express();
    MIDDLEWARES
 ===================== */
 app.use(cors({
-  origin: "https://mdai-self.vercel.app",
+  origin: [
+    "https://mdai-self.vercel.app",
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
+
+
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
