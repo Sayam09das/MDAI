@@ -60,49 +60,77 @@ export const register = async (req, res) => {
 
 /* ================= VERIFY OTP ================= */
 export const verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  try {
+    const { email, otp } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (
+      !user ||
+      String(user.otp) !== String(otp) ||
+      user.otpExpiry < Date.now()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.isVerified = true;
+    user.otp = null;
+    user.otpExpiry = null;
+
+    await user.save();
+
+    generateToken(res, user._id);
+
+    return res.json({ message: "Account verified successfully" });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ message: "OTP verification failed" });
   }
-
-  user.isVerified = true;
-  user.otp = null;
-  user.otpExpiry = null;
-  await user.save();
-
-  generateToken(res, user._id);
-
-  res.json({ message: "Account verified successfully" });
 };
 
 /* ================= RESEND OTP ================= */
 export const resendOtp = async (req, res) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!email) {
+      return res.status(400).json({ message: "Email required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const otp = generateOTP();
+
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    // 🔥 DO NOT AWAIT EMAIL
+    sendEmail({
+      to: user.email,
+      subject: "Resent OTP Code",
+      html: `
+        <h2>Your New OTP</h2>
+        <h3>${otp}</h3>
+        <p>Valid for 10 minutes.</p>
+      `,
+    }).catch(err => console.error("Resend OTP email error:", err));
+
+    return res.json({ message: "OTP resent to email" });
+
+  } catch (error) {
+    console.error("Resend OTP Error:", error);
+    return res.status(500).json({ message: "Failed to resend OTP" });
   }
-
-  const otp = generateOTP();
-  user.otp = otp;
-  user.otpExpiry = Date.now() + 10 * 60 * 1000;
-  await user.save();
-
-  // 📧 SEND OTP EMAIL
-  await sendEmail({
-    to: user.email,
-    subject: "Resent OTP Code",
-    html: `
-      <h2>Your New OTP</h2>
-      <h3>${otp}</h3>
-      <p>Valid for 10 minutes.</p>
-    `,
-  });
-
-  res.json({ message: "OTP resent to email" });
 };
 
 
