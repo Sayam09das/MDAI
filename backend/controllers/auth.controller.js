@@ -38,7 +38,7 @@ export const register = async (req, res) => {
 
     // 📧 SEND OTP EMAIL
     await sendEmail({
-      to: user.email,
+      to: process.env.EMAIL_USER,
       subject: "Your OTP Code",
       html: `
         <h2>Verify Your Account</h2>
@@ -116,7 +116,7 @@ export const resendOtp = async (req, res) => {
 
     // 🔥 DO NOT AWAIT EMAIL
     sendEmail({
-      to: user.email,
+      to: process.env.EMAIL_USER,
       subject: "Resent OTP Code",
       html: `
         <h2>Your New OTP</h2>
