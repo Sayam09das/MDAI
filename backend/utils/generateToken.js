@@ -1,40 +1,34 @@
 import jwt from "jsonwebtoken";
 
 /*
-  ACCESS TOKEN  -> short lived (15 min)
-  REFRESH TOKEN -> long lived (7 days)
+  ACCESS TOKEN  -> 15 min
+  REFRESH TOKEN -> 7 days
 */
 
-export const generateToken = (res, userId) => {
-  // 🔐 Access Token
-  const accessToken = jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: "15m" }
-  );
+export const generateToken = (res, payload) => {
+  // payload = { id, role }
 
-  // 🔁 Refresh Token
-  const refreshToken = jwt.sign(
-    { id: userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "7d" }
-  );
+  const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: "15m",
+  });
 
-  // 🍪 Access Token Cookie
+  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+
+  // 🍪 Access Token Cookie (CROSS-DOMAIN SAFE)
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    secure: true,        // 🔥 ALWAYS true on HTTPS (Render + Vercel)
+    sameSite: "None",    // 🔥 REQUIRED for cross-origin
+    maxAge: 15 * 60 * 1000,
   });
 
   // 🍪 Refresh Token Cookie
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    secure: true,
+    sameSite: "None",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
-
-  return { accessToken, refreshToken };
 };
