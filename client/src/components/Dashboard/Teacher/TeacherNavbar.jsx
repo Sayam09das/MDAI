@@ -11,6 +11,7 @@ import {
 
 const TeacherNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -37,6 +38,34 @@ const TeacherNavbar = ({ onMenuClick }) => {
             unread: false,
         },
     ]);
+
+
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+                const res = await fetch(`${BASE_URL}/api/auth/me`, {
+                    method: "GET",
+                    credentials: "include", // 🔥 REQUIRED for cookie auth
+                });
+
+                if (!res.ok) {
+                    throw new Error("Not authorized");
+                }
+
+                const user = await res.json();
+                setCurrentUser(user);
+
+            } catch (error) {
+                console.error("Auth error:", error);
+                navigate("/login"); // 🔐 redirect if not logged in
+            }
+        };
+
+        fetchCurrentUser();
+    }, [navigate]);
 
     /* ✅ Correct unread count */
     const unreadCount = notifications.filter(n => n.unread).length;
@@ -108,7 +137,11 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                 className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
                             >
                                 <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center">
-                                    <span className="text-white text-sm font-semibold">T</span>
+                                    <span className="text-white text-sm font-semibold">
+                                        {currentUser?.fullName
+                                            ? currentUser.fullName.charAt(0).toUpperCase()
+                                            : "S"}
+                                    </span>
                                 </div>
                                 <ChevronDown
                                     className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""
