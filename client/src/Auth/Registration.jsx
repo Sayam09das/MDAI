@@ -89,6 +89,7 @@ const Registration = () => {
                         fullName: formData.fullName,
                         email: formData.email,
                         password: formData.password,
+                        confirmPassword: formData.confirmPassword,
                         phone: formData.phone,
                         address: formData.address,
                     }),
