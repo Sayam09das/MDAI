@@ -23,47 +23,51 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setError("");
 
-        // Basic validation
         if (!formData.email || !formData.password) {
-            setError('Please fill in all fields');
+            setError("Please fill in all fields");
+            setLoading(false);
+            return;
+        }
+
+        // 🔐 Safety check (prevents undefined/api bug)
+        const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+        if (!BASE_URL) {
+            setError("Backend URL not configured");
             setLoading(false);
             return;
         }
 
         try {
-            const res = await fetch(
-                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: formData.email,
-                        password: formData.password,
-                    }),
-                }
-            );
+            const res = await fetch(`${BASE_URL}/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include", // needed for cookie auth
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                }),
+            });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || 'Login failed');
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error("Server did not return JSON");
             }
 
-            // Store in localStorage
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('token', data.token);
+            if (!res.ok) {
+                throw new Error(data.message || "Login failed");
+            }
 
-            // ✅ SPA navigation (FIX)
-            if (data.user.role === 'TEACHER') {
-                navigate('/teacher-dashboard');
-            } else if (data.user.role === 'STUDENT') {
-                navigate('/student-dashboard');
+            // 🔁 role comes directly (NOT data.user.role)
+            if (data.role === "teacher") {
+                navigate("/teacher-dashboard");
             } else {
-                navigate('/');
+                navigate("/student-dashboard");
             }
 
         } catch (err) {
@@ -72,7 +76,6 @@ const Login = () => {
             setLoading(false);
         }
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
