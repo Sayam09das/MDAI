@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+
 
 const Login = () => {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -17,7 +20,6 @@ const Login = () => {
         });
         setError('');
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -55,16 +57,13 @@ const Login = () => {
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('token', data.token);
 
-            // Redirect based on role
-            switch (data.user.role) {
-                case 'TEACHER':
-                    window.location.href = '/teacher-dashboard';
-                    break;
-                case 'STUDENT':
-                    window.location.href = '/student-dashboard';
-                    break;
-                default:
-                    window.location.href = '/';
+            // ✅ SPA navigation (FIX)
+            if (data.user.role === 'TEACHER') {
+                navigate('/teacher-dashboard');
+            } else if (data.user.role === 'STUDENT') {
+                navigate('/student-dashboard');
+            } else {
+                navigate('/');
             }
 
         } catch (err) {
