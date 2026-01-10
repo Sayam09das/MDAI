@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin, Check, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { auth } from '../firebase'
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -77,6 +79,17 @@ const Registration = () => {
         setIsLoading(true);
 
         try {
+            /* ================= 1️⃣ FIREBASE REGISTER ================= */
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                formData.email,
+                formData.password
+            );
+
+            /* ================= 2️⃣ SEND VERIFICATION EMAIL ================= */
+            await sendEmailVerification(userCredential.user);
+
+            /* ================= 3️⃣ SAVE USER IN BACKEND ================= */
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
                 {
@@ -84,7 +97,7 @@ const Registration = () => {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    credentials: "include", // VERY IMPORTANT (cookies)
+                    credentials: "include",
                     body: JSON.stringify({
                         fullName: formData.fullName,
                         email: formData.email,
@@ -102,21 +115,27 @@ const Registration = () => {
                 throw new Error(data.message || "Registration failed");
             }
 
-            toast.success("🎉 Registration successful!");
+            toast.success("🎉 Verification email sent! Check your inbox.");
 
             setIsSuccess(true);
 
-            // redirect to login after 2 seconds
             setTimeout(() => {
                 window.location.href = "/login";
-            }, 2000);
+            }, 2500);
 
         } catch (error) {
-            toast.error(error.message || "Something went wrong");
+            console.error(error);
+
+            if (error.code === "auth/email-already-in-use") {
+                toast.error("Email already registered");
+            } else {
+                toast.error(error.message || "Something went wrong");
+            }
         } finally {
             setIsLoading(false);
         }
     };
+
 
 
 
