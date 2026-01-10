@@ -1,19 +1,14 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"Auth App" <${process.env.EMAIL_USER}>`,
+  await sgMail.send({
     to,
+    from: {
+      email: "no-reply@mdai-self.vercel.app", // MUST be verified in SendGrid
+      name: "Auth App",
+    },
     subject,
     html,
   });
