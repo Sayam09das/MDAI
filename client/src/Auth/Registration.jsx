@@ -79,17 +79,6 @@ const Registration = () => {
         setIsLoading(true);
 
         try {
-            /* ================= 1️⃣ FIREBASE REGISTER ================= */
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                formData.email,
-                formData.password
-            );
-
-            /* ================= 2️⃣ SEND VERIFICATION EMAIL ================= */
-            await sendEmailVerification(userCredential.user);
-
-            /* ================= 3️⃣ SAVE USER IN BACKEND ================= */
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
                 {
@@ -97,7 +86,7 @@ const Registration = () => {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    credentials: "include",
+                    credentials: "include", // VERY IMPORTANT (cookies)
                     body: JSON.stringify({
                         fullName: formData.fullName,
                         email: formData.email,
@@ -115,27 +104,21 @@ const Registration = () => {
                 throw new Error(data.message || "Registration failed");
             }
 
-            toast.success("🎉 Verification email sent! Check your inbox.");
+            toast.success("🎉 Registration successful!");
 
             setIsSuccess(true);
 
+            // redirect to login after 2 seconds
             setTimeout(() => {
                 window.location.href = "/login";
-            }, 2500);
+            }, 2000);
 
         } catch (error) {
-            console.error(error);
-
-            if (error.code === "auth/email-already-in-use") {
-                toast.error("Email already registered");
-            } else {
-                toast.error(error.message || "Something went wrong");
-            }
+            toast.error(error.message || "Something went wrong");
         } finally {
             setIsLoading(false);
         }
     };
-
 
 
 
