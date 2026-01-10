@@ -1,22 +1,14 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const sendEmail = async ({ to, subject, html }) => {
-  try {
-    const response = await resend.emails.send({
-      from: "MDAI Admin <onboarding@resend.dev>",
-      to,
-      subject,
-      html,
-    });
+  const resend = new Resend(process.env.RESEND_API_KEY); // ✅ moved here
 
-    console.log("✅ Email sent:", response.id);
-    return response;
-  } catch (error) {
-    console.error("❌ Email failed:", error.message);
-    throw error;
-  }
+  return resend.emails.send({
+    from: "Sayam Admin <onboarding@resend.dev>",
+    to,
+    subject,
+    html,
+  });
 };
 
 export default sendEmail;
