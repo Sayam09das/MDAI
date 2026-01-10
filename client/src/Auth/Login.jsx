@@ -30,66 +30,50 @@ const Login = () => {
             return;
         }
 
-        // Simulate API call
-        setTimeout(() => {
-            // Mock authentication - Change role to test different redirects
-            const mockUser = {
-                email: formData.email,
-                role: 'STUDENT', // Options: 'ADMIN', 'TEACHER', 'STUDENT'
-                token: 'mock-jwt-token-12345',
-                name: 'John Doe',
-            };
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        password: formData.password,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
 
             // Store in localStorage
-            localStorage.setItem('user', JSON.stringify(mockUser));
-            localStorage.setItem('token', mockUser.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('token', data.token);
 
             // Redirect based on role
-            switch (mockUser.role) {
-                case 'ADMIN':
-                    window.location.href = '/admin';
-                    break;
+            switch (data.user.role) {
                 case 'TEACHER':
-                    window.location.href = '/teacher';
+                    window.location.href = '/teacher-dashboard';
                     break;
                 case 'STUDENT':
-                    window.location.href = '/student';
+                    window.location.href = '/student-dashboard';
                     break;
                 default:
                     window.location.href = '/';
             }
 
+        } catch (err) {
+            setError(err.message);
+        } finally {
             setLoading(false);
-        }, 1500);
-
-        // Real API call implementation:
-        // try {
-        //   const response = await fetch('/api/auth/login', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(formData),
-        //   });
-        //   const data = await response.json();
-        //   
-        //   if (response.ok) {
-        //     localStorage.setItem('user', JSON.stringify(data.user));
-        //     localStorage.setItem('token', data.token);
-        //     
-        //     switch (data.user.role) {
-        //       case 'ADMIN': window.location.href = '/admin'; break;
-        //       case 'TEACHER': window.location.href = '/teacher'; break;
-        //       case 'STUDENT': window.location.href = '/student'; break;
-        //       default: window.location.href = '/';
-        //     }
-        //   } else {
-        //     setError(data.message || 'Invalid credentials');
-        //   }
-        // } catch (err) {
-        //   setError('Something went wrong. Please try again.');
-        // } finally {
-        //   setLoading(false);
-        // }
+        }
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
