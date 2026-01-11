@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight } from "lucide-react";
+import React, { useState } from 'react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -17,23 +17,19 @@ const Login = () => {
     const [error, setError] = useState("");
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        setError("");
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+        setError('');
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
+        setLoading(true);
 
-        if (!formData.email || !formData.password) {
+        if (!email || !password) {
             setError("Please fill in all fields");
-            setLoading(false);
-            return;
-        }
-
-        if (!BACKEND_URL) {
-            setError("Backend URL not configured");
             setLoading(false);
             return;
         }
@@ -42,40 +38,27 @@ const Login = () => {
             const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
-                }),
+                body: JSON.stringify({ email, password }),
             });
 
-            let data;
-            try {
-                data = await res.json();
-            } catch {
-                throw new Error("Invalid server response");
-            }
+            const data = await res.json();
 
-            /* ---------- HANDLE ERRORS ---------- */
             if (!res.ok) {
-                if (res.status === 400 || res.status === 401) {
-                    throw new Error("Invalid email or password");
-                }
-                throw new Error(data.message || "Login failed");
+                throw new Error("Invalid email or password");
             }
 
-            /* ---------- SUCCESS ---------- */
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", data.role);
 
-            if (data.role === "teacher") {
-                navigate("/teacher-dashboard");
-            } else {
-                navigate("/student-dashboard");
-            }
+            navigate(
+                data.role === "teacher"
+                    ? "/teacher-dashboard"
+                    : "/student-dashboard"
+            );
 
         } catch (err) {
             if (err.message === "Failed to fetch") {
-                setError("Server not reachable. Please try again later.");
+                setError("Server not reachable");
             } else {
                 setError(err.message);
             }
