@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import { BACKEND_URL } from "../config/api";
 
+const BACKEND_URL = "https://mdai-0jhi.onrender.com";
 
 const Login = () => {
     const navigate = useNavigate();
