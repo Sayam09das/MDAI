@@ -179,13 +179,13 @@ const StudentNavbar = ({ onMenuClick }) => {
                             {isProfileOpen && (
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg">
                                     <button
-                                        onClick={() => navigate("/teacher/profile")}
+                                        onClick={() => navigate("/student-dashboard/profile")}
                                         className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
                                     >
                                         My Profile
                                     </button>
                                     <button
-                                        onClick={() => navigate("/teacher/settings")}
+                                        onClick={() => navigate("/student-dashboard/settings")}
                                         className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
                                     >
                                         Settings
