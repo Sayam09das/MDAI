@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin, Check, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { BACKEND_URL } from "../config/api";
 
+const BACKEND_URL = "https://mdai-0jhi.onrender.com";
 
 const Registration = () => {
     const [formData, setFormData] = useState({
