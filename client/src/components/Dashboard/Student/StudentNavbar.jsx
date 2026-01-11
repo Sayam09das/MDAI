@@ -79,6 +79,20 @@ const StudentNavbar = ({ onMenuClick }) => {
     }, [navigate]);
 
 
+    const handleLogout = async () => {
+        try {
+            await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
+                method: "POST",
+            });
+        } catch {
+            // ignore error
+        } finally {
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            navigate("/login");
+        }
+    };
+
     /* ✅ Correct unread count */
     const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -177,7 +191,7 @@ const StudentNavbar = ({ onMenuClick }) => {
                                         Settings
                                     </button>
                                     <button
-                                        onClick={() => navigate("/login")}
+                                        onClick={handleLogout}
                                         className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-gray-50"
                                     >
                                         Logout
