@@ -44,9 +44,9 @@ const CreateCourse = () => {
     const [thumbnailPreview, setThumbnailPreview] = useState(null);
     const [currentRequirement, setCurrentRequirement] = useState("");
     const [currentOutcome, setCurrentOutcome] = useState("");
-    // const [showPreview, setShowPreview] = useState(false)
-    // const [isSubmitting, setIsSubmitting] = useState(false)
-    // const [activeTab, setActiveTab] = useState("basic")
+    const [showPreview, setShowPreview] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [activeTab, setActiveTab] = useState("basic")
     const fileInputRef = useRef(null)
 
     const handleThumbnailChange = (e) => {
