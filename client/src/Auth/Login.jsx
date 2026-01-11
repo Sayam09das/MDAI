@@ -1,26 +1,26 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
+import React, { useState } from "react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const BACKEND_URL = "https://mdai-0jhi.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Login = () => {
     const navigate = useNavigate();
+
     const [formData, setFormData] = useState({
-        email: '',
-        password: '',
+        email: "",
+        password: "",
     });
+
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-        setError('');
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError("");
     };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -32,21 +32,16 @@ const Login = () => {
             return;
         }
 
-        // 🔐 Safety check (prevents undefined/api bug)
-        const BASE_URL = BACKEND_URL;
-        if (!BASE_URL) {
+        if (!BACKEND_URL) {
             setError("Backend URL not configured");
             setLoading(false);
             return;
         }
 
         try {
-            const res = await fetch(`${BASE_URL}/api/auth/login`, {
+            const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include", // needed for cookie auth
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     email: formData.email,
                     password: formData.password,
@@ -57,14 +52,21 @@ const Login = () => {
             try {
                 data = await res.json();
             } catch {
-                throw new Error("Server did not return JSON");
+                throw new Error("Invalid server response");
             }
 
+            /* ---------- HANDLE ERRORS ---------- */
             if (!res.ok) {
+                if (res.status === 400 || res.status === 401) {
+                    throw new Error("Invalid email or password");
+                }
                 throw new Error(data.message || "Login failed");
             }
 
-            // 🔁 role comes directly (NOT data.user.role)
+            /* ---------- SUCCESS ---------- */
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("role", data.role);
+
             if (data.role === "teacher") {
                 navigate("/teacher-dashboard");
             } else {
@@ -72,7 +74,11 @@ const Login = () => {
             }
 
         } catch (err) {
-            setError(err.message);
+            if (err.message === "Failed to fetch") {
+                setError("Server not reachable. Please try again later.");
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
