@@ -41,7 +41,6 @@ const extraMenu = [
 const otherMenu = [
     { icon: User, label: "Profile", path: "/teacher-dashboard/profile" },
     { icon: Settings, label: "Settings", path: "/teacher-dashboard/settings" },
-    { icon: LogOut, label: "Logout", path: "/login" },
 ];
 
 /* ================= SIDEBAR ================= */

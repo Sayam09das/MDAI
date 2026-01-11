@@ -40,7 +40,6 @@ const extraMenu = [
 const otherMenu = [
   { icon: User, label: "Profile", path: "/student/profile" },
   { icon: Settings, label: "Settings", path: "/student/settings" },
-  { icon: LogOut, label: "Logout", path: "/login" },
 ];
 
 /* ================= SIDEBAR ================= */
