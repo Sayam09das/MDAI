@@ -3,9 +3,10 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
+  Layers,
   BarChart3,
   Video,
-FolderOpen,
+  FolderOpen,
   Calendar,
   ClipboardCheck,
   Library,
@@ -20,6 +21,7 @@ FolderOpen,
 /* ================= MENU ================= */
 const mainMenu = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/student-dashboard" },
+  { icon: Layers, label: "All Courses", path: "/student-dashboard/all-courses", },
   { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
   { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
   { icon: Video, label: "Live Sessions", path: "/student-dashboard/student-live-classes" },
