@@ -25,21 +25,27 @@ const Login = () => {
     };
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
         setLoading(true);
+        setError("");
 
-        if (!email || !password) {
+        if (!formData.email || !formData.password) {
             setError("Please fill in all fields");
             setLoading(false);
             return;
         }
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+            const res = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        password: formData.password,
+                    }),
+                }
+            );
 
             const data = await res.json();
 
@@ -55,17 +61,17 @@ const Login = () => {
                     ? "/teacher-dashboard"
                     : "/student-dashboard"
             );
-
         } catch (err) {
-            if (err.message === "Failed to fetch") {
-                setError("Server not reachable");
-            } else {
-                setError(err.message);
-            }
+            setError(
+                err.message === "Failed to fetch"
+                    ? "Server not reachable"
+                    : err.message
+            );
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
