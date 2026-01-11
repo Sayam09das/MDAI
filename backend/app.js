@@ -46,6 +46,11 @@ app.use("/api/teacher", teacherRoutes);
 
 
 
+app.get("/ping", (req, res) => {
+  res.status(200).send("ok");
+});
+
+
 /* =====================
    EXPORT APP
 ===================== */
