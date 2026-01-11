@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin, Check, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { BACKEND_URL } from "../config/api";
 
 
 const Registration = () => {
@@ -79,7 +80,7 @@ const Registration = () => {
 
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+                `${BACKEND_URL}/api/auth/register`,
                 {
                     method: "POST",
                     headers: {

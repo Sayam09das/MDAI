@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../config/api";
 
 
 const Login = () => {
@@ -32,7 +33,7 @@ const Login = () => {
         }
 
         // 🔐 Safety check (prevents undefined/api bug)
-        const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+        const BASE_URL = BACKEND_URL;
         if (!BASE_URL) {
             setError("Backend URL not configured");
             setLoading(false);
@@ -40,7 +41,7 @@ const Login = () => {
         }
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, {
+            const res = await fetch(`${BASE_URL}/api/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
