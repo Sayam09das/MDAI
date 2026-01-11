@@ -43,29 +43,4 @@ export const registerTeacher = async (req, res) => {
   }
 };
 
-/* ================= TEACHER LOGOUT ================= */
-export const teacherLogout = (req, res) => {
-  try {
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-
-    res.json({
-      success: true,
-      message: "Teacher logged out successfully",
-    });
-  } catch (error) {
-    console.error("Teacher Logout Error:", error);
-    res.status(500).json({
-      message: "Logout failed",
-    });
-  }
-};

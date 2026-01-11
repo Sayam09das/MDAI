@@ -1,21 +1,27 @@
 import express from "express";
 import {
-  register,
-  unifiedLogin,
+  registerUser,
+  login,
   logout,
-  forgotPassword,
-  getMe,
-  refreshToken,
+  getCurrentUser,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", unifiedLogin);
+/* ================= AUTH ROUTES ================= */
+
+// User register
+router.post("/register", registerUser);
+
+// Unified login (User + Teacher)
+router.post("/login", login);
+
+// Logout (User + Teacher)
 router.post("/logout", logout);
-router.post("/forgot-password", forgotPassword);
-router.get("/me", protect, getMe);
-router.post("/refresh-token", refreshToken);
+
+// Get current logged-in user
+router.get("/me", protect, getCurrentUser);
+
 
 export default router;

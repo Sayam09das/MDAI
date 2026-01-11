@@ -1,59 +1,68 @@
 import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
-import { generateToken } from "../utils/generateToken.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
+import { generateToken } from "../utils/generateToken.js";
 
-/* ================= REGISTER ================= */
-export const register = async (req, res) => {
+/* ================= REGISTER USER ONLY ================= */
+export const registerUser = async (req, res) => {
   try {
     const schema = z.object({
       fullName: z.string().min(3),
       email: z.string().email(),
       password: z.string().min(8),
-      confirmPassword: z.string(),
       phone: z.string().min(10),
       address: z.string().min(10),
     });
 
     const data = schema.parse(req.body);
 
-    if (data.password !== data.confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
-    }
+    // check both collections
+    const exists =
+      (await User.findOne({ email: data.email })) ||
+      (await Teacher.findOne({ email: data.email }));
 
-    const exists = await User.findOne({ email: data.email });
     if (exists) {
-      return res.status(409).json({ message: "Email already exists" });
+      return res.status(400).json({ message: "Email already exists" });
     }
 
-    const user = await User.create({
-      fullName: data.fullName,
-      email: data.email,
-      password: data.password,
-      phone: data.phone,
-      address: data.address,
-      isVerified: true, // no OTP, auto verified
+    const user = await User.create(data);
+
+    const token = generateToken({
+      id: user._id,
+      role: "user",
     });
 
     res.status(201).json({
-      success: true,
-      message: "Registered successfully",
+      message: "User registered successfully",
+      token,
+      role: "user",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        isVerified: user.isVerified,
+      },
     });
   } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({ message: "Registration failed" });
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 /* ================= LOGIN (USER + TEACHER) ================= */
-export const unifiedLogin = async (req, res) => {
+export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const schema = z.object({
+      email: z.string().email(),
+      password: z.string(),
+    });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
-    }
+    const { email, password } = schema.parse(req.body);
 
     let account = await User.findOne({ email }).select("+password");
     let role = "user";
@@ -64,94 +73,86 @@ export const unifiedLogin = async (req, res) => {
     }
 
     if (!account) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await account.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    generateToken(res, {
+    const token = generateToken({
       id: account._id,
       role,
     });
 
     res.json({
-      success: true,
       message: "Login successful",
+      token,
       role,
+      user: {
+        id: account._id,
+        fullName: account.fullName,
+        email: account.email,
+        isVerified: account.isVerified,
+      },
     });
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Login failed" });
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ================= LOGOUT ================= */
-export const logout = (req, res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
 
-  res.json({ message: "Logged out successfully" });
+
+/* ================= LOGOUT (USER + TEACHER) ================= */
+export const logout = async (req, res) => {
+  try {
+    // JWT-based logout = frontend deletes token
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    res.status(500).json({ message: "Logout failed" });
+  }
 };
 
-/* ================= FORGOT PASSWORD (NO OTP) ================= */
-export const forgotPassword = async (req, res) => {
+
+
+/* ================= GET CURRENT USER ================= */
+export const getCurrentUser = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
-
-    if (!email || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Email and new password are required" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    let account = await User.findOne({ email });
-    let role = "user";
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!account) {
-      account = await Teacher.findOne({ email });
-      role = "teacher";
-    }
+    const { id, role } = decoded;
+
+    const account =
+      role === "teacher"
+        ? await Teacher.findById(id)
+        : await User.findById(id);
 
     if (!account) {
       return res.status(404).json({ message: "Account not found" });
     }
 
-    account.password = newPassword;
-    await account.save();
-
     res.json({
-      success: true,
-      message: `Password reset successful for ${role}`,
+      role,
+      user: {
+        id: account._id,
+        fullName: account.fullName,
+        email: account.email,
+        phone: account.phone,
+        address: account.address,
+        isVerified: account.isVerified,
+      },
     });
   } catch (error) {
-    console.error("Forgot Password Error:", error);
-    res.status(500).json({ message: "Forgot password failed" });
-  }
-};
-
-/* ================= GET CURRENT USER ================= */
-export const getMe = async (req, res) => {
-  res.json(req.user);
-};
-
-/* ================= REFRESH TOKEN ================= */
-export const refreshToken = (req, res) => {
-  const token = req.cookies.refreshToken;
-
-  if (!token) {
-    return res.status(401).json({ message: "No refresh token" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-
-    generateToken(res, decoded.id);
-
-    res.json({ message: "Token refreshed" });
-  } catch (error) {
-    return res.status(403).json({ message: "Invalid refresh token" });
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 };
