@@ -9,6 +9,9 @@ import {
     MessageSquare,
 } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+
 const StudentNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
@@ -40,6 +43,40 @@ const StudentNavbar = ({ onMenuClick }) => {
     ]);
 
 
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error("Unauthorized");
+                }
+
+                setCurrentUser(data.user);
+            } catch (error) {
+                // Token expired / invalid
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                navigate("/login");
+            }
+        };
+
+        fetchCurrentUser();
+    }, [navigate]);
 
 
     /* ✅ Correct unread count */

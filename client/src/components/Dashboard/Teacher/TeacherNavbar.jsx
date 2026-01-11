@@ -9,6 +9,9 @@ import {
     MessageSquare,
 } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+
 const TeacherNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
@@ -39,33 +42,42 @@ const TeacherNavbar = ({ onMenuClick }) => {
         },
     ]);
 
-
-
     useEffect(() => {
         const fetchCurrentUser = async () => {
-            try {
-                const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+            const token = localStorage.getItem("token");
 
-                const res = await fetch(`${BASE_URL}/api/auth/me`, {
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
                     method: "GET",
-                    credentials: "include", // 🔥 REQUIRED for cookie auth
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
+                const data = await res.json();
+
                 if (!res.ok) {
-                    throw new Error("Not authorized");
+                    throw new Error("Unauthorized");
                 }
 
-                const user = await res.json();
-                setCurrentUser(user);
-
+                setCurrentUser(data.user);
             } catch (error) {
-                console.error("Auth error:", error);
-                navigate("/login"); // 🔐 redirect if not logged in
+                // Token expired / invalid
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                navigate("/login");
             }
         };
 
         fetchCurrentUser();
     }, [navigate]);
+
+
 
     /* ✅ Correct unread count */
     const unreadCount = notifications.filter(n => n.unread).length;
