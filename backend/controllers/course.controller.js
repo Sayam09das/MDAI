@@ -3,26 +3,18 @@ import cloudinary from "../config/cloudinary.js";
 
 export const createCourse = async (req, res) => {
     try {
-        let thumbnailData;
-
-        // ✅ TEMP: allow JSON testing
-        if (req.file) {
-            const uploadResult = await cloudinary.uploader.upload(
-                `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
-                { folder: "courses" }
-            );
-
-            thumbnailData = {
-                public_id: uploadResult.public_id,
-                url: uploadResult.secure_url,
-            };
-        } else {
-            // JSON test mode
-            thumbnailData = {
-                public_id: "test",
-                url: "test",
-            };
+        // 🔒 STRICT CHECK (production)
+        if (!req.file) {
+            return res.status(400).json({ message: "Thumbnail is required" });
         }
+
+        // Upload image to Cloudinary
+        const uploadResult = await cloudinary.uploader.upload(
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+            {
+                folder: "courses",
+            }
+        );
 
         const course = await Course.create({
             title: req.body.title,
@@ -32,13 +24,19 @@ export const createCourse = async (req, res) => {
             duration: req.body.duration,
             level: req.body.level,
             language: req.body.language,
-            requirements: req.body.requirements,
-            learningOutcomes: req.body.learningOutcomes,
-            thumbnail: thumbnailData,
+            requirements: JSON.parse(req.body.requirements || "[]"),
+            learningOutcomes: JSON.parse(req.body.learningOutcomes || "[]"),
+            thumbnail: {
+                public_id: uploadResult.public_id,
+                url: uploadResult.secure_url,
+            },
             instructor: req.user.id,
         });
 
-        res.status(201).json({ success: true, course });
+        res.status(201).json({
+            success: true,
+            course,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
