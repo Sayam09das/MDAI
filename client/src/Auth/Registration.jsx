@@ -3,7 +3,7 @@ import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle,
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const BACKEND_URL = "https://mdai-0jhi.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -86,12 +86,10 @@ const Registration = () => {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    credentials: "include",
                     body: JSON.stringify({
                         fullName: formData.fullName,
                         email: formData.email,
                         password: formData.password,
-                        confirmPassword: formData.confirmPassword,
                         phone: formData.phone,
                         address: formData.address,
                     }),
@@ -100,8 +98,19 @@ const Registration = () => {
 
             const data = await response.json();
 
+            /* ---------- HANDLE BACKEND ERRORS ---------- */
             if (!response.ok) {
-                throw new Error(data.message || "Registration failed");
+                // Email already exists
+                if (response.status === 400 || response.status === 409) {
+                    throw new Error(data.message || "Email already registered");
+                }
+
+                // Validation error
+                if (response.status === 422) {
+                    throw new Error("Invalid input data");
+                }
+
+                throw new Error("Registration failed. Try again.");
             }
 
             toast.success("🎉 Registration successful!");
@@ -109,10 +118,15 @@ const Registration = () => {
 
             setTimeout(() => {
                 window.location.href = "/login";
-            }, 2000);
+            }, 1500);
 
         } catch (error) {
-            toast.error(error.message || "Something went wrong");
+            /* ---------- NETWORK / SERVER ERRORS ---------- */
+            if (error.message === "Failed to fetch") {
+                toast.error("❌ Server not reachable. Please try again later.");
+            } else {
+                toast.error(error.message);
+            }
         } finally {
             setIsLoading(false);
         }
