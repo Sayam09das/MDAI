@@ -152,7 +152,7 @@ const StudentNavbar = ({ onMenuClick }) => {
                                     <span className="text-white text-sm font-semibold">
                                         {currentUser?.fullName
                                             ? currentUser.fullName.charAt(0).toUpperCase()
-                                            : "S"}
+                                            : "U"}
                                     </span>
                                 </div>
 

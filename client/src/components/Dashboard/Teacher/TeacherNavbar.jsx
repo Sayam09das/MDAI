@@ -152,7 +152,7 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                     <span className="text-white text-sm font-semibold">
                                         {currentUser?.fullName
                                             ? currentUser.fullName.charAt(0).toUpperCase()
-                                            : "S"}
+                                            : "T"}
                                     </span>
                                 </div>
                                 <ChevronDown
