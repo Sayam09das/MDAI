@@ -5,94 +5,40 @@ import {
   BookOpen,
   BarChart3,
   Video,
-  FolderOpen,
-  ClipboardCheck,
+FolderOpen,
   Calendar,
+  ClipboardCheck,
   Library,
   MessageSquare,
   Wallet,
   CreditCard,
   User,
   Settings,
+  X,
 } from "lucide-react";
 
-/* ===== MAIN MENU ===== */
-export const mainMenu = [
-  {
-    icon: LayoutDashboard,
-    label: "Dashboard",
-    path: "/student-dashboard",
-  },
-  {
-    icon: BookOpen,
-    label: "My Courses",
-    path: "/student-dashboard/my-courses",
-  },
-  {
-    icon: BarChart3,
-    label: "Course Progress",
-    path: "/student-dashboard/course-progress",
-  },
-  {
-    icon: Video,
-    label: "Live Sessions",
-    path: "/student-dashboard/live-classes",
-  },
-  {
-    icon: FolderOpen,
-    label: "Resources",
-    path: "/student-dashboard/resources",
-  },
+/* ================= MENU ================= */
+const mainMenu = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/student-dashboard" },
+  { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
+  { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
+  { icon: Video, label: "Live Sessions", path: "/student-dashboard/student-live-classes" },
+  { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
 ];
 
-/* ===== EXTRA MENU ===== */
-export const extraMenu = [
-  {
-    icon: ClipboardCheck,
-    label: "Attendance",
-    path: "/student-dashboard/attendance",
-  },
-  {
-    icon: Calendar,
-    label: "Calendar",
-    path: "/student-dashboard/calendar",
-  },
-  {
-    icon: Library,
-    label: "Library",
-    path: "/student-dashboard/library", // ✅ FIXED
-  },
-  {
-    icon: MessageSquare,
-    label: "Messages",
-    path: "/student-dashboard/messages",
-  },
-  {
-    icon: Wallet,
-    label: "Finance",
-    path: "/student-dashboard/finance",
-  },
-  {
-    icon: CreditCard,
-    label: "Payments",
-    path: "/student-dashboard/payments",
-  },
+const extraMenu = [
+  { icon: ClipboardCheck, label: "Attendance", path: "/student-dashboard/attendance" },
+  { icon: Calendar, label: "Calendar", path: "/student-dashboard/calendar" },
+  { icon: Library, label: "Library", path: "/student-dashboard/library" },
+  { icon: MessageSquare, label: "Messages", path: "/student-dashboard/messages" },
+  { icon: Wallet, label: "Finance", path: "/student-dashboard/finance" },
+  { icon: CreditCard, label: "Payments", path: "/student-dashboard/student-payments" },
 ];
 
-/* ===== OTHER MENU ===== */
-export const otherMenu = [
-  {
-    icon: User,
-    label: "Profile",
-    path: "/student-dashboard/profile",
-  },
-  {
-    icon: Settings,
-    label: "Settings",
-    path: "/student-dashboard/settings",
-  },
+const otherMenu = [
+  { icon: User, label: "Profile", path: "/student/profile" },
+  { icon: Settings, label: "Settings", path: "/student/settings" },
 ];
-
 
 /* ================= SIDEBAR ================= */
 const TeacherSidebar = ({ isOpen, onClose }) => {
