@@ -7,6 +7,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import teacherRoutes from "./routes/teacher.routes.js";
+import courseRoutes from "./routes/course.routes.js"
 
 import database from "./database/db.js";
 
@@ -43,6 +44,7 @@ database();
 ===================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/teacher", teacherRoutes);
+app.use("/api/courses", courseRoutes);
 
 
 
