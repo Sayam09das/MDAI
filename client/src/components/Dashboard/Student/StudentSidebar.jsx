@@ -3,44 +3,96 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
-  Plus,
-  FileText,
+  BarChart3,
   Video,
-  Users,
-  Calendar,
+  FolderOpen,
   ClipboardCheck,
+  Calendar,
   Library,
   MessageSquare,
   Wallet,
   CreditCard,
   User,
   Settings,
-  LogOut,
-  X,
 } from "lucide-react";
 
-/* ================= MENU ================= */
-const mainMenu = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/student-dashboard" },
-  { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
-  { icon: Plus, label: "Course Progress", path: "/student-dashboard/course-progress" },
-  { icon: Video, label: "Live Sessions", path: "/student-dashboard/student-live-classes" },
-  { icon: Users, label: "Resources", path: "/student-dashboard/resources" },
+/* ===== MAIN MENU ===== */
+export const mainMenu = [
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    path: "/student-dashboard",
+  },
+  {
+    icon: BookOpen,
+    label: "My Courses",
+    path: "/student-dashboard/my-courses",
+  },
+  {
+    icon: BarChart3,
+    label: "Course Progress",
+    path: "/student-dashboard/course-progress",
+  },
+  {
+    icon: Video,
+    label: "Live Sessions",
+    path: "/student-dashboard/live-classes",
+  },
+  {
+    icon: FolderOpen,
+    label: "Resources",
+    path: "/student-dashboard/resources",
+  },
 ];
 
-const extraMenu = [
-  { icon: ClipboardCheck, label: "Attendance", path: "/student-dashboard/attendance" },
-  { icon: Calendar, label: "Calendar", path: "/student-dashboard/calendar" },
-  { icon: Library, label: "Library", path: "/teacher-dashboard/library" },
-  { icon: MessageSquare, label: "Messages", path: "/student-dashboard/messages" },
-  { icon: Wallet, label: "Finance", path: "/student-dashboard/finance" },
-  { icon: CreditCard, label: "Payments", path: "/student-dashboard/student-payments" },
+/* ===== EXTRA MENU ===== */
+export const extraMenu = [
+  {
+    icon: ClipboardCheck,
+    label: "Attendance",
+    path: "/student-dashboard/attendance",
+  },
+  {
+    icon: Calendar,
+    label: "Calendar",
+    path: "/student-dashboard/calendar",
+  },
+  {
+    icon: Library,
+    label: "Library",
+    path: "/student-dashboard/library", // ✅ FIXED
+  },
+  {
+    icon: MessageSquare,
+    label: "Messages",
+    path: "/student-dashboard/messages",
+  },
+  {
+    icon: Wallet,
+    label: "Finance",
+    path: "/student-dashboard/finance",
+  },
+  {
+    icon: CreditCard,
+    label: "Payments",
+    path: "/student-dashboard/payments",
+  },
 ];
 
-const otherMenu = [
-  { icon: User, label: "Profile", path: "/student/profile" },
-  { icon: Settings, label: "Settings", path: "/student/settings" },
+/* ===== OTHER MENU ===== */
+export const otherMenu = [
+  {
+    icon: User,
+    label: "Profile",
+    path: "/student-dashboard/profile",
+  },
+  {
+    icon: Settings,
+    label: "Settings",
+    path: "/student-dashboard/settings",
+  },
 ];
+
 
 /* ================= SIDEBAR ================= */
 const TeacherSidebar = ({ isOpen, onClose }) => {
