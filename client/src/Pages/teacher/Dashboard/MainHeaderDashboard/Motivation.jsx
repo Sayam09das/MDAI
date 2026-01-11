@@ -1,11 +1,48 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
-const Motivation = ({ teacherName = "Pyana" }) => {
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+const Motivation = () => {
+    const navigate = useNavigate();
+
     const [quote, setQuote] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
 
+    /* ================= FETCH USER ================= */
     useEffect(() => {
-        const today = new Date().toDateString();
+        const fetchCurrentUser = async () => {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) throw new Error("Unauthorized");
+
+                const data = await res.json();
+                setCurrentUser(data.user);
+            } catch (error) {
+                localStorage.clear();
+                navigate("/login");
+            }
+        };
+
+        fetchCurrentUser();
+    }, [navigate]);
+
+    /* ================= DAILY MOTIVATION ================= */
+    useEffect(() => {
+        const today = new Date().toISOString().split("T")[0]; // safer date
         const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
 
         if (saved && saved.date === today) {
@@ -13,9 +50,12 @@ const Motivation = ({ teacherName = "Pyana" }) => {
             return;
         }
 
-        fetch("https://corsproxy.io/?https://zenquotes.io/api/random")
-            .then(res => res.json())
-            .then(data => {
+        // cache-busting
+        const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
+
+        fetch(url)
+            .then((res) => res.json())
+            .then((data) => {
                 const newQuote = {
                     text: data[0].q,
                     author: data[0].a,
@@ -30,13 +70,13 @@ const Motivation = ({ teacherName = "Pyana" }) => {
             })
             .catch(() => {
                 setQuote({
-                    text: "Every teacher has the power to inspire greatness.",
-                    author: "Education Wisdom",
+                    text: "Consistency beats motivation when motivation fades.",
+                    author: "Daily Wisdom",
                 });
             });
     }, []);
 
-    if (!quote) return null;
+    if (!quote || !currentUser) return null;
 
     return (
         <motion.div
@@ -45,22 +85,11 @@ const Motivation = ({ teacherName = "Pyana" }) => {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="w-full mt-5"
         >
+            <div className="relative overflow-hidden rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
 
-            <div
-                className="
-                    relative
-                    overflow-hidden
-                    rounded-2xl
-                    p-7
-                    bg-gradient-to-r
-                    from-sky-50
-                    via-emerald-50
-                    to-lime-50
-                "
-            >
                 {/* HEADER */}
                 <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                    Hello {teacherName} 👋
+                    Hello {currentUser.fullName || currentUser.name} 👋
                 </h3>
 
                 {/* QUOTE */}
