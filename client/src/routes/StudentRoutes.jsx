@@ -2,6 +2,8 @@ import React, { Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import StudentLayout from "../components/Dashboard/Student/StudentLayout";
 import PageLoader from "../components/common/PageLoader";
+import StudentProtectedRoute from "../ProtectedRoute/StudentProtectedRoute";
+
 import ReturnStudentStats from "../Pages/Student/Dashboard/MainStudentStats/ReturnStudentStats";
 import ReturnMyCourses from "../Pages/Student/Dashboard/MyCourses/ReturnMyCourses";
 import ReturnCourseProgress from "../Pages/Student/Dashboard/CourseProgress/ReturnCourseProgress";
@@ -13,8 +15,14 @@ const StudentRoutes = () => {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
-                <Route path="/student-dashboard" element={<StudentLayout />}>
-
+                <Route
+                    path="/student-dashboard"
+                    element={
+                        <StudentProtectedRoute>
+                            <StudentLayout />
+                        </StudentProtectedRoute>
+                    }
+                >
                     {/* DEFAULT PAGE */}
                     <Route index element={<ReturnStudentStats />} />
 

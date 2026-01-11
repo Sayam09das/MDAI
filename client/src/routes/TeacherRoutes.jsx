@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import TeacherLayout from "../components/Dashboard/Teacher/TeacherLayout";
 import PageLoader from "../components/common/PageLoader";
+import TeacherProtectedRoute from "../ProtectedRoute/TeacherProtectedRoute";
+
 import ReturneacherLiveSessions from "../Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions";
 import ReturnEnrolledStudents from "../Pages/teacher/Dashboard/MainEnrolledStudents/ReturnEnrolledStudents";
 import ReturnStudentAttendance from "../Pages/teacher/Dashboard/MainAttendance/ReturnStudentAttendance";
@@ -29,7 +31,14 @@ const TeacherRoutes = () => {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
-                <Route path="/teacher-dashboard" element={<TeacherLayout />}>
+                <Route
+                    path="/teacher-dashboard"
+                    element={
+                        <TeacherProtectedRoute>
+                            <TeacherLayout />
+                        </TeacherProtectedRoute>
+                    }
+                >
                     <Route index element={<ReturnDashboard />} />
                     <Route path="mycourse" element={<ReturnCoursedashboard />} />
                     <Route path="create-course" element={<ReturnCreateCourse />} />
