@@ -29,6 +29,7 @@ import {
     Share2,
     Menu,
 } from "lucide-react"
+import { Link } from "react-router-dom";
 
 const TeacherCourses = () => {
     const [courses, setCourses] = useState([
@@ -294,17 +295,17 @@ const TeacherCourses = () => {
                         </h1>
                         <p className="text-gray-600 mt-2">Manage and track your course performance</p>
                     </div>
-                    <motion.button
+                    <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => toast.info("🚀 Create new course feature coming soon!", {
-                            position: "top-center",
-                            autoClose: 3000,
-                        })}
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow"
                     >
-                        <Plus size={20} /> Create Course
-                    </motion.button>
+                        <Link
+                            to="/teacher-dashboard/create-course"
+                            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow"
+                        >
+                            <Plus size={20} /> Create Course
+                        </Link>
+                    </motion.div>
                 </motion.div>
 
                 {/* Stats Cards */}
@@ -361,8 +362,8 @@ const TeacherCourses = () => {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setFilterStatus(f)}
                                     className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap text-sm font-medium transition-all ${filterStatus === f
-                                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                                            : "bg-gray-100 hover:bg-gray-200"
+                                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                                        : "bg-gray-100 hover:bg-gray-200"
                                         }`}
                                 >
                                     <Filter size={14} className="inline mr-1" />
@@ -406,8 +407,8 @@ const TeacherCourses = () => {
                                 />
                                 <div className="absolute top-3 right-3 flex gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.status === "Published"
-                                            ? "bg-green-500 text-white"
-                                            : "bg-yellow-500 text-white"
+                                        ? "bg-green-500 text-white"
+                                        : "bg-yellow-500 text-white"
                                         }`}>
                                         {course.status}
                                     </span>

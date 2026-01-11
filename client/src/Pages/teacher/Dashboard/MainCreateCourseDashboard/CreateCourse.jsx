@@ -377,18 +377,23 @@ const CreateCourse = () => {
                                                 <Tag size={16} className="text-purple-600" />
                                                 Category *
                                             </label>
-                                            <select
+
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Web Development, Bengali Literature"
                                                 value={courseData.category}
-                                                onChange={(e) => setCourseData({ ...courseData, category: e.target.value })}
+                                                onChange={(e) =>
+                                                    setCourseData({ ...courseData, category: e.target.value })
+                                                }
                                                 className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 sm:py-4 focus:border-indigo-500 focus:outline-none transition-colors"
-                                            >
-                                                {categories.map((cat) => (
-                                                    <option key={cat.value} value={cat.value}>
-                                                        {cat.icon} {cat.value}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                required
+                                            />
+
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Enter any category that best fits your course.
+                                            </p>
                                         </div>
+
                                     </div>
                                 </motion.div>
                             )}
@@ -435,18 +440,25 @@ const CreateCourse = () => {
 
                                         <div>
                                             <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
-                                                🌐 Language
+                                                🌐 Language *
                                             </label>
-                                            <select
+
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Bengali, English, Hindi"
                                                 value={courseData.language}
-                                                onChange={(e) => setCourseData({ ...courseData, language: e.target.value })}
+                                                onChange={(e) =>
+                                                    setCourseData({ ...courseData, language: e.target.value })
+                                                }
                                                 className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-indigo-500 focus:outline-none transition-colors"
-                                            >
-                                                {languages.map((lang) => (
-                                                    <option key={lang} value={lang}>{lang}</option>
-                                                ))}
-                                            </select>
+                                                required
+                                            />
+
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Enter the language(s) used in this course (comma separated if multiple).
+                                            </p>
                                         </div>
+
                                     </div>
 
                                     <div>
