@@ -40,31 +40,6 @@ const StudentNavbar = ({ onMenuClick }) => {
     ]);
 
 
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-                const res = await fetch(`${BASE_URL}/api/auth/me`, {
-                    method: "GET",
-                    credentials: "include", // 🔥 REQUIRED for cookie auth
-                });
-
-                if (!res.ok) {
-                    throw new Error("Not authorized");
-                }
-
-                const user = await res.json();
-                setCurrentUser(user);
-
-            } catch (error) {
-                console.error("Auth error:", error);
-                navigate("/login"); // 🔐 redirect if not logged in
-            }
-        };
-
-        fetchCurrentUser();
-    }, [navigate]);
 
 
     /* ✅ Correct unread count */
