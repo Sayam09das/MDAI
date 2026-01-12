@@ -73,3 +73,27 @@ export const getAllPublishedCourses = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+export const publishCourse = async (req, res) => {
+  try {
+    const course = await Course.findOne({
+      _id: req.params.id,
+      instructor: req.user.id,
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Course published successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

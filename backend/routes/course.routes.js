@@ -3,6 +3,7 @@ import {
   createCourse,
   getTeacherCourses,
   getAllPublishedCourses,
+  publishCourse,
 } from "../controllers/course.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -30,6 +31,14 @@ router.get(
 router.get(
   "/",
   getAllPublishedCourses
+);
+
+// routes/courseRoutes.js
+router.patch(
+  "/:id/publish",
+  protect,
+  teacherOnly,
+  publishCourse
 );
 
 export default router;
