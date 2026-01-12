@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ToastContainer, toast } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
 import {
     BookOpen,
     Users,
@@ -30,79 +29,11 @@ import {
     Menu,
 } from "lucide-react"
 import { Link } from "react-router-dom";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const TeacherCourses = () => {
-    const [courses, setCourses] = useState([
-        {
-            id: 1,
-            title: "Full Stack MERN Development",
-            description: "Complete guide to modern web apps with MongoDB, Express, React & Node",
-            students: 2100,
-            lessons: 45,
-            status: "Published",
-            rating: 4.9,
-            reviews: 856,
-            category: "Development",
-            duration: "60 hours",
-            price: 89.99,
-            revenue: 186990,
-            thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee",
-            lastUpdated: "2024-12-15",
-            completionRate: 78,
-        },
-        {
-            id: 2,
-            title: "Python for Data Science",
-            description: "Master data analysis, visualization & machine learning with Python",
-            students: 1580,
-            lessons: 38,
-            status: "Published",
-            rating: 4.7,
-            reviews: 642,
-            category: "Data Science",
-            duration: "45 hours",
-            price: 79.99,
-            revenue: 126342,
-            thumbnail: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935",
-            lastUpdated: "2024-12-10",
-            completionRate: 82,
-        },
-        {
-            id: 3,
-            title: "React Advanced Patterns",
-            description: "Deep dive into React Hooks, patterns & best practices for scalable apps",
-            students: 0,
-            lessons: 0,
-            status: "Draft",
-            rating: 0,
-            reviews: 0,
-            category: "Development",
-            duration: "30 hours",
-            price: 69.99,
-            revenue: 0,
-            thumbnail: "https://images.unsplash.com/photo-1633356122102-3fe601e05bd2",
-            lastUpdated: "2025-01-02",
-            completionRate: 0,
-        },
-        {
-            id: 4,
-            title: "UI/UX Design Masterclass",
-            description: "Learn modern design principles, Figma, prototyping & user research",
-            students: 890,
-            lessons: 32,
-            status: "Published",
-            rating: 4.8,
-            reviews: 324,
-            category: "Design",
-            duration: "35 hours",
-            price: 74.99,
-            revenue: 66741,
-            thumbnail: "https://images.unsplash.com/photo-1561070791-2526d30994b5",
-            lastUpdated: "2024-12-20",
-            completionRate: 71,
-        },
-    ])
-
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("")
     const [filterStatus, setFilterStatus] = useState("all")
     const [sortBy, setSortBy] = useState("newest")
@@ -115,25 +46,69 @@ const TeacherCourses = () => {
     const [showAnalyticsModal, setShowAnalyticsModal] = useState(false)
 
     const [selectedCourse, setSelectedCourse] = useState(null)
+    const fetchTeacherCourses = async () => {
+        try {
+            setLoading(true);
 
-    const [lessons, setLessons] = useState([
-        { id: 1, title: "Introduction to MERN Stack", duration: "15 min", type: "video", order: 1, completed: 245 },
-        { id: 2, title: "MongoDB Setup & Configuration", duration: "20 min", type: "video", order: 2, completed: 198 },
-        { id: 3, title: "Express.js Fundamentals", duration: "25 min", type: "video", order: 3, completed: 176 },
-    ])
+            const res = await fetch(`${BACKEND_URL}/api/courses/teacher`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
 
-    const [newLesson, setNewLesson] = useState({
-        title: "",
-        duration: "",
-        type: "video",
-    })
+            const data = await res.json();
 
-    const studentsList = [
-        { id: 1, name: "John Smith", email: "john@mail.com", progress: 85, enrolled: "2024-11-15", lastActive: "2 hours ago" },
-        { id: 2, name: "Sarah Johnson", email: "sarah@mail.com", progress: 92, enrolled: "2024-11-20", lastActive: "1 day ago" },
-        { id: 3, name: "Alex Brown", email: "alex@mail.com", progress: 76, enrolled: "2024-12-01", lastActive: "3 days ago" },
-        { id: 4, name: "Emma Wilson", email: "emma@mail.com", progress: 64, enrolled: "2024-12-05", lastActive: "5 hours ago" },
-    ]
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to fetch courses");
+            }
+
+            setCourses(data.courses);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    /* ================= PUBLISH COURSE ================= */
+    const publishCourse = async (courseId) => {
+        try {
+            const res = await fetch(
+                `${BACKEND_URL}/api/courses/${courseId}/publish`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to publish course");
+            }
+
+            toast.success("🎉 Course published successfully");
+
+            // Update UI without refetch (optional)
+            setCourses((prev) =>
+                prev.map((course) =>
+                    course._id === courseId
+                        ? { ...course, isPublished: true }
+                        : course
+                )
+            );
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    /* ================= LOAD ON MOUNT ================= */
+    useEffect(() => {
+        fetchTeacherCourses();
+    }, []);
 
     // Calculate statistics
     const totalStudents = courses.reduce((sum, c) => sum + c.students, 0)
@@ -162,58 +137,6 @@ const TeacherCourses = () => {
             return 0
         })
 
-    const handleEdit = (course) => {
-        setSelectedCourse({ ...course })
-        setShowEditModal(true)
-    }
-
-    const handleSaveEdit = () => {
-        setCourses(courses.map((c) => c.id === selectedCourse.id ? selectedCourse : c))
-        setShowEditModal(false)
-        toast.success("✅ Course updated successfully!", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-        })
-    }
-
-    const handleAddLesson = () => {
-        if (!newLesson.title || !newLesson.duration) {
-            toast.error("⚠️ Please fill all lesson fields", {
-                position: "top-center",
-                autoClose: 3000,
-            })
-            return
-        }
-        setLessons([
-            ...lessons,
-            { ...newLesson, id: Date.now(), order: lessons.length + 1, completed: 0 },
-        ])
-        setNewLesson({ title: "", duration: "", type: "video" })
-        toast.success("✅ Lesson added successfully!", {
-            position: "bottom-right",
-            autoClose: 2000,
-        })
-    }
-
-    const handleDeleteLesson = (id) => {
-        setLessons(lessons.filter((l) => l.id !== id))
-        toast.info("🗑️ Lesson deleted", {
-            position: "bottom-left",
-            autoClose: 2000,
-        })
-    }
-
-    const handleDeleteCourse = (id) => {
-        setCourses(courses.filter((c) => c.id !== id))
-        toast.warning("⚠️ Course deleted", {
-            position: "top-center",
-            autoClose: 3000,
-        })
-    }
 
     const handlePublish = (course) => {
         setCourses(courses.map((c) =>
@@ -525,498 +448,7 @@ const TeacherCourses = () => {
                 )}
             </div>
 
-            {/* Edit Modal */}
-            <AnimatePresence>
-                {showEditModal && selectedCourse && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowEditModal(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                        />
-                        <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                            <motion.div
-                                variants={modalVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                className="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-2xl my-8 shadow-2xl"
-                            >
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold">Edit Course</h2>
-                                    <button onClick={() => setShowEditModal(false)}>
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Course Title</label>
-                                        <input
-                                            value={selectedCourse.title}
-                                            onChange={(e) =>
-                                                setSelectedCourse({
-                                                    ...selectedCourse,
-                                                    title: e.target.value,
-                                                })
-                                            }
-                                            className="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Description</label>
-                                        <textarea
-                                            value={selectedCourse.description}
-                                            onChange={(e) =>
-                                                setSelectedCourse({
-                                                    ...selectedCourse,
-                                                    description: e.target.value,
-                                                })
-                                            }
-                                            rows={4}
-                                            className="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Category</label>
-                                            <select
-                                                value={selectedCourse.category}
-                                                onChange={(e) =>
-                                                    setSelectedCourse({
-                                                        ...selectedCourse,
-                                                        category: e.target.value,
-                                                    })
-                                                }
-                                                className="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-indigo-500 focus:outline-none"
-                                            >
-                                                <option>Development</option>
-                                                <option>Data Science</option>
-                                                <option>Design</option>
-                                                <option>Business</option>
-                                                <option>Marketing</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Price ($)</label>
-                                            <input
-                                                type="number"
-                                                value={selectedCourse.price}
-                                                onChange={(e) =>
-                                                    setSelectedCourse({
-                                                        ...selectedCourse,
-                                                        price: parseFloat(e.target.value),
-                                                    })
-                                                }
-                                                className="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-indigo-500 focus:outline-none"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3 mt-6">
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleSaveEdit}
-                                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg"
-                                        >
-                                            <Save size={18} className="inline mr-2" /> Save Changes
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => {
-                                                handleDeleteCourse(selectedCourse.id)
-                                                setShowEditModal(false)
-                                            }}
-                                            className="px-6 py-3 bg-red-500 text-white rounded-lg font-medium"
-                                        >
-                                            <Trash2 size={18} className="inline mr-2" /> Delete
-                                        </motion.button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            {/* Lessons Modal */}
-            <AnimatePresence>
-                {showLessonsModal && selectedCourse && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowLessonsModal(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                        />
-                        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 overflow-y-auto">
-                            <motion.div
-                                variants={modalVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                className="bg-white p-6 sm:p-8 rounded-2xl max-w-4xl w-full my-8 shadow-2xl"
-                            >
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold">Course Lessons</h2>
-                                    <button onClick={() => setShowLessonsModal(false)}>
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="bg-indigo-50 rounded-xl p-4 mb-6">
-                                    <h3 className="font-semibold mb-4">Add New Lesson</h3>
-                                    <div className="grid sm:grid-cols-3 gap-3 mb-3">
-                                        <input
-                                            placeholder="Lesson Title"
-                                            value={newLesson.title}
-                                            onChange={(e) =>
-                                                setNewLesson({ ...newLesson, title: e.target.value })
-                                            }
-                                            className="border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                        />
-                                        <input
-                                            placeholder="Duration (e.g., 15 min)"
-                                            value={newLesson.duration}
-                                            onChange={(e) =>
-                                                setNewLesson({
-                                                    ...newLesson,
-                                                    duration: e.target.value,
-                                                })
-                                            }
-                                            className="border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                        />
-                                        <select
-                                            value={newLesson.type}
-                                            onChange={(e) =>
-                                                setNewLesson({ ...newLesson, type: e.target.value })
-                                            }
-                                            className="border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                        >
-                                            <option value="video">Video</option>
-                                            <option value="article">Article</option>
-                                            <option value="quiz">Quiz</option>
-                                            <option value="assignment">Assignment</option>
-                                        </select>
-                                    </div>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={handleAddLesson}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-medium shadow-md"
-                                    >
-                                        <Plus size={18} className="inline mr-2" /> Add Lesson
-                                    </motion.button>
-                                </div>
-
-                                <div className="space-y-3 max-h-96 overflow-y-auto">
-                                    {lessons.map((l, idx) => (
-                                        <motion.div
-                                            key={l.id}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors"
-                                        >
-                                            <div className="flex items-center gap-4 flex-1">
-                                                <div className="bg-indigo-100 text-indigo-600 w-10 h-10 rounded-lg flex items-center justify-center font-bold">
-                                                    {l.order}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold">{l.title}</h4>
-                                                    <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                                                        <span className="flex items-center gap-1">
-                                                            <Clock size={14} /> {l.duration}
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            {l.type === "video" ? <Video size={14} /> : <FileText size={14} />}
-                                                            {l.type}
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <CheckCircle size={14} /> {l.completed} completed
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={() => handleDeleteLesson(l.id)}
-                                                className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={20} />
-                                            </motion.button>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setShowLessonsModal(false)}
-                                    className="mt-6 w-full bg-gray-200 hover:bg-gray-300 py-3 rounded-lg font-medium transition-colors"
-                                >
-                                    Close
-                                </motion.button>
-                            </motion.div>
-                        </div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            {/* Students Modal */}
-            <AnimatePresence>
-                {showStudentsModal && selectedCourse && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowStudentsModal(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                        />
-                        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 overflow-y-auto">
-                            <motion.div
-                                variants={modalVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                className="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-3xl my-8 shadow-2xl"
-                            >
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Enrolled Students</h2>
-                                        <p className="text-gray-600 mt-1">{selectedCourse.title}</p>
-                                    </div>
-                                    <button onClick={() => setShowStudentsModal(false)}>
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-3 max-h-96 overflow-y-auto">
-                                    {studentsList.map((s, idx) => (
-                                        <motion.div
-                                            key={s.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl hover:shadow-md transition-shadow"
-                                        >
-                                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
-                                                    {s.name.split(" ").map(n => n[0]).join("")}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-lg">{s.name}</p>
-                                                    <p className="text-sm text-gray-600">{s.email}</p>
-                                                    <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                                        <span>Enrolled: {s.enrolled}</span>
-                                                        <span>Last active: {s.lastActive}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-bold text-purple-600">{s.progress}%</p>
-                                                    <p className="text-xs text-gray-600">Progress</p>
-                                                </div>
-                                                <div className="w-24 h-24 relative">
-                                                    <svg className="w-full h-full transform -rotate-90">
-                                                        <circle
-                                                            cx="48"
-                                                            cy="48"
-                                                            r="40"
-                                                            stroke="#e5e7eb"
-                                                            strokeWidth="8"
-                                                            fill="none"
-                                                        />
-                                                        <circle
-                                                            cx="48"
-                                                            cy="48"
-                                                            r="40"
-                                                            stroke="url(#gradient)"
-                                                            strokeWidth="8"
-                                                            fill="none"
-                                                            strokeDasharray={`${2 * Math.PI * 40}`}
-                                                            strokeDashoffset={`${2 * Math.PI * 40 * (1 - s.progress / 100)}`}
-                                                            strokeLinecap="round"
-                                                        />
-                                                    </svg>
-                                                    <defs>
-                                                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                            <stop offset="0%" stopColor="#a855f7" />
-                                                            <stop offset="100%" stopColor="#ec4899" />
-                                                        </linearGradient>
-                                                    </defs>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setShowStudentsModal(false)}
-                                    className="mt-6 w-full bg-gray-200 hover:bg-gray-300 py-3 rounded-lg font-medium transition-colors"
-                                >
-                                    Close
-                                </motion.button>
-                            </motion.div>
-                        </div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            {/* Analytics Modal */}
-            <AnimatePresence>
-                {showAnalyticsModal && selectedCourse && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowAnalyticsModal(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                        />
-                        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 overflow-y-auto">
-                            <motion.div
-                                variants={modalVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                className="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-4xl my-8 shadow-2xl"
-                            >
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Course Analytics</h2>
-                                        <p className="text-gray-600 mt-1">{selectedCourse.title}</p>
-                                    </div>
-                                    <button onClick={() => setShowAnalyticsModal(false)}>
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                    <div className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white p-4 rounded-xl">
-                                        <Users size={24} className="mb-2" />
-                                        <p className="text-2xl font-bold">{selectedCourse.students}</p>
-                                        <p className="text-sm opacity-90">Total Students</p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-green-500 to-emerald-500 text-white p-4 rounded-xl">
-                                        <DollarSign size={24} className="mb-2" />
-                                        <p className="text-2xl font-bold">${selectedCourse.revenue.toLocaleString()}</p>
-                                        <p className="text-sm opacity-90">Total Revenue</p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white p-4 rounded-xl">
-                                        <Star size={24} className="mb-2" />
-                                        <p className="text-2xl font-bold">{selectedCourse.rating}</p>
-                                        <p className="text-sm opacity-90">Avg Rating</p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-purple-500 to-pink-500 text-white p-4 rounded-xl">
-                                        <TrendingUp size={24} className="mb-2" />
-                                        <p className="text-2xl font-bold">{selectedCourse.completionRate}%</p>
-                                        <p className="text-sm opacity-90">Completion Rate</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid md:grid-cols-2 gap-6 mb-6">
-                                    <div className="bg-gray-50 p-5 rounded-xl">
-                                        <h3 className="font-bold mb-4 flex items-center gap-2">
-                                            <MessageSquare size={20} /> Recent Reviews
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {[
-                                                { name: "John Doe", rating: 5, comment: "Excellent course! Very detailed." },
-                                                { name: "Jane Smith", rating: 4, comment: "Great content, well structured." },
-                                                { name: "Mike Johnson", rating: 5, comment: "Best course I've taken!" },
-                                            ].map((review, idx) => (
-                                                <div key={idx} className="bg-white p-3 rounded-lg">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <p className="font-semibold text-sm">{review.name}</p>
-                                                        <div className="flex">
-                                                            {[...Array(review.rating)].map((_, i) => (
-                                                                <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600">{review.comment}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-5 rounded-xl">
-                                        <h3 className="font-bold mb-4 flex items-center gap-2">
-                                            <TrendingUp size={20} /> Enrollment Trend
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {[
-                                                { month: "October", students: 320 },
-                                                { month: "November", students: 485 },
-                                                { month: "December", students: 612 },
-                                                { month: "January", students: 683 },
-                                            ].map((data, idx) => (
-                                                <div key={idx}>
-                                                    <div className="flex justify-between text-sm mb-1">
-                                                        <span className="font-medium">{data.month}</span>
-                                                        <span className="text-gray-600">{data.students} students</span>
-                                                    </div>
-                                                    <div className="bg-gray-200 h-2 rounded-full overflow-hidden">
-                                                        <motion.div
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${(data.students / 683) * 100}%` }}
-                                                            transition={{ duration: 1, delay: idx * 0.1 }}
-                                                            className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => toast.success("📊 Report downloaded!", { position: "bottom-right" })}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-medium"
-                                    >
-                                        <Download size={18} className="inline mr-2" /> Download Report
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => toast.info("🔗 Share link copied!", { position: "bottom-right" })}
-                                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium"
-                                    >
-                                        <Share2 size={18} className="inline mr-2" /> Share Course
-                                    </motion.button>
-                                </div>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setShowAnalyticsModal(false)}
-                                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 py-3 rounded-lg font-medium transition-colors"
-                                >
-                                    Close
-                                </motion.button>
-                            </motion.div>
-                        </div>
-                    </>
-                )}
-            </AnimatePresence>
+            {/* Add Later Some New things  */}
 
             {/* Mobile FAB for Create Course */}
             <motion.button
