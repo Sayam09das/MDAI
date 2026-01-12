@@ -37,7 +37,7 @@ const StudentRoutes = () => {
                     <Route path="student-payments" element={<StudentPayments />} />
                     <Route path="resources" element={<ReturnStudentResources />} />
                     <Route path="finance" element={<ReturnStudentFinance />} />
-                    <Route path="student-dashboard/payment/:courseId" element={<ReturnPayment />} />
+                     <Route path="payment/:courseId" element={<ReturnPayment />} />
                 </Route>
             </Routes>
         </Suspense>
