@@ -275,14 +275,37 @@ const Payment = () => {
 
                                     {/* Action Buttons */}
                                     <div className="space-y-3">
+                                        {/* PAY NOW */}
                                         <button
-                                            onClick={() => toast.info("Payment gateway coming next 🚀")}
-                                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                                            onClick={() => {
+                                                toast.info("🔐 Redirecting to payment gateway...", {
+                                                    position: "top-center",
+                                                    autoClose: 2500,
+                                                });
+                                            }}
+                                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer"
                                         >
                                             <CreditCard className="w-5 h-5" />
                                             Proceed to Pay
                                         </button>
 
+                                        {/* PAY AFTER COURSE */}
+                                        <button
+                                            onClick={() => {
+                                                toast.success(
+                                                    "✅ You can pay after completing the course. Access granted!",
+                                                    {
+                                                        position: "top-center",
+                                                        autoClose: 3000,
+                                                    }
+                                                );
+                                            }}
+                                            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            ⏳ Pay After Course Ends
+                                        </button>
+
+                                        {/* CANCEL */}
                                         <button
                                             onClick={() => navigate(-1)}
                                             className="w-full border-2 border-gray-300 py-3 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 active:scale-95 transition-all"
@@ -290,6 +313,7 @@ const Payment = () => {
                                             Cancel Order
                                         </button>
                                     </div>
+
 
                                     {/* Security Badge */}
                                     <div className="mt-6 pt-6 border-t border-gray-200">

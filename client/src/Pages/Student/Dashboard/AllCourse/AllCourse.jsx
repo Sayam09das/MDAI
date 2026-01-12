@@ -239,7 +239,7 @@ const AllCourse = () => {
                                     {/* Price Badge */}
                                     <div className="absolute top-4 right-4">
                                         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                                            ₹{course.price}
+                                            ${course.price}
                                         </div>
                                     </div>
 
@@ -356,7 +356,7 @@ const AllCourse = () => {
                                     {/* Enroll Button */}
                                     <button
                                         onClick={() => handleEnroll(course._id)}
-                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group cursor-pointer"
                                     >
                                         <span>Enroll Now</span>
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
