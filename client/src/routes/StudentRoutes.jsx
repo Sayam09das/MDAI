@@ -30,7 +30,7 @@ const StudentRoutes = () => {
 
                     {/* MY COURSES PAGE */}
                     <Route path="student-mycourse" element={<ReturnMyCourses />} />
-                    <Route ath="all-courses" element={<ReturnAllCourse />} />
+                    <Route path="all-courses" element={<ReturnAllCourse />} />
                     <Route path="course-progress" element={<ReturnCourseProgress />} />
                     <Route path="student-live-classes" element={<StudentLiveClasses />} />
                     <Route path="student-payments" element={<StudentPayments />} />
