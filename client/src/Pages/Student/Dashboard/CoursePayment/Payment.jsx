@@ -15,7 +15,6 @@ const Payment = () => {
     const fetchCourse = async () => {
         try {
             setLoading(true);
-
             const res = await fetch(`${BACKEND_URL}/api/courses/${courseId}`);
             const data = await res.json();
 
@@ -44,35 +43,55 @@ const Payment = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-            <div className="max-w-4xl w-full grid md:grid-cols-2 gap-6">
+        <div className="min-h-screen bg-gray-100 px-4 py-10">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-6">
 
-                {/* LEFT: COURSE DETAILS */}
-                <div className="bg-white rounded-xl shadow p-6">
+                {/* LEFT: FULL COURSE DETAILS */}
+                <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
                     <img
                         src={course.thumbnail?.url}
                         alt={course.title}
-                        className="rounded-lg mb-4 h-48 w-full object-cover"
+                        className="w-full h-64 object-cover rounded-lg mb-6"
                     />
 
-                    <h2 className="text-xl font-bold mb-2">
-                        {course.title}
-                    </h2>
+                    <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+                    <p className="text-gray-600 mb-6">{course.description}</p>
 
-                    <p className="text-sm text-gray-600 mb-4">
-                        {course.description}
-                    </p>
+                    {/* Meta Info */}
+                    <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700 mb-6">
+                        <p><strong>Category:</strong> {course.category}</p>
+                        <p><strong>Duration:</strong> {course.duration}</p>
+                        <p><strong>Level:</strong> {course.level}</p>
+                        <p><strong>Language:</strong> {course.language}</p>
+                    </div>
 
-                    <ul className="text-sm text-gray-700 space-y-2">
-                        <li>✔ Lifetime access</li>
-                        <li>✔ Certificate of completion</li>
-                        <li>✔ {course.duration}</li>
-                        <li>✔ Language: {course.language}</li>
-                    </ul>
+                    {/* Requirements */}
+                    {course.requirements?.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="font-semibold mb-2">Requirements</h3>
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                {course.requirements.map((req, i) => (
+                                    <li key={i}>{req}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Learning Outcomes */}
+                    {course.learningOutcomes?.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold mb-2">What you’ll learn</h3>
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                {course.learningOutcomes.map((out, i) => (
+                                    <li key={i}>{out}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
-                {/* RIGHT: PAYMENT */}
-                <div className="bg-white rounded-xl shadow p-6">
+                {/* RIGHT: PAYMENT SUMMARY */}
+                <div className="bg-white rounded-xl shadow p-6 h-fit">
                     <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
                     <div className="border rounded-lg p-4 mb-4">
