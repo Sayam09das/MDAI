@@ -41,158 +41,148 @@ const CreateCourse = () => {
         learningOutcomes: [],
     });
 
-    const [thumbnailPreview, setThumbnailPreview] = useState(null);
-    const [currentRequirement, setCurrentRequirement] = useState("");
-    const [currentOutcome, setCurrentOutcome] = useState("");
+    const [thumbnailPreview, setThumbnailPreview] = useState(null)
+    const [currentRequirement, setCurrentRequirement] = useState("")
+    const [currentOutcome, setCurrentOutcome] = useState("")
     const [showPreview, setShowPreview] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState("basic")
     const fileInputRef = useRef(null)
 
+    const categories = [
+        { value: "Development", icon: "💻", color: "from-blue-500 to-cyan-500" },
+        { value: "Data Science", icon: "📊", color: "from-green-500 to-emerald-500" },
+        { value: "Design", icon: "🎨", color: "from-purple-500 to-pink-500" },
+        { value: "Business", icon: "💼", color: "from-yellow-500 to-orange-500" },
+        { value: "Marketing", icon: "📢", color: "from-red-500 to-rose-500" },
+        { value: "Photography", icon: "📷", color: "from-indigo-500 to-violet-500" },
+    ]
 
-    /* ================= THUMBNAIL ================= */
+    const levels = ["Beginner", "Intermediate", "Advanced", "Expert"]
+    const languages = ["English", "Spanish", "French", "German", "Mandarin", "Japanese"]
+
     const handleThumbnailChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const file = e.target.files[0]
+        if (file) {
+            if (file.size > 5000000) {
+                toast.error("⚠️ File size should be less than 5MB", {
+                    position: "top-center",
+                    autoClose: 3000,
+                })
+                return
+            }
 
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error("Image must be less than 5MB");
-            return;
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setThumbnailPreview(reader.result)
+                setCourseData({ ...courseData, thumbnail: file })
+                toast.success("✅ Thumbnail uploaded successfully!", {
+                    position: "bottom-right",
+                    autoClose: 2000,
+                })
+            }
+            reader.readAsDataURL(file)
         }
-
-        setCourseData({ ...courseData, thumbnail: file });
-
-        const reader = new FileReader();
-        reader.onloadend = () => setThumbnailPreview(reader.result);
-        reader.readAsDataURL(file);
-    };
+    }
 
     const removeThumbnail = () => {
-        setThumbnailPreview(null);
-        setCourseData({ ...courseData, thumbnail: null });
-    };
+        setThumbnailPreview(null)
+        setCourseData({ ...courseData, thumbnail: null })
+        toast.info("🗑️ Thumbnail removed", {
+            position: "bottom-left",
+            autoClose: 2000,
+        })
+    }
 
-    /* ================= REQUIREMENTS ================= */
     const addRequirement = () => {
-        if (!currentRequirement.trim()) return;
-
-        setCourseData({
-            ...courseData,
-            requirements: [...courseData.requirements, currentRequirement.trim()],
-        });
-        setCurrentRequirement("");
-    };
+        if (currentRequirement.trim()) {
+            setCourseData({
+                ...courseData,
+                requirements: [...courseData.requirements, currentRequirement.trim()],
+            })
+            setCurrentRequirement("")
+            toast.success("✅ Requirement added", {
+                position: "bottom-right",
+                autoClose: 1500,
+            })
+        }
+    }
 
     const removeRequirement = (index) => {
         setCourseData({
             ...courseData,
             requirements: courseData.requirements.filter((_, i) => i !== index),
-        });
-    };
+        })
+    }
 
-    /* ================= OUTCOMES ================= */
     const addOutcome = () => {
-        if (!currentOutcome.trim()) return;
-
-        setCourseData({
-            ...courseData,
-            learningOutcomes: [...courseData.learningOutcomes, currentOutcome.trim()],
-        });
-        setCurrentOutcome("");
-    };
+        if (currentOutcome.trim()) {
+            setCourseData({
+                ...courseData,
+                learningOutcomes: [...courseData.learningOutcomes, currentOutcome.trim()],
+            })
+            setCurrentOutcome("")
+            toast.success("✅ Learning outcome added", {
+                position: "bottom-right",
+                autoClose: 1500,
+            })
+        }
+    }
 
     const removeOutcome = (index) => {
         setCourseData({
             ...courseData,
             learningOutcomes: courseData.learningOutcomes.filter((_, i) => i !== index),
-        });
-    };
+        })
+    }
 
-
-
-
-    /* ================= SUBMIT ================= */
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
 
+        // Validation
         if (!courseData.title.trim()) {
-            toast.error("Course title is required");
-            return;
+            toast.error("❌ Course title is required", {
+                position: "top-center",
+                autoClose: 3000,
+            })
+            return
         }
 
         if (!courseData.description.trim()) {
-            toast.error("Course description is required");
-            return;
+            toast.error("❌ Course description is required", {
+                position: "top-center",
+                autoClose: 3000,
+            })
+            return
         }
 
         if (!courseData.price) {
-            toast.error("Course price is required");
-            return;
+            toast.error("❌ Course price is required", {
+                position: "top-center",
+                autoClose: 3000,
+            })
+            return
         }
 
-        if (!courseData.thumbnail) {
-            toast.error("Thumbnail is required");
-            return;
-        }
+        setIsSubmitting(true)
 
-        setIsSubmitting(true);
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 2000))
 
-        try {
-            const formData = new FormData();
+        toast.success("🎉 Course created successfully!", {
+            position: "top-center",
+            autoClose: 4000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+        })
 
-            formData.append("title", courseData.title);
-            formData.append("description", courseData.description);
-            formData.append("price", courseData.price);
-            formData.append("category", courseData.category);
-            formData.append("duration", courseData.duration);
-            formData.append("level", courseData.level);
-            formData.append("language", courseData.language);
-            formData.append(
-                "requirements",
-                JSON.stringify(courseData.requirements)
-            );
-            formData.append(
-                "learningOutcomes",
-                JSON.stringify(courseData.learningOutcomes)
-            );
-            formData.append("thumbnail", courseData.thumbnail);
+        setIsSubmitting(false)
 
-            const res = await fetch(`${BACKEND_URL}/api/courses/create`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || "Course creation failed");
-            }
-
-            toast.success("🎉 Course created successfully!");
-
-            // Optional reset
-            setCourseData({
-                title: "",
-                description: "",
-                price: "",
-                category: "Development",
-                thumbnail: null,
-                duration: "",
-                level: "Beginner",
-                language: "English",
-                requirements: [],
-                learningOutcomes: [],
-            });
-            setThumbnailPreview(null);
-        } catch (error) {
-            toast.error(error.message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        // Reset form (optional)
+        // setCourseData({ ... reset to initial state })
+    }
 
     const handleSaveDraft = () => {
         toast.info("💾 Course saved as draft", {
