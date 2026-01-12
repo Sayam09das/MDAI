@@ -37,7 +37,9 @@ const MainHeader = () => {
 
     return (
         <div className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3">
-            <AnnouncementMarquee />
+            <div className="mt-20">
+                <AnnouncementMarquee />
+            </div>
             {/* Background blobs */}
             <div className="absolute inset-0 pointer-events-none">
                 <div

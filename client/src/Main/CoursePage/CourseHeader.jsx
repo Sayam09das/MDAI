@@ -109,7 +109,6 @@ const CourseHeader = () => {
 
     return (
         <div ref={sectionRef} className="relative py-12 md:py-20 bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-5">
-
             {/* Background Decorations */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />

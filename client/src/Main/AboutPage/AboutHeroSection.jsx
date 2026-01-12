@@ -10,6 +10,7 @@ import {
     Globe,
     ArrowDown
 } from 'lucide-react';
+import AnnouncementMarquee from '../AnnouncementMarquee/AnnouncementMarquee';
 
 const AboutHeroSection = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -36,7 +37,6 @@ const AboutHeroSection = () => {
 
     return (
         <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
-
             {/* Grid Background Pattern */}
             <div className="absolute inset-0">
                 <div className="absolute inset-0" style={{
@@ -68,10 +68,8 @@ const AboutHeroSection = () => {
                     </div>
                 );
             })}
-
             {/* Main Content */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 text-center">
-
                 {/* Badge */}
                 <div className={`inline-flex items-center space-x-2 px-6 py-3 bg-indigo-50 border border-indigo-200 rounded-full mb-8 shadow-md transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
                     }`}>
