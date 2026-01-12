@@ -19,12 +19,11 @@ const app = express();
    MIDDLEWARES
 ===================== */
 app.use(cors({
-  origin: [
-    "https://mdai-self.vercel.app",
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
+   origin: [
+      "https://mdai-self.vercel.app",
+   ],
+   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"],
+   credentials: true,
 }));
 
 
@@ -49,7 +48,7 @@ app.use("/api/courses", courseRoutes);
 
 
 app.get("/ping", (req, res) => {
-  res.status(200).send("ok");
+   res.status(200).send("ok");
 });
 
 
