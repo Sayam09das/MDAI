@@ -19,7 +19,6 @@ const StudentRoutes = () => {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
-                {/* STUDENT DASHBOARD */}
                 <Route
                     path="/student-dashboard"
                     element={
@@ -37,7 +36,7 @@ const StudentRoutes = () => {
                     <Route path="resources" element={<ReturnStudentResources />} />
                     <Route path="finance" element={<ReturnStudentFinance />} />
 
-                    {/* ✅ PAYMENT (NESTED) */}
+                    {/* ✅ PAYMENT PAGE (THIS IS CORRECT) */}
                     <Route path="payment/:courseId" element={<ReturnPayment />} />
                 </Route>
             </Routes>
