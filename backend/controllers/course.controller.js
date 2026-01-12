@@ -41,3 +41,35 @@ export const createCourse = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const getTeacherCourses = async (req, res) => {
+  try {
+    const courses = await Course.find({
+      instructor: req.user.id,
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      courses,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAllPublishedCourses = async (req, res) => {
+  try {
+    const courses = await Course.find({
+      isPublished: true,
+    })
+      .populate("instructor", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      courses,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
