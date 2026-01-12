@@ -9,6 +9,7 @@ import AboutRoutes from "./routes/AboutRoutes"
 import ContactRoutes from "./routes/ContactRoutes"
 import TeacherRoutes from "./routes/TeacherRoutes"
 import StudentRoutes from "./routes/StudentRoutes"
+import PaymentRoutes from "./routes/PaymentRoutes"
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
       <AuthRoutes />
       <TeacherRoutes />
       <StudentRoutes />
+      <PaymentRoutes />
     </>
   )
 }
