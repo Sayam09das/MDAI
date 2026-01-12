@@ -3,6 +3,7 @@ import { BookOpen, Video, FileText, Sparkles } from "lucide-react";
 import Viedopage from "./Viedopage";
 import { WordRotate } from "@/components/ui/word-rotate";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import AnnouncementMarquee from "../AnnouncementMarquee/AnnouncementMarquee";
 
 const MainHeader = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -36,6 +37,7 @@ const MainHeader = () => {
 
     return (
         <div className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3">
+            <AnnouncementMarquee />
             {/* Background blobs */}
             <div className="absolute inset-0 pointer-events-none">
                 <div
