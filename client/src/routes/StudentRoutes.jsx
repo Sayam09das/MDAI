@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+
 import StudentLayout from "../components/Dashboard/Student/StudentLayout";
 import PageLoader from "../components/common/PageLoader";
 import StudentProtectedRoute from "../ProtectedRoute/StudentProtectedRoute";
@@ -18,6 +19,7 @@ const StudentRoutes = () => {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
+                {/* STUDENT DASHBOARD */}
                 <Route
                     path="/student-dashboard"
                     element={
@@ -26,10 +28,7 @@ const StudentRoutes = () => {
                         </StudentProtectedRoute>
                     }
                 >
-                    {/* DEFAULT PAGE */}
                     <Route index element={<ReturnStudentStats />} />
-
-                    {/* MY COURSES PAGE */}
                     <Route path="student-mycourse" element={<ReturnMyCourses />} />
                     <Route path="all-courses" element={<ReturnAllCourse />} />
                     <Route path="course-progress" element={<ReturnCourseProgress />} />
@@ -37,7 +36,9 @@ const StudentRoutes = () => {
                     <Route path="student-payments" element={<StudentPayments />} />
                     <Route path="resources" element={<ReturnStudentResources />} />
                     <Route path="finance" element={<ReturnStudentFinance />} />
-                     <Route path="payment/:courseId" element={<ReturnPayment />} />
+
+                    {/* ✅ PAYMENT (NESTED) */}
+                    <Route path="payment/:courseId" element={<ReturnPayment />} />
                 </Route>
             </Routes>
         </Suspense>
