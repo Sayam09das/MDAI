@@ -111,31 +111,26 @@ const TeacherCourses = () => {
     }, []);
 
     // Calculate statistics
-    const totalStudents = courses.reduce((sum, c) => sum + c.students, 0)
-    const totalRevenue = courses.reduce((sum, c) => sum + c.revenue, 0)
-    const avgRating = courses.filter(c => c.rating > 0).reduce((sum, c) => sum + c.rating, 0) / courses.filter(c => c.rating > 0).length
+    const totalCourses = courses.length;
+    const publishedCourses = courses.filter(c => c.isPublished).length;
+    const draftCourses = courses.filter(c => !c.isPublished).length;
+
 
     // Filter and sort courses
     const filteredCourses = courses
         .filter((course) => {
             const matchSearch =
                 course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                course.category.toLowerCase().includes(searchQuery.toLowerCase())
+                course.category.toLowerCase().includes(searchQuery.toLowerCase());
 
             const matchFilter =
                 filterStatus === "all" ||
-                (filterStatus === "published" && course.status === "Published") ||
-                (filterStatus === "draft" && course.status === "Draft")
+                (filterStatus === "published" && course.isPublished) ||
+                (filterStatus === "draft" && !course.isPublished);
 
-            return matchSearch && matchFilter
-        })
-        .sort((a, b) => {
-            if (sortBy === "newest") return new Date(b.lastUpdated) - new Date(a.lastUpdated)
-            if (sortBy === "students") return b.students - a.students
-            if (sortBy === "revenue") return b.revenue - a.revenue
-            if (sortBy === "rating") return b.rating - a.rating
-            return 0
-        })
+            return matchSearch && matchFilter;
+        });
+
 
 
     const handlePublish = (course) => {
@@ -317,23 +312,21 @@ const TeacherCourses = () => {
                 >
                     {filteredCourses.map((course) => (
                         <motion.div
-                            key={course.id}
+                            key={course._id}
                             variants={itemVariants}
                             whileHover={{ y: -8, scale: 1.02 }}
                             className="bg-white rounded-xl lg:rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow"
                         >
                             <div className="relative">
                                 <img
-                                    src={course.thumbnail}
+                                    src={course.thumbnail?.url}
                                     alt={course.title}
                                     className="h-40 sm:h-48 w-full object-cover"
                                 />
                                 <div className="absolute top-3 right-3 flex gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.status === "Published"
-                                        ? "bg-green-500 text-white"
-                                        : "bg-yellow-500 text-white"
-                                        }`}>
-                                        {course.status}
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.isPublished ? "bg-green-500" : "bg-yellow-500"
+                                        } text-white`}>
+                                        {course.isPublished ? "Published" : "Draft"}
                                     </span>
                                 </div>
                             </div>
@@ -420,11 +413,11 @@ const TeacherCourses = () => {
                                     </motion.button>
                                 </div>
 
-                                {course.status === "Draft" && (
+                                {!course.isPublished && (
                                     <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => handlePublish(course)}
+                                        onClick={() => publishCourse(course._id)}
                                         className="w-full bg-green-500 text-white py-2 rounded-lg mt-3 text-sm font-medium"
                                     >
                                         <CheckCircle size={14} className="inline mr-1" /> Publish
