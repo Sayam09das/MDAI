@@ -4,6 +4,7 @@ import {
   getTeacherCourses,
   getAllPublishedCourses,
   publishCourse,
+  getCourseById,
 } from "../controllers/course.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -40,5 +41,8 @@ router.patch(
   teacherOnly,
   publishCourse
 );
+
+router.get("/:id", getCourseById);
+
 
 export default router;

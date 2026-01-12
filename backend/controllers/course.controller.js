@@ -98,3 +98,19 @@ export const publishCourse = async (req, res) => {
     }
 };
 
+export const getCourseById = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course || !course.isPublished) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
