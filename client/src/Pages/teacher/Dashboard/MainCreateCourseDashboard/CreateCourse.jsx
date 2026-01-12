@@ -435,18 +435,25 @@ const CreateCourse = () => {
                                         <div>
                                             <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
                                                 <TrendingUp size={16} className="text-orange-600" />
-                                                Level
+                                                Level *
                                             </label>
-                                            <select
+
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Beginner, Intermediate, Advanced"
                                                 value={courseData.level}
-                                                onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
+                                                onChange={(e) =>
+                                                    setCourseData({ ...courseData, level: e.target.value })
+                                                }
                                                 className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-indigo-500 focus:outline-none transition-colors"
-                                            >
-                                                {levels.map((level) => (
-                                                    <option key={level} value={level}>{level}</option>
-                                                ))}
-                                            </select>
+                                                required
+                                            />
+
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Enter the difficulty level of the course.
+                                            </p>
                                         </div>
+
 
                                         <div>
                                             <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
