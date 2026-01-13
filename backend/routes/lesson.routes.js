@@ -1,10 +1,11 @@
 import express from "express";
 import {
-    createLesson,
-    getAllLessons,
-    getLessonById,
-    updateLesson,
-    deleteLesson,
+   createLesson,
+   getAllLessons,
+   getLessonById,
+   updateLesson,
+   deleteLesson,
+   getLessonsByCourse,
 } from "../controllers/lesson.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -33,5 +34,12 @@ router.get("/", protect, getAllLessons);
 
 // Get single live session
 router.get("/:id", protect, getLessonById);
+
+
+router.get(
+   "/course/:courseId",
+   protect,
+   getLessonsByCourse
+);
 
 export default router;

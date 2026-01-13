@@ -150,3 +150,20 @@ export const deleteLesson = async (req, res) => {
         });
     }
 };
+
+
+export const getLessonsByCourse = async (req, res) => {
+    try {
+        const lessons = await Lesson.find({
+            course: req.params.courseId,
+        })
+            .sort({ date: 1, time: 1 });
+
+        res.status(200).json({
+            success: true,
+            lessons,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
