@@ -11,7 +11,11 @@ import upload from "../middlewares/multer.js";
 
 const router = express.Router();
 
-// CREATE COURSE
+/* ===============================
+   TEACHER ROUTES
+================================ */
+
+// Create course
 router.post(
   "/create",
   protect,
@@ -20,7 +24,7 @@ router.post(
   createCourse
 );
 
-// GET COURSES FOR TEACHER
+// Get teacher courses (for dashboard & live sessions)
 router.get(
   "/teacher",
   protect,
@@ -28,13 +32,7 @@ router.get(
   getTeacherCourses
 );
 
-// GET COURSES FOR USERS
-router.get(
-  "/",
-  getAllPublishedCourses
-);
-
-// routes/courseRoutes.js
+// Publish course
 router.patch(
   "/:id/publish",
   protect,
@@ -42,7 +40,14 @@ router.patch(
   publishCourse
 );
 
-router.get("/:id", getCourseById);
+/* ===============================
+   PUBLIC ROUTES
+================================ */
 
+// Get all published courses
+router.get("/", getAllPublishedCourses);
+
+// Get course by id (KEEP LAST)
+router.get("/:id", getCourseById);
 
 export default router;
