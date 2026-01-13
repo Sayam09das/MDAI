@@ -20,126 +20,130 @@ import {
     ExternalLink,
 } from "lucide-react"
 
-const TeacherLiveSessions = () => {
-    const [currentTime, setCurrentTime] = useState(new Date())
-    const [sessions, setSessions] = useState([
-        {
-            id: 1,
-            title: "Introduction to React Hooks",
-            course: "Full Stack Development",
-            startTime: "2025-01-05T10:00:00",
-            endTime: "2025-01-05T11:30:00",
-            duration: "90 min",
-            meetLink: "https://meet.google.com/abc-defg-hij",
-            students: 45,
-            maxStudents: 50,
-            status: "upcoming",
-        },
-        {
-            id: 2,
-            title: "JavaScript ES6+ Features",
-            course: "Web Development Bootcamp",
-            startTime: "2025-01-04T14:30:00",
-            endTime: "2025-01-04T16:00:00",
-            duration: "90 min",
-            meetLink: "https://meet.google.com/xyz-abcd-efg",
-            students: 32,
-            maxStudents: 40,
-            status: "ongoing",
-        },
-        {
-            id: 3,
-            title: "CSS Grid & Flexbox Mastery",
-            course: "Frontend Design",
-            startTime: "2025-01-05T15:00:00",
-            endTime: "2025-01-05T16:30:00",
-            duration: "90 min",
-            meetLink: "https://meet.google.com/pqr-stuv-wxy",
-            students: 28,
-            maxStudents: 35,
-            status: "upcoming",
-        },
-        {
-            id: 4,
-            title: "Node.js & Express Basics",
-            course: "Backend Development",
-            startTime: "2025-01-06T11:00:00",
-            endTime: "2025-01-06T12:30:00",
-            duration: "90 min",
-            meetLink: "https://meet.google.com/lmn-opqr-stu",
-            students: 38,
-            maxStudents: 45,
-            status: "upcoming",
-        },
-    ])
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-    const [filterStatus, setFilterStatus] = useState("all")
-    const [searchQuery, setSearchQuery] = useState("")
-    const [showScheduleModal, setShowScheduleModal] = useState(false)
-    const [editingSession, setEditingSession] = useState(null)
-    const [formData, setFormData] = useState({
-        title: "",
-        course: "",
-        date: "",
-        time: "",
-        duration: "90",
-        meetLink: "",
-    })
+const getToken = () => localStorage.getItem("token");
+
+
+const TeacherLiveSessions = () => {
+    const [sessions, setSessions] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [editingSession, setEditingSession] = useState(null);
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date())
-        }, 60000)
+        fetchLessons();
+    }, []);
 
-        return () => clearInterval(timer)
-    }, [])
+    const fetchLessons = async () => {
+        try {
+            setLoading(true);
 
-    const getTimeUntilSession = (startTime) => {
-        const start = new Date(startTime)
-        const diff = start - currentTime
-        const hours = Math.floor(diff / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+            const res = await fetch(`${BACKEND_URL}/api/lessons`, {
+                headers: {
+                    Authorization: `Bearer ${getToken()}`,
+                },
+            });
 
-        if (diff < 0) return "Started"
-        if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`
-        if (hours > 0) return `${hours}h ${minutes}m`
-        return `${minutes}m`
-    }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
 
-    const handleStartClass = (session) => {
-        window.open(session.meetLink, '_blank')
-        toast.success(`🎥 Starting class: ${session.title}`, {
-            position: "top-center",
-            autoClose: 3000,
-        })
-    }
+            const formatted = data.lessons.map((lesson) => ({
+                id: lesson._id,
+                title: lesson.title,
+                course: lesson.course?.title || "N/A",
+                courseId: lesson.course?._id,
+                date: lesson.date,
+                time: lesson.time,
+                duration: `${lesson.duration} min`,
+                meetLink: lesson.meetLink,
+                status: "upcoming",
+                students: 0,
+            }));
 
-    const handleJoinClass = (session) => {
-        window.open(session.meetLink, '_blank')
-        toast.info(`🚀 Joining: ${session.title}`, {
-            position: "top-center",
-            autoClose: 2000,
-        })
-    }
+            setSessions(formatted);
+        } catch (error) {
+            toast.error(error.message || "Failed to load sessions");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const copyMeetLink = (link, title) => {
-        navigator.clipboard.writeText(link)
-        toast.success(`📋 Link copied for: ${title}`, {
-            position: "bottom-right",
-            autoClose: 2000,
-        })
-    }
+    /* ===============================
+       CREATE / UPDATE LIVE SESSION
+    ================================ */
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    const handleDeleteSession = (id) => {
-        setSessions(sessions.filter(s => s.id !== id))
-        toast.warning("🗑️ Session deleted", {
-            position: "bottom-left",
-            autoClose: 2000,
-        })
-    }
+        try {
+            const payload = {
+                title: formData.title,
+                course: formData.course,
+                date: formData.date,
+                time: formData.time,
+                duration: formData.duration,
+                meetLink: formData.meetLink,
+            };
 
+            const url = editingSession
+                ? `${BACKEND_URL}/api/lessons/${editingSession.id}`
+                : `${BACKEND_URL}/api/lessons/create`;
+
+            const method = editingSession ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${getToken()}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            toast.success(
+                editingSession ? "✅ Session updated!" : "✅ Session created!"
+            );
+
+            setShowScheduleModal(false);
+            setEditingSession(null);
+            fetchLessons();
+        } catch (error) {
+            toast.error(error.message || "Something went wrong");
+        }
+    };
+
+    /* ===============================
+       DELETE LIVE SESSION
+    ================================ */
+    const handleDeleteSession = async (id) => {
+        if (!window.confirm("Delete this live session?")) return;
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/lessons/${id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${getToken()}`,
+                },
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            toast.success("🗑️ Session deleted");
+            fetchLessons();
+        } catch (error) {
+            toast.error(error.message || "Delete failed");
+        }
+    };
+
+    /* ===============================
+       OPEN CREATE MODAL
+    ================================ */
     const openScheduleModal = () => {
-        setEditingSession(null)
+        setEditingSession(null);
         setFormData({
             title: "",
             course: "",
@@ -147,71 +151,25 @@ const TeacherLiveSessions = () => {
             time: "",
             duration: "90",
             meetLink: "",
-        })
-        setShowScheduleModal(true)
-    }
+        });
+        setShowScheduleModal(true);
+    };
 
+    /* ===============================
+       OPEN EDIT MODAL
+    ================================ */
     const openEditModal = (session) => {
-        setEditingSession(session)
-        const sessionDate = new Date(session.startTime)
+        setEditingSession(session);
         setFormData({
             title: session.title,
-            course: session.course,
-            date: sessionDate.toISOString().split('T')[0],
-            time: sessionDate.toTimeString().slice(0, 5),
-            duration: session.duration.replace(' min', ''),
+            course: session.courseId,
+            date: session.date,
+            time: session.time,
+            duration: session.duration.replace(" min", ""),
             meetLink: session.meetLink,
-        })
-        setShowScheduleModal(true)
-    }
-
-    const handleSubmit = (e) => {
-        e.preventDefault()
-
-        const startDateTime = new Date(`${formData.date}T${formData.time}:00`)
-        const endDateTime = new Date(startDateTime.getTime() + parseInt(formData.duration) * 60000)
-
-        const sessionData = {
-            id: editingSession ? editingSession.id : Date.now(),
-            title: formData.title,
-            course: formData.course,
-            startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString(),
-            duration: `${formData.duration} min`,
-            meetLink: formData.meetLink,
-            students: editingSession ? editingSession.students : 0,
-            status: "upcoming"
-        }
-
-        if (editingSession) {
-            setSessions(sessions.map(s => s.id === editingSession.id ? sessionData : s))
-            toast.success("✅ Session updated successfully!", {
-                position: "top-center",
-                autoClose: 2000,
-            })
-        } else {
-            setSessions([...sessions, sessionData])
-            toast.success("✅ Session scheduled successfully!", {
-                position: "top-center",
-                autoClose: 2000,
-            })
-        }
-
-        setShowScheduleModal(false)
-    }
-
-    const filteredSessions = sessions
-        .filter(session => {
-            const matchSearch = session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                session.course.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchFilter = filterStatus === "all" || session.status === filterStatus
-            return matchSearch && matchFilter
-        })
-        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-
-    const totalSessions = sessions.length
-    const totalStudents = sessions.reduce((sum, s) => sum + s.students, 0)
-    const ongoingCount = sessions.filter(s => s.status === "ongoing").length
+        });
+        setShowScheduleModal(true);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -366,8 +324,8 @@ const TeacherLiveSessions = () => {
                                     transition={{ delay: idx * 0.05 }}
                                     whileHover={{ y: -3 }}
                                     className={`bg-white rounded-xl lg:rounded-2xl shadow-lg overflow-hidden border-2 ${session.status === "ongoing"
-                                            ? "border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50"
-                                            : "border-gray-100"
+                                        ? "border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50"
+                                        : "border-gray-100"
                                         }`}
                                 >
                                     <div className="p-4 sm:p-6">
@@ -375,8 +333,8 @@ const TeacherLiveSessions = () => {
                                             {/* Icon Section */}
                                             <div className="flex-shrink-0">
                                                 <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex flex-col items-center justify-center ${session.status === "ongoing"
-                                                        ? "bg-gradient-to-br from-green-500 to-emerald-500"
-                                                        : "bg-gradient-to-br from-blue-500 to-purple-500"
+                                                    ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                                                    : "bg-gradient-to-br from-blue-500 to-purple-500"
                                                     }`}>
                                                     {session.status === "ongoing" ? (
                                                         <>
@@ -445,8 +403,8 @@ const TeacherLiveSessions = () => {
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => session.status === "ongoing" ? handleJoinClass(session) : handleStartClass(session)}
                                                         className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium shadow-lg ${session.status === "ongoing"
-                                                                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
-                                                                : "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                                                            ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+                                                            : "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
                                                             }`}
                                                     >
                                                         <Play size={18} />
