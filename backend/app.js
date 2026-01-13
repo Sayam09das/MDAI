@@ -9,7 +9,7 @@ import authRoutes from "./routes/auth.routes.js";
 import teacherRoutes from "./routes/teacher.routes.js";
 import courseRoutes from "./routes/course.routes.js"
 import enrollmentRoutes from "./routes/enrollment.routes.js";
-
+import lessonRoutes from "./routes/lesson.routes.js"
 
 import database from "./database/db.js";
 
@@ -47,7 +47,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/enroll", enrollmentRoutes);
-
+app.use("/api/lessons", lessonRoutes);
 
 
 

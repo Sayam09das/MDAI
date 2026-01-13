@@ -1,4 +1,4 @@
-import Lesson from "../models/lesson.model.js";
+import Lesson from "../models/lessonModel.js";
 
 /* ===============================
    CREATE LIVE SESSION (LESSON)
