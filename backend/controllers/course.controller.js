@@ -46,10 +46,7 @@ export const getTeacherCourses = async (req, res) => {
     try {
         const courses = await Course.find({
             instructor: req.user.id,
-            isPublished: true,
-        })
-            .select("_id title")
-            .sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
