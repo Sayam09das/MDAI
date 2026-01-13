@@ -154,9 +154,15 @@ export const deleteLesson = async (req, res) => {
 
 export const getLessonsByCourse = async (req, res) => {
     try {
-        const lessons = await Lesson.find({
-            course: req.params.courseId,
-        })
+        const { courseId } = req.params;
+
+        if (!courseId || courseId === "undefined") {
+            return res.status(400).json({
+                message: "Course ID is required",
+            });
+        }
+
+        const lessons = await Lesson.find({ course: courseId })
             .sort({ date: 1, time: 1 });
 
         res.status(200).json({
