@@ -84,7 +84,6 @@ const TeacherLiveSessions = () => {
         time: "",
         duration: "90",
         meetLink: "",
-        maxStudents: "50"
     })
 
     useEffect(() => {
@@ -148,7 +147,6 @@ const TeacherLiveSessions = () => {
             time: "",
             duration: "90",
             meetLink: "",
-            maxStudents: "50"
         })
         setShowScheduleModal(true)
     }
@@ -163,7 +161,6 @@ const TeacherLiveSessions = () => {
             time: sessionDate.toTimeString().slice(0, 5),
             duration: session.duration.replace(' min', ''),
             meetLink: session.meetLink,
-            maxStudents: session.maxStudents.toString()
         })
         setShowScheduleModal(true)
     }
@@ -183,7 +180,6 @@ const TeacherLiveSessions = () => {
             duration: `${formData.duration} min`,
             meetLink: formData.meetLink,
             students: editingSession ? editingSession.students : 0,
-            maxStudents: parseInt(formData.maxStudents),
             status: "upcoming"
         }
 
@@ -648,21 +644,6 @@ const TeacherLiveSessions = () => {
                                         </select>
                                     </div>
 
-                                    {/* Max Students */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Max Students
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="500"
-                                            value={formData.maxStudents}
-                                            onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })}
-                                            placeholder="50"
-                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                                        />
-                                    </div>
                                 </div>
 
                                 {/* Google Meet Link */}
