@@ -15,6 +15,9 @@ import {
     Search,
     AlertCircle,
     Trash2,
+    Edit3,
+    X,
+    ExternalLink,
 } from "lucide-react"
 
 const TeacherLiveSessions = () => {
@@ -72,6 +75,17 @@ const TeacherLiveSessions = () => {
 
     const [filterStatus, setFilterStatus] = useState("all")
     const [searchQuery, setSearchQuery] = useState("")
+    const [showScheduleModal, setShowScheduleModal] = useState(false)
+    const [editingSession, setEditingSession] = useState(null)
+    const [formData, setFormData] = useState({
+        title: "",
+        course: "",
+        date: "",
+        time: "",
+        duration: "90",
+        meetLink: "",
+        maxStudents: "50"
+    })
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -125,6 +139,71 @@ const TeacherLiveSessions = () => {
         })
     }
 
+    const openScheduleModal = () => {
+        setEditingSession(null)
+        setFormData({
+            title: "",
+            course: "",
+            date: "",
+            time: "",
+            duration: "90",
+            meetLink: "",
+            maxStudents: "50"
+        })
+        setShowScheduleModal(true)
+    }
+
+    const openEditModal = (session) => {
+        setEditingSession(session)
+        const sessionDate = new Date(session.startTime)
+        setFormData({
+            title: session.title,
+            course: session.course,
+            date: sessionDate.toISOString().split('T')[0],
+            time: sessionDate.toTimeString().slice(0, 5),
+            duration: session.duration.replace(' min', ''),
+            meetLink: session.meetLink,
+            maxStudents: session.maxStudents.toString()
+        })
+        setShowScheduleModal(true)
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+
+        const startDateTime = new Date(`${formData.date}T${formData.time}:00`)
+        const endDateTime = new Date(startDateTime.getTime() + parseInt(formData.duration) * 60000)
+
+        const sessionData = {
+            id: editingSession ? editingSession.id : Date.now(),
+            title: formData.title,
+            course: formData.course,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            duration: `${formData.duration} min`,
+            meetLink: formData.meetLink,
+            students: editingSession ? editingSession.students : 0,
+            maxStudents: parseInt(formData.maxStudents),
+            status: "upcoming"
+        }
+
+        if (editingSession) {
+            setSessions(sessions.map(s => s.id === editingSession.id ? sessionData : s))
+            toast.success("✅ Session updated successfully!", {
+                position: "top-center",
+                autoClose: 2000,
+            })
+        } else {
+            setSessions([...sessions, sessionData])
+            toast.success("✅ Session scheduled successfully!", {
+                position: "top-center",
+                autoClose: 2000,
+            })
+        }
+
+        setShowScheduleModal(false)
+    }
+
     const filteredSessions = sessions
         .filter(session => {
             const matchSearch = session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,9 +212,6 @@ const TeacherLiveSessions = () => {
             return matchSearch && matchFilter
         })
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-
-    const ongoingSessions = filteredSessions.filter(s => s.status === "ongoing")
-    const upcomingSessions = filteredSessions.filter(s => s.status === "upcoming")
 
     const totalSessions = sessions.length
     const totalStudents = sessions.reduce((sum, s) => sum + s.students, 0)
@@ -186,7 +262,7 @@ const TeacherLiveSessions = () => {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => toast.info("🎯 Schedule feature coming soon!")}
+                            onClick={openScheduleModal}
                             className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg whitespace-nowrap"
                         >
                             <Plus size={20} /> <span className="hidden sm:inline">Schedule</span>
@@ -262,8 +338,8 @@ const TeacherLiveSessions = () => {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setFilterStatus(f)}
                                     className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap text-sm font-medium transition-all ${filterStatus === f
-                                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                                            : "bg-gray-100 hover:bg-gray-200"
+                                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
+                                        : "bg-gray-100 hover:bg-gray-200"
                                         }`}
                                 >
                                     <Filter size={14} className="inline mr-1" />
@@ -274,64 +350,87 @@ const TeacherLiveSessions = () => {
                     </div>
                 </motion.div>
 
-                {/* Ongoing Sessions */}
-                {ongoingSessions.length > 0 && (
+                {/* All Sessions */}
+                {filteredSessions.length > 0 ? (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-8"
                     >
                         <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-                            <Video className="text-green-600" size={24} />
-                            <span>Live Now</span>
-                            <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                </span>
-                                LIVE
-                            </span>
+                            <Calendar className="text-blue-600" size={24} />
+                            All Sessions
                         </h2>
 
                         <div className="grid gap-4 sm:gap-6">
-                            {ongoingSessions.map((session) => (
+                            {filteredSessions.map((session, idx) => (
                                 <motion.div
                                     key={session.id}
-                                    initial={{ scale: 0.95, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    whileHover={{ scale: 1.02 }}
-                                    className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl shadow-lg overflow-hidden border-2 border-green-200"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    whileHover={{ y: -3 }}
+                                    className={`bg-white rounded-xl lg:rounded-2xl shadow-lg overflow-hidden border-2 ${session.status === "ongoing"
+                                            ? "border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50"
+                                            : "border-gray-100"
+                                        }`}
                                 >
                                     <div className="p-4 sm:p-6">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex flex-col lg:flex-row gap-4">
+                                            {/* Icon Section */}
                                             <div className="flex-shrink-0">
-                                                <div className="bg-gradient-to-br from-green-500 to-emerald-500 text-white w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex flex-col items-center justify-center">
-                                                    <Video size={32} className="animate-pulse" />
-                                                    <span className="text-xs font-bold mt-1">LIVE</span>
+                                                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex flex-col items-center justify-center ${session.status === "ongoing"
+                                                        ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                                                        : "bg-gradient-to-br from-blue-500 to-purple-500"
+                                                    }`}>
+                                                    {session.status === "ongoing" ? (
+                                                        <>
+                                                            <Video size={32} className="text-white animate-pulse" />
+                                                            <span className="text-xs font-bold text-white mt-1">LIVE</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Clock size={32} className="text-white" />
+                                                            <span className="text-xs font-bold text-white mt-1">
+                                                                {getTimeUntilSession(session.startTime)}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
+                                            {/* Content Section */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                                                     <div className="flex-1 min-w-0">
-                                                        <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-2">
-                                                            {session.title}
-                                                        </h3>
+                                                        <div className="flex items-start gap-2 mb-1">
+                                                            <h3 className="text-lg sm:text-xl font-bold line-clamp-2 flex-1">
+                                                                {session.title}
+                                                            </h3>
+                                                            {session.status === "ongoing" && (
+                                                                <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex-shrink-0">
+                                                                    <span className="relative flex h-2 w-2">
+                                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                                    </span>
+                                                                    LIVE
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-sm text-gray-600 mb-2">{session.course}</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 text-sm">
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 text-sm">
                                                     <div className="flex items-center gap-2 text-gray-700">
-                                                        <Clock size={16} />
+                                                        <Clock size={16} className="text-blue-500 flex-shrink-0" />
                                                         <span>{session.duration}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-gray-700">
-                                                        <Users size={16} />
+                                                        <Users size={16} className="text-purple-500 flex-shrink-0" />
                                                         <span>{session.students}/{session.maxStudents}</span>
                                                     </div>
                                                     <div className="col-span-2 flex items-center gap-2 text-gray-700">
-                                                        <Calendar size={16} />
+                                                        <Calendar size={16} className="text-green-500 flex-shrink-0" />
                                                         <span className="truncate">
                                                             {new Date(session.startTime).toLocaleString('en-US', {
                                                                 month: 'short',
@@ -343,14 +442,19 @@ const TeacherLiveSessions = () => {
                                                     </div>
                                                 </div>
 
+                                                {/* Action Buttons */}
                                                 <div className="flex flex-wrap gap-2">
                                                     <motion.button
                                                         whileHover={{ scale: 1.05 }}
                                                         whileTap={{ scale: 0.95 }}
-                                                        onClick={() => handleJoinClass(session)}
-                                                        className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium shadow-lg"
+                                                        onClick={() => session.status === "ongoing" ? handleJoinClass(session) : handleStartClass(session)}
+                                                        className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium shadow-lg ${session.status === "ongoing"
+                                                                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+                                                                : "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                                                            }`}
                                                     >
-                                                        <Play size={18} /> Join Class
+                                                        <Play size={18} />
+                                                        {session.status === "ongoing" ? "Join Class" : "Start Class"}
                                                     </motion.button>
 
                                                     <motion.button
@@ -361,6 +465,24 @@ const TeacherLiveSessions = () => {
                                                     >
                                                         <Copy size={16} /> Copy Link
                                                     </motion.button>
+
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => openEditModal(session)}
+                                                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-medium"
+                                                    >
+                                                        <Edit3 size={16} /> Edit
+                                                    </motion.button>
+
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => handleDeleteSession(session.id)}
+                                                        className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-medium"
+                                                    >
+                                                        <Trash2 size={16} /> Delete
+                                                    </motion.button>
                                                 </div>
                                             </div>
                                         </div>
@@ -369,108 +491,8 @@ const TeacherLiveSessions = () => {
                             ))}
                         </div>
                     </motion.div>
-                )}
-
-                {/* Upcoming Sessions */}
-                {upcomingSessions.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-                            <Calendar className="text-blue-600" size={24} />
-                            Upcoming Sessions
-                        </h2>
-
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {upcomingSessions.map((session, idx) => (
-                                <motion.div
-                                    key={session.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    whileHover={{ y: -5, scale: 1.02 }}
-                                    className="bg-white rounded-xl lg:rounded-2xl shadow-lg overflow-hidden"
-                                >
-                                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 text-white">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs opacity-90 mb-1">Starting in</p>
-                                                <p className="text-2xl font-bold">
-                                                    {getTimeUntilSession(session.startTime)}
-                                                </p>
-                                            </div>
-                                            <Video size={32} className="opacity-80" />
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 sm:p-5">
-                                        <h3 className="font-bold text-base sm:text-lg mb-2 line-clamp-2">
-                                            {session.title}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mb-4">{session.course}</p>
-
-                                        <div className="space-y-2 text-sm text-gray-700 mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <Clock size={16} className="text-blue-500" />
-                                                <span>{session.duration}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Users size={16} className="text-purple-500" />
-                                                <span>{session.students}/{session.maxStudents} students</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={16} className="text-green-500" />
-                                                <span className="truncate">
-                                                    {new Date(session.startTime).toLocaleString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-2">
-                                            <motion.button
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => handleStartClass(session)}
-                                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-lg font-medium"
-                                            >
-                                                <Play size={16} /> Start Class
-                                            </motion.button>
-
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => copyMeetLink(session.meetLink, session.title)}
-                                                    className="flex items-center justify-center gap-1 bg-gray-100 hover:bg-gray-200 py-2 rounded-lg text-sm font-medium"
-                                                >
-                                                    <Copy size={14} /> Copy
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => handleDeleteSession(session.id)}
-                                                    className="flex items-center justify-center gap-1 bg-red-100 text-red-700 hover:bg-red-200 py-2 rounded-lg text-sm font-medium"
-                                                >
-                                                    <Trash2 size={14} /> Delete
-                                                </motion.button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Empty State */}
-                {filteredSessions.length === 0 && (
+                ) : (
+                    /* Empty State */
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -482,7 +504,7 @@ const TeacherLiveSessions = () => {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => toast.info("🎯 Schedule feature coming soon!")}
+                            onClick={openScheduleModal}
                             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium"
                         >
                             <Plus size={18} className="inline mr-2" /> Schedule Session
@@ -495,11 +517,200 @@ const TeacherLiveSessions = () => {
             <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => toast.info("🎯 Schedule feature coming soon!")}
+                onClick={openScheduleModal}
                 className="fixed bottom-6 right-6 lg:hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
             >
                 <Plus size={28} />
             </motion.button>
+
+            {/* Schedule Modal */}
+            <AnimatePresence>
+                {showScheduleModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowScheduleModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                        >
+                            {/* Modal Header */}
+                            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-white/20 p-2 rounded-lg">
+                                            <Calendar size={24} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold">
+                                                {editingSession ? "Edit Session" : "Schedule New Session"}
+                                            </h2>
+                                            <p className="text-sm text-white/80">Fill in the details below</p>
+                                        </div>
+                                    </div>
+                                    <motion.button
+                                        whileHover={{ scale: 1.1, rotate: 90 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => setShowScheduleModal(false)}
+                                        className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                                    >
+                                        <X size={24} />
+                                    </motion.button>
+                                </div>
+                            </div>
+
+                            {/* Modal Form */}
+                            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                                {/* Session Title */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Session Title <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        placeholder="e.g., Introduction to React Hooks"
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                    />
+                                </div>
+
+                                {/* Course Name */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Course Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.course}
+                                        onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                                        placeholder="e.g., Full Stack Development"
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                    />
+                                </div>
+
+                                {/* Date and Time Row */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Date */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Date <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={formData.date}
+                                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        />
+                                    </div>
+
+                                    {/* Time */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Time <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="time"
+                                            required
+                                            value={formData.time}
+                                            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Duration and Max Students Row */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Duration */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Duration (minutes) <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        >
+                                            <option value="30">30 minutes</option>
+                                            <option value="45">45 minutes</option>
+                                            <option value="60">60 minutes</option>
+                                            <option value="90">90 minutes</option>
+                                            <option value="120">120 minutes</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Max Students */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Max Students
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="500"
+                                            value={formData.maxStudents}
+                                            onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })}
+                                            placeholder="50"
+                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Google Meet Link */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Google Meet Link <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                        <input
+                                            type="url"
+                                            required
+                                            value={formData.meetLink}
+                                            onChange={(e) => setFormData({ ...formData, meetLink: e.target.value })}
+                                            placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                            className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Create a meeting at <a href="https://meet.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">meet.google.com</a>
+                                    </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 pt-4">
+                                    <motion.button
+                                        type="button"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setShowScheduleModal(false)}
+                                        className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium shadow-lg"
+                                    >
+                                        {editingSession ? "Update Session" : "Create Session"}
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
