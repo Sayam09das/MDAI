@@ -7,13 +7,14 @@ import "react-toastify/dist/ReactToastify.css";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const StudentLiveClasses = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams(); // ✅ now comes from route
   const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!courseId) return;
-    fetchSessions();
+    if (courseId) {
+      fetchSessions();
+    }
   }, [courseId]);
 
   const fetchSessions = async () => {
@@ -27,12 +28,13 @@ const StudentLiveClasses = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Failed to fetch sessions");
+        throw new Error(data.message || "Failed to fetch live sessions");
       }
 
-      setSessions(data.lessons || []);
-    } catch (err) {
-      toast.error(err.message || "Failed to load live sessions");
+      setSessions(Array.isArray(data.lessons) ? data.lessons : []);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load live sessions");
     } finally {
       setLoading(false);
     }

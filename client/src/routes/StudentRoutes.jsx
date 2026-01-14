@@ -31,7 +31,7 @@ const StudentRoutes = () => {
                     <Route path="student-mycourse" element={<ReturnMyCourses />} />
                     <Route path="all-courses" element={<ReturnAllCourse />} />
                     <Route path="course-progress" element={<ReturnCourseProgress />} />
-                    <Route path="student-live-classes" element={<StudentLiveClasses />} />
+                    <Route path="student-live-classes/:courseId" element={<StudentLiveClasses />} />
                     <Route path="student-payments" element={<StudentPayments />} />
                     <Route path="resources" element={<ReturnStudentResources />} />
                     <Route path="finance" element={<ReturnStudentFinance />} />
