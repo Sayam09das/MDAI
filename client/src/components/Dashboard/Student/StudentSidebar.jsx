@@ -24,7 +24,7 @@ const mainMenu = [
   { icon: Layers, label: "All Courses", path: "/student-dashboard/all-courses", },
   { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
   { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
-  { icon: Video, label: "Live Sessions", path: "/student-dashboard/student-live-classes" },
+  { icon: Video, label: "Live Sessions", path: "/student-dashboard/student-live-classes/:courseId" },
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
 ];
 
