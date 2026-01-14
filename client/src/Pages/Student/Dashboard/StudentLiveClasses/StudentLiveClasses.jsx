@@ -5,7 +5,6 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const getToken = () => localStorage.getItem("token");
 
 const StudentLiveClasses = () => {
   const { courseId } = useParams();
@@ -20,21 +19,20 @@ const StudentLiveClasses = () => {
   const fetchSessions = async () => {
     try {
       setLoading(true);
+
       const res = await fetch(
-        `${BACKEND_URL}/api/lessons/course/${courseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
+        `${BACKEND_URL}/api/lessons/course/${courseId}`
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to fetch sessions");
+      }
 
       setSessions(data.lessons || []);
     } catch (err) {
-      toast.error("Failed to load live sessions");
+      toast.error(err.message || "Failed to load live sessions");
     } finally {
       setLoading(false);
     }
@@ -52,7 +50,8 @@ const StudentLiveClasses = () => {
       {/* Header */}
       <div className="max-w-5xl mx-auto mb-6">
         <h2 className="text-3xl font-bold flex items-center gap-3">
-          <Video className="text-indigo-600" /> Live Classes
+          <Video className="text-indigo-600" />
+          Live Classes
         </h2>
         <p className="text-gray-600 mt-1">
           Join your scheduled live sessions
@@ -62,10 +61,15 @@ const StudentLiveClasses = () => {
       {/* Content */}
       <div className="max-w-5xl mx-auto">
         {loading ? (
-          <p className="text-center text-gray-500">Loading sessions...</p>
+          <p className="text-center text-gray-500">
+            Loading sessions...
+          </p>
         ) : sessions.length === 0 ? (
           <div className="text-center bg-white p-10 rounded-xl shadow">
-            <Video className="mx-auto text-gray-300 mb-3" size={48} />
+            <Video
+              className="mx-auto text-gray-300 mb-3"
+              size={48}
+            />
             <p className="text-lg font-semibold text-gray-600">
               No live sessions scheduled
             </p>
@@ -79,14 +83,21 @@ const StudentLiveClasses = () => {
               >
                 {/* Info */}
                 <div>
-                  <h3 className="text-xl font-bold">{s.title}</h3>
+                  <h3 className="text-xl font-bold">
+                    {s.title}
+                  </h3>
+
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-2">
                     <span className="flex items-center gap-1">
-                      <Calendar size={14} /> {s.date}
+                      <Calendar size={14} />
+                      {s.date}
                     </span>
+
                     <span className="flex items-center gap-1">
-                      <Clock size={14} /> {s.time}
+                      <Clock size={14} />
+                      {s.time}
                     </span>
+
                     <span className="font-semibold text-indigo-600">
                       {s.duration} min
                     </span>
@@ -98,7 +109,8 @@ const StudentLiveClasses = () => {
                   onClick={() => joinClass(s.meetLink)}
                   className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition"
                 >
-                  <Play size={16} /> Join Live
+                  <Play size={16} />
+                  Join Live
                 </button>
               </div>
             ))}
