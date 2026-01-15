@@ -5,7 +5,6 @@ export const enrollCourse = async (req, res) => {
         const { courseId } = req.params;
         const studentId = req.user._id;
 
-        // prevent duplicate enrollment
         const exists = await Enrollment.findOne({
             student: studentId,
             course: courseId,
@@ -21,7 +20,6 @@ export const enrollCourse = async (req, res) => {
         const enrollment = await Enrollment.create({
             student: studentId,
             course: courseId,
-            // paymentStatus defaults to PENDING
         });
 
         res.status(201).json({

@@ -5,7 +5,7 @@ export const enrollCourse = async (req, res) => {
         // Later we will save this in DB
         res.status(200).json({
             success: true,
-            message: "Enrollment initiated",
+            message: "Enrollment successful",
             courseId,
         });
     } catch (error) {
