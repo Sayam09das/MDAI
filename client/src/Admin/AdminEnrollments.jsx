@@ -1,35 +1,60 @@
 import { useEffect, useState } from "react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 export default function AdminEnrollments() {
     const [enrollments, setEnrollments] = useState([]);
+    const [error, setError] = useState("");
     const token = localStorage.getItem("adminToken");
 
     const fetchEnrollments = async () => {
-        const res = await fetch(
-            "https://mdai-0jhi.onrender.com/api/admin/enrollments",
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+        if (!token) {
+            setError("Admin not logged in");
+            return;
+        }
+
+        try {
+            const res = await fetch(
+                `${BACKEND_URL}/api/admin/enrollments`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!res.ok) {
+                throw new Error("Unauthorized or session expired");
             }
-        );
-        const data = await res.json();
-        setEnrollments(data.enrollments || []);
+
+            const data = await res.json();
+            setEnrollments(data.enrollments || []);
+            setError("");
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     const updatePayment = async (id, status) => {
-        await fetch(
-            `https://mdai-0jhi.onrender.com/api/admin/enrollments/${id}/payment-status`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ status }),
-            }
-        );
-        fetchEnrollments();
+        if (!token) return;
+
+        try {
+            await fetch(
+                `${BACKEND_URL}/api/admin/enrollments/${id}/payment-status`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ status }),
+                }
+            );
+
+            fetchEnrollments();
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     useEffect(() => {
@@ -39,6 +64,12 @@ export default function AdminEnrollments() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Student Payments</h1>
+
+            {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                    {error}
+                </div>
+            )}
 
             <table className="w-full border">
                 <thead className="bg-gray-100">
@@ -51,6 +82,14 @@ export default function AdminEnrollments() {
                 </thead>
 
                 <tbody>
+                    {enrollments.length === 0 && (
+                        <tr>
+                            <td colSpan="4" className="p-4 text-center text-gray-500">
+                                No enrollments found
+                            </td>
+                        </tr>
+                    )}
+
                     {enrollments.map((e) => (
                         <tr key={e._id}>
                             <td className="p-2 border">{e.student?.email}</td>
