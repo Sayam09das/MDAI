@@ -252,7 +252,7 @@ const Payment = () => {
                                     <div className="space-y-4 mb-6">
                                         <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                                             <span className="text-gray-600">Course Price</span>
-                                            <span className="text-2xl font-bold text-gray-900">₹{course.price}</span>
+                                            <span className="text-2xl font-bold text-gray-900">${course.price}</span>
                                         </div>
 
                                         <div className="flex justify-between items-center">
@@ -260,14 +260,14 @@ const Payment = () => {
                                                 <Gift className="w-4 h-4 text-green-600" />
                                                 Discount
                                             </span>
-                                            <span className="font-semibold text-green-600">₹0</span>
+                                            <span className="font-semibold text-green-600">$0</span>
                                         </div>
 
                                         <div className="pt-4 border-t-2 border-gray-200">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-lg font-semibold text-gray-700">Total Amount</span>
                                                 <span className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                                    ₹{course.price}
+                                                    ${course.price}
                                                 </span>
                                             </div>
                                         </div>
@@ -278,16 +278,21 @@ const Payment = () => {
                                         {/* PAY NOW */}
                                         <button
                                             onClick={() => {
-                                                toast.info("🔐 Redirecting to payment gateway...", {
+                                                toast.info("🔐 Redirecting to payment instructions...", {
                                                     position: "top-center",
-                                                    autoClose: 2500,
+                                                    autoClose: 2000,
                                                 });
+
+                                                setTimeout(() => {
+                                                    navigate("/payment-info"); // your new page
+                                                }, 2000);
                                             }}
                                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer"
                                         >
                                             <CreditCard className="w-5 h-5" />
                                             Proceed to Pay
                                         </button>
+
 
                                         {/* PAY AFTER COURSE */}
                                         <button
