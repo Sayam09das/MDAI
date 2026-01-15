@@ -284,7 +284,7 @@ const Payment = () => {
                                                 });
 
                                                 setTimeout(() => {
-                                                    navigate("/payment-info"); // your new page
+                                                    navigate(`/payment-info/${courseId}`); // your new page
                                                 }, 2000);
                                             }}
                                             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer"
