@@ -4,45 +4,43 @@ import Enrollment from "../models/enrollmentModel.js";
    STUDENT: CREATE ENROLLMENT (DEFAULT PENDING)
    ========================================= */
 export const createEnrollment = async (req, res) => {
-    try {
-        const userId = req.user._id;
+  try {
+    const userId = req.user.id; // ✅ FIX HERE
+    const { courseId } = req.params;
 
-        // 👇 TAKE FROM PARAMS, NOT BODY
-        const { courseId } = req.params;
-
-        if (!courseId) {
-            return res.status(400).json({ message: "Course ID is required" });
-        }
-
-        const existingEnrollment = await Enrollment.findOne({
-            user: userId,
-            course: courseId,
-        });
-
-        if (existingEnrollment) {
-            return res.status(400).json({
-                success: false,
-                message: "Already enrolled in this course",
-            });
-        }
-
-        const enrollment = await Enrollment.create({
-            user: userId,
-            course: courseId,
-            paymentStatus: "pending",
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Enrollment created",
-            enrollment,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+    if (!courseId) {
+      return res.status(400).json({ message: "Course ID is required" });
     }
+
+    const existingEnrollment = await Enrollment.findOne({
+      user: userId,
+      course: courseId,
+    });
+
+    if (existingEnrollment) {
+      return res.status(400).json({
+        success: false,
+        message: "Already enrolled in this course",
+      });
+    }
+
+    const enrollment = await Enrollment.create({
+      user: userId,
+      course: courseId,
+      paymentStatus: "pending",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Enrollment created successfully",
+      enrollment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 
