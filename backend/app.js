@@ -11,7 +11,7 @@ import courseRoutes from "./routes/course.routes.js"
 import enrollmentRoutes from "./routes/enrollment.routes.js";
 import lessonRoutes from "./routes/lesson.routes.js"
 import adminRoutes from "./routes/admin.routes.js";
-
+import PaymentEnrollmentRoutes from "./routes/PaymentEnrollment.routes.js"
 import database from "./database/db.js";
 
 dotenv.config();
@@ -50,6 +50,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/enroll", enrollmentRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/enroll", PaymentEnrollmentRoutes);
 
 
 
