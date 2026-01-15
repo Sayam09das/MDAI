@@ -1,12 +1,31 @@
+import Enrollment from "../models/enrollmentModel.js";
+
 export const enrollCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
+        const studentId = req.user._id;
 
-        // Later we will save this in DB
-        res.status(200).json({
+        const exists = await Enrollment.findOne({
+            student: studentId,
+            course: courseId,
+        });
+
+        if (exists) {
+            return res.status(400).json({
+                success: false,
+                message: "Already enrolled",
+            });
+        }
+
+        const enrollment = await Enrollment.create({
+            student: studentId,
+            course: courseId,
+        });
+
+        res.status(201).json({
             success: true,
             message: "Enrollment successful",
-            courseId,
+            enrollment,
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
