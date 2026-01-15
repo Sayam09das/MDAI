@@ -6,9 +6,14 @@ import Enrollment from "../models/enrollmentModel.js";
 export const createEnrollment = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { courseId } = req.body;
 
-        // prevent duplicate enrollment
+        // 👇 TAKE FROM PARAMS, NOT BODY
+        const { courseId } = req.params;
+
+        if (!courseId) {
+            return res.status(400).json({ message: "Course ID is required" });
+        }
+
         const existingEnrollment = await Enrollment.findOne({
             user: userId,
             course: courseId,
@@ -29,16 +34,17 @@ export const createEnrollment = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: "Enrollment created. Payment pending verification.",
+            message: "Enrollment created",
             enrollment,
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to create enrollment",
+            message: error.message,
         });
     }
 };
+
 
 /* =========================================
    STUDENT: GET MY ENROLLMENTS

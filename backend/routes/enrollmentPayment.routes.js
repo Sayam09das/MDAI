@@ -11,7 +11,7 @@ import { protect, adminOnly } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 /* ================= STUDENT ================= */
-router.post("/enroll", protect, createEnrollment);
+router.post("/enroll/:courseId",protect,createEnrollment);
 router.get("/my-enrollments", protect, getMyEnrollments);
 
 /* ================= ADMIN ================= */
