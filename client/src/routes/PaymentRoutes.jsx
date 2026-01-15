@@ -4,6 +4,7 @@ import Payment from "../Pages/Student/Dashboard/CoursePayment/Payment";
 import PaymentInfo from "../Pages/Student/Dashboard/CoursePayment/PaymentInfo";
 import StudentProtectedRoute from "../ProtectedRoute/StudentProtectedRoute";
 import PaymentDemo from "../Pages/Student/Dashboard/CoursePayment/paymentdemo";
+import PayLaterRequest from "../Pages/Student/Dashboard/CoursePayment/PayLaterRequest"
 
 const PaymentRoutes = () => {
     return (
@@ -27,6 +28,15 @@ const PaymentRoutes = () => {
                     </StudentProtectedRoute>
                 }
             />
+            <Route
+                path="pay-later/:courseId"
+                element={
+                    <StudentProtectedRoute>
+                        <PayLaterRequest />
+                    </StudentProtectedRoute>
+                }
+            />
+
 
             {/* Demo / Test Page */}
             <Route path="/payment-demo" element={<PaymentDemo />} />

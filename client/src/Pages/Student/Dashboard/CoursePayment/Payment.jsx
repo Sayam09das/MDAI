@@ -294,21 +294,15 @@ const Payment = () => {
                                         </button>
 
 
-                                        {/* PAY AFTER COURSE */}
                                         <button
                                             onClick={() => {
-                                                toast.success(
-                                                    "✅ You can pay after completing the course. Access granted!",
-                                                    {
-                                                        position: "top-center",
-                                                        autoClose: 3000,
-                                                    }
-                                                );
+                                                navigate(`/pay-later/${courseId}`);
                                             }}
                                             className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                                         >
                                             ⏳ Pay After Course Ends
                                         </button>
+
 
                                         {/* CANCEL */}
                                         <button
