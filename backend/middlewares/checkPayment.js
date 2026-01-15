@@ -2,7 +2,7 @@ import Enrollment from "../models/enrollmentModel.js";
 
 const checkPaymentStatus = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user.id; // ✅ FIXED
         const { courseId } = req.params;
 
         const enrollment = await Enrollment.findOne({

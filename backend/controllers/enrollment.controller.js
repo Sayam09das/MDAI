@@ -3,7 +3,7 @@ import Enrollment from "../models/enrollmentModel.js";
 export const enrollCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const studentId = req.user._id;
+        const studentId = req.user.id; // ✅ FIXED
 
         const exists = await Enrollment.findOne({
             student: studentId,

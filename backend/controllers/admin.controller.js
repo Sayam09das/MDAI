@@ -130,17 +130,14 @@ export const getAdminProfile = async (req, res) => {
     }
 };
 
-
-/* =========================================
-   ADMIN: GET ALL ENROLLMENTS (PAYMENT PANEL)
-========================================= */
+/* ================= ADMIN: GET ALL ENROLLMENTS ================= */
 export const getAllEnrollmentsForAdmin = async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
             .populate("student", "name email")
             .populate("course", "title");
 
-        res.status(200).json({
+        res.json({
             success: true,
             enrollments,
         });
@@ -149,13 +146,11 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
     }
 };
 
-/* =========================================
-   ADMIN: UPDATE PAYMENT STATUS
-   ========================================= */
+/* ================= ADMIN: UPDATE PAYMENT ================= */
 export const updatePaymentStatusByAdmin = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
-        const { status } = req.body; // "PAID" or "LATER"
+        const { status } = req.body; // PAID or LATER
 
         if (!["PAID", "LATER"].includes(status)) {
             return res.status(400).json({ message: "Invalid payment status" });
@@ -182,4 +177,3 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-

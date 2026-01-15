@@ -13,7 +13,7 @@ import { protect, adminOnly } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 /* =====================================
-   AUTH ROUTES (NO PROTECT)
+   AUTH ROUTES (PUBLIC)
 ===================================== */
 
 // Admin register
@@ -23,7 +23,7 @@ router.post("/register", registerAdmin);
 router.post("/login", loginAdmin);
 
 /* =====================================
-   PROTECTED ROUTES
+   PROTECTED ROUTES (ADMIN ONLY)
 ===================================== */
 
 // Admin logout
@@ -32,7 +32,7 @@ router.post("/logout", protect, adminOnly, logoutAdmin);
 // Admin profile
 router.get("/profile", protect, adminOnly, getAdminProfile);
 
-// Get all enrollments (payment panel)
+// Get all enrollments (payment verification panel)
 router.get(
     "/enrollments",
     protect,
@@ -42,11 +42,10 @@ router.get(
 
 // Update payment status (PAID / LATER)
 router.patch(
-  "/enrollments/:enrollmentId/payment-status",
-  protect,
-  adminOnly,
-  updatePaymentStatusByAdmin
+    "/enrollments/:enrollmentId/payment-status",
+    protect,
+    adminOnly,
+    updatePaymentStatusByAdmin
 );
-
 
 export default router;

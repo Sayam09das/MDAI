@@ -17,6 +17,13 @@ const enrollmentSchema = new mongoose.Schema(
             enum: ["PENDING", "PAID", "LATER"],
             default: "PENDING",
         },
+        verifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Admin",
+        },
+        verifiedAt: {
+            type: Date,
+        },
     },
     { timestamps: true }
 );
