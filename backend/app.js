@@ -50,7 +50,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/enroll", enrollmentRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/enroll", PaymentEnrollmentRoutes);
+app.use("/api/payment-enroll", PaymentEnrollmentRoutes);
 
 
 
