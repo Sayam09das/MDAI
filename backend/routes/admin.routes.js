@@ -14,7 +14,7 @@ const router = express.Router();
 
 /* =====================================
    AUTH ROUTES (NO PROTECT)
-   ===================================== */
+===================================== */
 
 // Admin register
 router.post("/register", registerAdmin);
@@ -22,25 +22,31 @@ router.post("/register", registerAdmin);
 // Admin login
 router.post("/login", loginAdmin);
 
+/* =====================================
+   PROTECTED ROUTES
+===================================== */
+
 // Admin logout
 router.post("/logout", protect, adminOnly, logoutAdmin);
-
-/* =====================================
-   ADMIN PROTECTED ROUTES
-   ===================================== */
 
 // Admin profile
 router.get("/profile", protect, adminOnly, getAdminProfile);
 
-// All enrollments (payment verification panel)
-router.get("/enrollments", protect, adminOnly, getAllEnrollmentsForAdmin);
-
-// Update payment status (paid / pay_later)
-router.patch(
-    "/enrollments/:enrollmentId/payment-status",
+// Get all enrollments (payment panel)
+router.get(
+    "/enrollments",
     protect,
     adminOnly,
-    updatePaymentStatusByAdmin
+    getAllEnrollmentsForAdmin
 );
+
+// Update payment status (PAID / LATER)
+router.patch(
+  "/enrollments/:enrollmentId/payment-status",
+  protect,
+  adminOnly,
+  updatePaymentStatusByAdmin
+);
+
 
 export default router;
