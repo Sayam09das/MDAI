@@ -48,21 +48,21 @@ export const createEnrollment = async (req, res) => {
    STUDENT: GET MY ENROLLMENTS
    ========================================= */
 export const getMyEnrollments = async (req, res) => {
-    try {
-        const enrollments = await Enrollment.find({
-            user: req.user._id,
-        }).populate("course");
+  try {
+    const enrollments = await Enrollment.find({
+      user: req.user.id, // ✅ FIX HERE
+    }).populate("course");
 
-        res.json({
-            success: true,
-            enrollments,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message || "Failed to fetch enrollments",
-        });
-    }
+    res.json({
+      success: true,
+      enrollments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 /* =========================================
