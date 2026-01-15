@@ -1,3 +1,4 @@
+// routes/paymentEnrollment.routes.js
 import express from "express";
 import { enrollCourse } from "../controllers/enrollment.controller.js";
 import { protect, userOnly } from "../middlewares/auth.middleware.js";
