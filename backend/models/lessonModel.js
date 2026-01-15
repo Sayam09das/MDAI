@@ -10,7 +10,7 @@ const lessonSchema = new mongoose.Schema(
 
         course: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Course", // change if your course model name is different
+            ref: "Course",
             required: true,
         },
 
