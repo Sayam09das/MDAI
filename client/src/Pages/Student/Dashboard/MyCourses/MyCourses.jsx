@@ -108,7 +108,7 @@ export default function MyCourses() {
 
             {e.paymentStatus === "PAID" ? (
               <a
-                href={`/course/${e.course._id}`}
+                href={`/student-dashboard/course/${e.course._id}`}
                 className="block mt-4 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700"
               >
                 View Course
