@@ -58,7 +58,13 @@ export default function StudentLiveClasses() {
   };
 
   const joinClass = (link) => {
-    window.open(link, "_blank");
+    if (!link) return;
+
+    const finalLink = link.startsWith("http")
+      ? link
+      : `https://${link}`;
+
+    window.open(finalLink, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -108,6 +114,7 @@ export default function StudentLiveClasses() {
                   <Play size={16} />
                   Join
                 </button>
+
               </div>
             ))}
           </div>
