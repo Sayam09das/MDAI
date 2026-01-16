@@ -31,3 +31,20 @@ export const enrollCourse = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const getMyEnrollments = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+
+        const enrollments = await Enrollment.find({ student: studentId })
+            .populate("course", "title thumbnail")
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            enrollments,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
