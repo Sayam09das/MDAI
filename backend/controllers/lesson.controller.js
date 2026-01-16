@@ -1,5 +1,5 @@
 import Lesson from "../models/lessonModel.js";
-import Course from "../models/courseModel.js";
+import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
 
 /* ===============================
