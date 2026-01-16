@@ -5,12 +5,16 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
   const [error, setError] = useState("");
-  const token = localStorage.getItem("userToken"); // ✅ USER token
+  const [loading, setLoading] = useState(true);
+
+  // ✅ FIX: use correct token key
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchMyCourses = async () => {
       if (!token) {
         setError("Please login to view your courses");
+        setLoading(false);
         return;
       }
 
@@ -18,33 +22,47 @@ export default function MyCourses() {
         const res = await fetch(
           `${BACKEND_URL}/api/enroll/my-courses`,
           {
+            method: "GET",
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
           }
         );
 
-        if (!res.ok) {
-          throw new Error("Unauthorized or session expired");
-        }
-
         const data = await res.json();
 
-        // remove broken enrollments (course: null)
-        const valid = (data.enrollments || []).filter(
+        if (!res.ok) {
+          throw new Error(data.message || "Unauthorized or session expired");
+        }
+
+        // ✅ Remove broken enrollments (course deleted / null)
+        const validEnrollments = (data.enrollments || []).filter(
           (e) => e.course !== null
         );
 
-        setEnrollments(valid);
+        setEnrollments(validEnrollments);
         setError("");
       } catch (err) {
         setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchMyCourses();
-  }, []);
+  }, [token]);
 
+  // ⏳ Loading state
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Loading your courses...
+      </div>
+    );
+  }
+
+  // ❌ Error state
   if (error) {
     return (
       <div className="p-6 bg-red-100 text-red-700 rounded">
@@ -63,7 +81,10 @@ export default function MyCourses() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {enrollments.map((e) => (
-          <div key={e._id} className="border rounded-lg p-4 shadow">
+          <div
+            key={e._id}
+            className="border rounded-lg p-4 shadow bg-white"
+          >
             <img
               src={e.course.thumbnail?.url}
               alt={e.course.title}
@@ -88,7 +109,7 @@ export default function MyCourses() {
             {e.paymentStatus === "PAID" ? (
               <a
                 href={`/course/${e.course._id}`}
-                className="block mt-4 bg-blue-600 text-white text-center py-2 rounded"
+                className="block mt-4 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700"
               >
                 View Course
               </a>
