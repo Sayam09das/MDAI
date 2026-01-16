@@ -13,17 +13,21 @@ const AdminLogin = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setLoading(true)
-        setError("")
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-            })
+            const res = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        password: password.trim(),
+                    }),
+                }
+            )
 
             const data = await res.json()
 
@@ -32,15 +36,13 @@ const AdminLogin = () => {
             }
 
             localStorage.setItem("adminToken", data.token)
-
-            // 🔥 Redirect here
             navigate("/admin-enrollment")
         } catch (err) {
-            setError(err.message)
-        } finally {
-            setLoading(false)
+            console.error("LOGIN ERROR:", err.message)
+            alert(err.message)
         }
     }
+
 
 
     return (
