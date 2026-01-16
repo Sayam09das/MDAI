@@ -14,6 +14,15 @@ export const createLesson = async (req, res) => {
             });
         }
 
+        // ✅ CHECK COURSE EXISTS
+        const existingCourse = await Course.findById(course);
+        if (!existingCourse) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid course ID",
+            });
+        }
+
         const lesson = await Lesson.create({
             title,
             course,
