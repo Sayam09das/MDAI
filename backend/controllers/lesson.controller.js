@@ -1,4 +1,6 @@
 import Lesson from "../models/lessonModel.js";
+import Course from "../models/courseModel.js";
+import Enrollment from "../models/enrollmentModel.js";
 
 /* ===============================
    CREATE LIVE SESSION (LESSON)
