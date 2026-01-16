@@ -31,17 +31,17 @@ const AdminLogin = () => {
                 throw new Error(data.message || "Login failed")
             }
 
-            // save token (if backend sends token)
             localStorage.setItem("adminToken", data.token)
 
-            // redirect to admin dashboard
-            navigate("/admin/dashboard")
+            // 🔥 Redirect here
+            navigate("/admin-enrollment")
         } catch (err) {
             setError(err.message)
         } finally {
             setLoading(false)
         }
     }
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900">
