@@ -16,30 +16,21 @@ const router = express.Router();
    TEACHER ONLY ROUTES
 ================================ */
 
-// Create live session
 router.post("/create", protect, teacherOnly, createLesson);
-
-// Update live session
 router.put("/:id", protect, teacherOnly, updateLesson);
-
-// Delete live session
 router.delete("/:id", protect, teacherOnly, deleteLesson);
 
 /* ===============================
-   PUBLIC / AUTH ROUTES
+   STUDENT / AUTH ROUTES
 ================================ */
 
-// Get all live sessions
-router.get("/", protect, getAllLessons);
+// ✅ MUST BE ABOVE "/:id"
+router.get("/course/:courseId", protect, getLessonsByCourse);
 
 // Get single live session
 router.get("/:id", protect, getLessonById);
 
-
-router.get(
-   "/course/:courseId",
-   protect,
-   getLessonsByCourse
-);
+// (optional) all lessons
+router.get("/", protect, getAllLessons);
 
 export default router;

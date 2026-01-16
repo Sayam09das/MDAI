@@ -151,17 +151,39 @@ export const deleteLesson = async (req, res) => {
     }
 };
 
-
 export const getLessonsByCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
+        const studentId = req.user.id; // from protect middleware
 
-        if (!courseId || courseId === "undefined") {
+        if (!courseId) {
             return res.status(400).json({
+                success: false,
                 message: "Course ID is required",
             });
         }
 
+        // ✅ CHECK ENROLLMENT + PAYMENT
+        const enrollment = await Enrollment.findOne({
+            student: studentId,
+            course: courseId,
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not enrolled in this course",
+            });
+        }
+
+        if (enrollment.paymentStatus !== "PAID") {
+            return res.status(403).json({
+                success: false,
+                message: "Payment required to access live sessions",
+            });
+        }
+
+        // ✅ FETCH LESSONS
         const lessons = await Lesson.find({ course: courseId })
             .sort({ date: 1, time: 1 });
 
@@ -170,6 +192,10 @@ export const getLessonsByCourse = async (req, res) => {
             lessons,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Get Lessons By Course Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
     }
 };
