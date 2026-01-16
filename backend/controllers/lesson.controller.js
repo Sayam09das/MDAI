@@ -1,18 +1,35 @@
 import Lesson from "../models/lessonModel.js";
 import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
+import mongoose from "mongoose";
+
+/* ===============================
+   HELPER: NORMALIZE MEET LINK
+================================ */
+const normalizeMeetLink = (link) => {
+    if (!link) return link;
+    return link.startsWith("http") ? link : `https://${link}`;
+};
 
 /* ===============================
    CREATE LIVE SESSION (LESSON)
 ================================ */
 export const createLesson = async (req, res) => {
     try {
-        const { title, course, date, time, duration, meetLink } = req.body;
+        let { title, course, date, time, duration, meetLink } = req.body;
 
         if (!title || !course || !date || !time || !meetLink) {
             return res.status(400).json({
                 success: false,
                 message: "All required fields must be filled",
+            });
+        }
+
+        // ✅ VALIDATE COURSE ID
+        if (!mongoose.Types.ObjectId.isValid(course)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid course ID",
             });
         }
 
@@ -24,6 +41,9 @@ export const createLesson = async (req, res) => {
                 message: "Invalid course ID",
             });
         }
+
+        // ✅ FIX MEET LINK
+        meetLink = normalizeMeetLink(meetLink);
 
         const lesson = await Lesson.create({
             title,
@@ -77,6 +97,13 @@ export const getLessonById = async (req, res) => {
     try {
         const { id } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid lesson ID",
+            });
+        }
+
         const lesson = await Lesson.findById(id).populate("course", "title");
 
         if (!lesson) {
@@ -100,11 +127,23 @@ export const getLessonById = async (req, res) => {
 };
 
 /* ===============================
-   EDIT / UPDATE LIVE SESSION
+   UPDATE LIVE SESSION
 ================================ */
 export const updateLesson = async (req, res) => {
     try {
         const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid lesson ID",
+            });
+        }
+
+        // ✅ FIX MEET LINK IF PRESENT
+        if (req.body.meetLink) {
+            req.body.meetLink = normalizeMeetLink(req.body.meetLink);
+        }
 
         const updatedLesson = await Lesson.findByIdAndUpdate(
             id,
@@ -140,6 +179,13 @@ export const deleteLesson = async (req, res) => {
     try {
         const { id } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid lesson ID",
+            });
+        }
+
         const lesson = await Lesson.findByIdAndDelete(id);
 
         if (!lesson) {
@@ -162,19 +208,22 @@ export const deleteLesson = async (req, res) => {
     }
 };
 
+/* ===============================
+   GET LIVE SESSIONS BY COURSE (STUDENT)
+================================ */
 export const getLessonsByCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const studentId = req.user.id; // from protect middleware
+        const studentId = req.user.id;
 
-        if (!courseId) {
+        if (!mongoose.Types.ObjectId.isValid(courseId)) {
             return res.status(400).json({
                 success: false,
-                message: "Course ID is required",
+                message: "Invalid course ID",
             });
         }
 
-        // ✅ CHECK ENROLLMENT + PAYMENT
+        // ✅ CHECK ENROLLMENT
         const enrollment = await Enrollment.findOne({
             student: studentId,
             course: courseId,

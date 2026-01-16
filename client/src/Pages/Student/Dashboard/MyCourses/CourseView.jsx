@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
     CheckCircle,
     PlayCircle,
@@ -21,13 +20,20 @@ export default function CourseView() {
     const token = localStorage.getItem("token");
 
     useEffect(() => {
-        const fetchCourse = async () => {
-            if (!token) {
-                setError("Please login to view this course");
-                setLoading(false);
-                return;
-            }
+        // ✅ Guard: invalid route
+        if (!courseId || courseId === ":courseId") {
+            setError("Invalid course");
+            setLoading(false);
+            return;
+        }
 
+        // ✅ Guard: not logged in
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
+        const fetchCourse = async () => {
             try {
                 const res = await fetch(
                     `${BACKEND_URL}/api/courses/${courseId}`,
@@ -53,12 +59,16 @@ export default function CourseView() {
         };
 
         fetchCourse();
-    }, [courseId, token]);
+    }, [courseId, token, navigate]);
+
+    /* ===============================
+       UI STATES
+    ================================ */
 
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p>Loading course...</p>
+                <p className="text-gray-600 font-medium">Loading course...</p>
             </div>
         );
     }
@@ -76,9 +86,14 @@ export default function CourseView() {
 
     if (!course) return null;
 
+    /* ===============================
+       MAIN VIEW
+    ================================ */
+
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-6xl mx-auto space-y-6">
+
                 {/* HEADER */}
                 <div className="bg-white rounded-xl shadow p-6 grid md:grid-cols-2 gap-6">
                     <img
@@ -98,7 +113,7 @@ export default function CourseView() {
                             Access Granted
                         </div>
 
-                        {/* LIVE CLASS BUTTON */}
+                        {/* LIVE CLASSES */}
                         <div className="mt-6">
                             <button
                                 onClick={() =>
@@ -106,7 +121,7 @@ export default function CourseView() {
                                         `/student-dashboard/student-live-classes/${course._id}`
                                     )
                                 }
-                                className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700"
+                                className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
                             >
                                 <PlayCircle size={20} />
                                 Join Live Classes
@@ -115,7 +130,7 @@ export default function CourseView() {
                     </div>
                 </div>
 
-                {/* CONTENT */}
+                {/* COURSE CONTENT */}
                 <div className="bg-white rounded-xl shadow p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <BookOpen className="text-indigo-600" />
@@ -126,11 +141,14 @@ export default function CourseView() {
                         <div className="space-y-3">
                             {course.lessons.map((lesson, i) => (
                                 <div
-                                    key={i}
+                                    key={lesson._id || i}
                                     className="border rounded-lg p-4 flex justify-between items-center"
                                 >
                                     <span>{lesson.title}</span>
-                                    <button className="bg-gray-300 text-white px-4 py-2 rounded cursor-not-allowed">
+                                    <button
+                                        disabled
+                                        className="bg-gray-300 text-white px-4 py-2 rounded cursor-not-allowed"
+                                    >
                                         Play
                                     </button>
                                 </div>
