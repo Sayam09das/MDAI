@@ -50,20 +50,12 @@ const StudentMotivation = () => {
             return;
         }
 
-        fetch("https://type.fit/api/quotes")
+        fetch("https://api.quotable.io/random?tags=education|inspirational")
             .then((res) => res.json())
             .then((data) => {
-                // filter for short & meaningful student quotes
-                const filtered = data.filter(
-                    (q) => q.text && q.text.length < 120
-                );
-
-                const randomQuote =
-                    filtered[Math.floor(Math.random() * filtered.length)];
-
                 const newQuote = {
-                    text: randomQuote.text,
-                    author: randomQuote.author || "Unknown Mentor",
+                    text: data.content,
+                    author: data.author,
                 };
 
                 localStorage.setItem(
@@ -75,11 +67,12 @@ const StudentMotivation = () => {
             })
             .catch(() => {
                 setQuote({
-                    text: "Study a little every day, and big dreams will follow.",
+                    text: "Small steps every day lead to big academic success.",
                     author: "Student Wisdom",
                 });
             });
     }, []);
+
 
 
     if (!quote || !student) return null;
