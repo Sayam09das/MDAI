@@ -21,7 +21,10 @@ const ReturnStudentMain = () => {
 
                     <div className="bg-white rounded-xl p-4 shadow text-sm text-gray-700">
                         <h4 className="font-semibold text-gray-900 mb-2">
-                            Working Process Pyana Dasgupta ❤️
+                            Working Process
+                            *note: Donot disturb the devloper management team
+                                                                        --- Leader,
+                                                                           Sayam Das
                         </h4>
                         <ul className="space-y-2">
                             <li>📌 Attend classes</li>

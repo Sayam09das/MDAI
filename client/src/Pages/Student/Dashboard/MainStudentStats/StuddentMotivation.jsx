@@ -73,43 +73,67 @@ const StudentMotivation = () => {
             });
     }, []);
 
-
-
     if (!quote || !student) return null;
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-full mt-5"
+            transition={{ duration: 0.5 }}
+            className="w-full mt-4 sm:mt-5"
         >
-            <div className="relative overflow-hidden rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
+            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-indigo-100 shadow-sm">
 
                 {/* HEADER */}
-                <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                    Hello {student.fullName || student.name} 👋
-                </h3>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.4 }}
+                >
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-1">
+                        Daily Motivation
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                        Hello, {student.fullName || student.name} 👋
+                    </p>
+                </motion.div>
 
                 {/* QUOTE */}
-                <p className="mt-4 text-lg md:text-xl text-gray-800 leading-relaxed italic">
-                    “{quote.text}”
-                </p>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
+                    className="mt-4 sm:mt-5"
+                >
+                    <div className="relative">
+                        {/* Quote Icon */}
+                        <svg
+                            className="absolute -left-1 -top-1 w-6 h-6 sm:w-8 sm:h-8 text-indigo-300 opacity-50"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+                        </svg>
+
+                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-800 leading-relaxed pl-6 sm:pl-8 pr-2 sm:pr-4">
+                            {quote.text}
+                        </p>
+                    </div>
+                </motion.div>
 
                 {/* AUTHOR */}
-                <p className="mt-3 text-base md:text-lg text-gray-700 font-medium">
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.4 }}
+                    className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-gray-700 font-medium text-right pr-2 sm:pr-4"
+                >
                     — {quote.author}
-                </p>
+                </motion.p>
 
-                {/* DECORATION */}
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block">
-                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-                        <path
-                            d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"
-                            fill="#22c55e"
-                        />
-                    </svg>
-                </div>
+                {/* DECORATION - Simple Circle Pattern */}
+                <div className="absolute -right-4 -bottom-4 sm:-right-6 sm:-bottom-6 w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-indigo-200 rounded-full opacity-20 blur-2xl" />
+                <div className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-purple-200 rounded-full opacity-30 blur-xl" />
             </div>
         </motion.div>
     );
