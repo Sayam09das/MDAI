@@ -40,11 +40,9 @@ const Motivation = () => {
         fetchCurrentUser();
     }, [navigate]);
 
-    /* ================= DAILY MOTIVATION (STUDENT ONLY) ================= */
+    /* ================= DAILY MOTIVATION ================= */
     useEffect(() => {
-        if (!currentUser || currentUser.role !== "student") return;
-
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toISOString().split("T")[0]; // safer date
         const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
 
         if (saved && saved.date === today) {
@@ -52,6 +50,7 @@ const Motivation = () => {
             return;
         }
 
+        // cache-busting
         const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
 
         fetch(url)
@@ -75,11 +74,9 @@ const Motivation = () => {
                     author: "Daily Wisdom",
                 });
             });
-    }, [currentUser]);
+    }, []);
 
-    /* ================= ROLE GUARD ================= */
-    if (!currentUser || currentUser.role !== "student") return null;
-    if (!quote) return null;
+    if (!quote || !currentUser) return null;
 
     return (
         <motion.div
@@ -90,18 +87,22 @@ const Motivation = () => {
         >
             <div className="relative overflow-hidden rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
 
+                {/* HEADER */}
                 <h3 className="text-base md:text-lg font-semibold text-gray-900">
                     Hello {currentUser.fullName || currentUser.name} 👋
                 </h3>
 
+                {/* QUOTE */}
                 <p className="mt-4 text-lg md:text-xl text-gray-800 leading-relaxed italic">
                     “{quote.text}”
                 </p>
 
+                {/* AUTHOR */}
                 <p className="mt-3 text-base md:text-lg text-gray-700 font-medium">
                     — {quote.author}
                 </p>
 
+                {/* DECORATION */}
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block">
                     <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
                         <path
