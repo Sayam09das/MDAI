@@ -1,5 +1,5 @@
 import React from "react";
-import Motivation from "./Motivation";
+import StuddentMotivation from "./StuddentMotivation";
 
 const ReturnStudentMain = () => {
     return (
@@ -11,7 +11,7 @@ const ReturnStudentMain = () => {
 
                     {/* LEFT SIDE – 75% */}
                     <div className="w-full md:w-3/4 flex flex-col gap-4">
-                        <Motivation />
+                       <StuddentMotivation />
                         {/* <TeacherStats /> */}
 
                         {/* PERFORMANCE + ATTENDANCE */}
