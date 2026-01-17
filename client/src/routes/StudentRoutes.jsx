@@ -5,7 +5,7 @@ import StudentLayout from "../components/Dashboard/Student/StudentLayout";
 import PageLoader from "../components/common/PageLoader";
 import StudentProtectedRoute from "../ProtectedRoute/StudentProtectedRoute";
 
-import ReturnStudentStats from "../Pages/Student/Dashboard/MainStudentStats/ReturnStudentStats";
+import ReturnStudentMain from "../Pages/Student/Dashboard/MainStudentStats/ReturnStudentMain";
 import ReturnMyCourses from "../Pages/Student/Dashboard/MyCourses/ReturnMyCourses";
 import ReturnCourseProgress from "../Pages/Student/Dashboard/CourseProgress/ReturnCourseProgress";
 import StudentLiveClasses from "../Pages/Student/Dashboard/StudentLiveClasses/StudentLiveClasses";
@@ -27,7 +27,7 @@ const StudentRoutes = () => {
                         </StudentProtectedRoute>
                     }
                 >
-                    <Route index element={<ReturnStudentStats />} />
+                    <Route index element={<ReturnStudentMain />} />
                     <Route path="student-mycourse" element={<ReturnMyCourses />} />
                     <Route path="all-courses" element={<ReturnAllCourse />} />
                     <Route path="course-progress" element={<ReturnCourseProgress />} />
