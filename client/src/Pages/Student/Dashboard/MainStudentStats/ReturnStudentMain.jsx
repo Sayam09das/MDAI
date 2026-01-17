@@ -13,11 +13,12 @@ const ReturnStudentMain = () => {
                     {/* LEFT SIDE – 75% */}
                     <div className="w-full md:w-3/4 flex flex-col gap-4">
                         <StuddentMotivation />
-                        <StudentCalendar />
+                        
 
                         {/* PERFORMANCE + ATTENDANCE */}
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Left */}
+                            <StudentCalendar />
                             <div className="w-full lg:w-1/2">
                                 {/* <StudentPerformance /> */}
                             </div>
