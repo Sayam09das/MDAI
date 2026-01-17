@@ -9,6 +9,7 @@ const Motivation = () => {
 
     const [quote, setQuote] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     /* ================= FETCH USER ================= */
     useEffect(() => {
@@ -34,15 +35,18 @@ const Motivation = () => {
             } catch (error) {
                 localStorage.clear();
                 navigate("/login");
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchCurrentUser();
     }, [navigate]);
 
-    /* ================= DAILY MOTIVATION (STUDENT ONLY) ================= */
+    /* ================= DAILY MOTIVATION ================= */
     useEffect(() => {
-        if (!currentUser || currentUser.role !== "student") return;
+        if (!currentUser) return;
+        if (currentUser.role !== "student") return;
 
         const today = new Date().toISOString().split("T")[0];
         const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
@@ -52,9 +56,7 @@ const Motivation = () => {
             return;
         }
 
-        const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
-
-        fetch(url)
+        fetch(`https://corsproxy.io/?https://zenquotes.io/api/random`)
             .then((res) => res.json())
             .then((data) => {
                 const newQuote = {
@@ -77,39 +79,32 @@ const Motivation = () => {
             });
     }, [currentUser]);
 
-    /* ================= ROLE GUARD ================= */
-    if (!currentUser || currentUser.role !== "student") return null;
+    /* ================= GUARDS ================= */
+    if (loading) return null;
+    if (!currentUser) return null;
+    if (currentUser.role !== "student") return null;
     if (!quote) return null;
 
+    /* ================= UI ================= */
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6 }}
             className="w-full mt-5"
         >
-            <div className="relative overflow-hidden rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
-
-                <h3 className="text-base md:text-lg font-semibold text-gray-900">
+            <div className="rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
+                <h3 className="text-lg font-semibold text-gray-900">
                     Hello {currentUser.fullName || currentUser.name} 👋
                 </h3>
 
-                <p className="mt-4 text-lg md:text-xl text-gray-800 leading-relaxed italic">
+                <p className="mt-4 text-xl text-gray-800 italic">
                     “{quote.text}”
                 </p>
 
-                <p className="mt-3 text-base md:text-lg text-gray-700 font-medium">
+                <p className="mt-3 text-lg text-gray-700 font-medium">
                     — {quote.author}
                 </p>
-
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block">
-                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-                        <path
-                            d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"
-                            fill="#22c55e"
-                        />
-                    </svg>
-                </div>
             </div>
         </motion.div>
     );
