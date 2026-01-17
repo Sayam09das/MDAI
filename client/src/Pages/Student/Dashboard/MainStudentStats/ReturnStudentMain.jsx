@@ -24,17 +24,22 @@ const ReturnStudentMain = () => {
             {/* ================= ROW 2 ================= */}
             <div className="flex flex-col md:flex-row gap-6 items-start mt-6">
 
-                {/* LEFT – Future Section (75%) */}
+                {/* LEFT – Student Overview (75%) */}
                 <div className="w-full md:w-3/4">
-                    {/* Future Component Here */}
-                    <div className="h-40 rounded-xl border border-dashed flex items-center justify-center text-gray-400">
-                        <StudentOverview />
-                    </div>
+                    <StudentOverview />
                 </div>
 
-                {/* RIGHT – Overview (25%) */}
-                <div className="w-full md:w-1/4">
-                   Working process pyana dasgupta
+                {/* RIGHT – Working Process (25%) */}
+                <div className="w-full md:w-1/4 bg-white rounded-xl p-4 shadow text-sm text-gray-700">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                        Working Process Pyana dasgupta ❤️
+                    </h4>
+                    <ul className="space-y-2">
+                        <li>📌 Attend classes</li>
+                        <li>📌 Complete assignments</li>
+                        <li>📌 Practice daily</li>
+                        <li>📌 Track progress</li>
+                    </ul>
                 </div>
             </div>
 
