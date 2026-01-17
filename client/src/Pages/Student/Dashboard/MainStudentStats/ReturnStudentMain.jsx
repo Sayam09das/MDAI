@@ -28,13 +28,13 @@ const ReturnStudentMain = () => {
                 <div className="w-full md:w-3/4">
                     {/* Future Component Here */}
                     <div className="h-40 rounded-xl border border-dashed flex items-center justify-center text-gray-400">
-                        Future Content
+                        <StudentOverview />
                     </div>
                 </div>
 
                 {/* RIGHT – Overview (25%) */}
                 <div className="w-full md:w-1/4">
-                    <StudentOverview />
+                   Working process pyana dasgupta
                 </div>
             </div>
 
