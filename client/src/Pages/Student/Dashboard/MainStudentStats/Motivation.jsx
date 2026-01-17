@@ -7,13 +7,12 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const Motivation = () => {
     const navigate = useNavigate();
 
-    const [currentUser, setCurrentUser] = useState(null);
     const [quote, setQuote] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
 
-    /* ================= FETCH CURRENT USER ================= */
+    /* ================= FETCH USER ================= */
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchCurrentUser = async () => {
             const token = localStorage.getItem("token");
 
             if (!token) {
@@ -32,22 +31,18 @@ const Motivation = () => {
 
                 const data = await res.json();
                 setCurrentUser(data.user);
-            } catch (err) {
-                console.error("Auth error:", err);
+            } catch (error) {
                 localStorage.clear();
                 navigate("/login");
-            } finally {
-                setLoading(false);
             }
         };
 
-        fetchUser();
+        fetchCurrentUser();
     }, [navigate]);
 
-    /* ================= FETCH DAILY MOTIVATION (STUDENT ONLY) ================= */
+    /* ================= DAILY MOTIVATION (STUDENT ONLY) ================= */
     useEffect(() => {
-        if (!currentUser) return;
-        if (currentUser.role !== "student") return;
+        if (!currentUser || currentUser.role !== "student") return;
 
         const today = new Date().toISOString().split("T")[0];
         const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
@@ -57,20 +52,19 @@ const Motivation = () => {
             return;
         }
 
-        fetch("https://corsproxy.io/?https://zenquotes.io/api/random")
+        const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
+
+        fetch(url)
             .then((res) => res.json())
             .then((data) => {
                 const newQuote = {
-                    text: data?.[0]?.q || "Discipline beats motivation.",
-                    author: data?.[0]?.a || "Daily Wisdom",
+                    text: data[0].q,
+                    author: data[0].a,
                 };
 
                 localStorage.setItem(
                     "dailyMotivation",
-                    JSON.stringify({
-                        date: today,
-                        quote: newQuote,
-                    })
+                    JSON.stringify({ date: today, quote: newQuote })
                 );
 
                 setQuote(newQuote);
@@ -83,33 +77,24 @@ const Motivation = () => {
             });
     }, [currentUser]);
 
-    /* ================= SAFE GUARDS (NO WHITE SCREEN) ================= */
-    if (loading) {
-        return <div className="h-24 w-full" />;
-    }
+    /* ================= ROLE GUARD ================= */
+    if (!currentUser || currentUser.role !== "student") return null;
+    if (!quote) return null;
 
-    if (!currentUser || currentUser.role !== "student") {
-        return <div className="h-24 w-full" />;
-    }
-
-    if (!quote) {
-        return <div className="h-24 w-full" />;
-    }
-
-    /* ================= UI ================= */
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             className="w-full mt-5"
         >
             <div className="relative overflow-hidden rounded-2xl p-7 bg-gradient-to-r from-sky-50 via-emerald-50 to-lime-50">
+
                 <h3 className="text-base md:text-lg font-semibold text-gray-900">
                     Hello {currentUser.fullName || currentUser.name} 👋
                 </h3>
 
-                <p className="mt-4 text-lg md:text-xl text-gray-800 italic leading-relaxed">
+                <p className="mt-4 text-lg md:text-xl text-gray-800 leading-relaxed italic">
                     “{quote.text}”
                 </p>
 
