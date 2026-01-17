@@ -40,28 +40,34 @@ const StudentMotivation = () => {
         fetchStudent();
     }, [navigate]);
 
-    /* ================= DAILY MOTIVATION ================= */
+    /* ================= DAILY STUDENT MOTIVATION ================= */
     useEffect(() => {
         const today = new Date().toISOString().split("T")[0];
-        const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
+        const saved = JSON.parse(localStorage.getItem("dailyStudentMotivation"));
 
         if (saved && saved.date === today) {
             setQuote(saved.quote);
             return;
         }
 
-        const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
-
-        fetch(url)
+        fetch("https://type.fit/api/quotes")
             .then((res) => res.json())
             .then((data) => {
+                // filter for short & meaningful student quotes
+                const filtered = data.filter(
+                    (q) => q.text && q.text.length < 120
+                );
+
+                const randomQuote =
+                    filtered[Math.floor(Math.random() * filtered.length)];
+
                 const newQuote = {
-                    text: data[0].q,
-                    author: data[0].a,
+                    text: randomQuote.text,
+                    author: randomQuote.author || "Unknown Mentor",
                 };
 
                 localStorage.setItem(
-                    "dailyMotivation",
+                    "dailyStudentMotivation",
                     JSON.stringify({ date: today, quote: newQuote })
                 );
 
@@ -69,11 +75,12 @@ const StudentMotivation = () => {
             })
             .catch(() => {
                 setQuote({
-                    text: "Consistency beats motivation when motivation fades.",
-                    author: "Daily Wisdom",
+                    text: "Study a little every day, and big dreams will follow.",
+                    author: "Student Wisdom",
                 });
             });
     }, []);
+
 
     if (!quote || !student) return null;
 
