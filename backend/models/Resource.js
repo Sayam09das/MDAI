@@ -26,21 +26,18 @@ const resourceSchema = new mongoose.Schema(
             required: true,
         },
 
-        // 🔹 Thumbnail (NOT required for now)
         thumbnail: {
             type: String,
             default: "",
         },
 
-        // 🔹 For video (mp3) & file (any)
         fileUrl: {
             type: String,
             required: function () {
-                return this.resourceType === "video" || this.resourceType === "file";
+                return this.resourceType === "file" || this.resourceType === "video";
             },
         },
 
-        // 🔹 Only for external links
         externalLink: {
             type: String,
             required: function () {
@@ -48,7 +45,6 @@ const resourceSchema = new mongoose.Schema(
             },
         },
 
-        // 🔹 Video format validation (mp3 only)
         fileFormat: {
             type: String,
             enum: ["mp3"],
@@ -69,9 +65,7 @@ const resourceSchema = new mongoose.Schema(
             default: true,
         },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
 export default mongoose.model("Resource", resourceSchema);
