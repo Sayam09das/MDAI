@@ -42,7 +42,7 @@ const TeacherRoutes = () => {
                     <Route index element={<ReturnDashboard />} />
                     <Route path="mycourse" element={<ReturnCoursedashboard />} />
                     <Route path="create-course" element={<ReturnCreateCourse />} />
-                    <Route path="lessons" element={<ReturnLessonManager />} />
+                    <Route path="resources" element={<ReturnLessonManager />} />
                     <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
                     <Route path="students" element={<ReturnEnrolledStudents />} />
                     <Route path="attendance" element={<ReturnStudentAttendance />} />
