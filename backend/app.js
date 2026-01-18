@@ -52,7 +52,6 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/resource", resourceRoutes);
 
-
 app.get("/ping", (req, res) => {
    res.status(200).send("ok");
 });
