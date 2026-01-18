@@ -11,30 +11,26 @@ const TeacherResources = () => {
   const [form, setForm] = useState({
     title: "",
     courseTitle: "",
-    resourceType: "pdf",
+    resourceType: "link",
     tags: "",
-    pages: "",
     externalLink: "",
+    thumbnailUrl: "",
   });
 
-  const [thumbnail, setThumbnail] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [file, setFile] = useState(null);
 
   /* ================= FETCH RESOURCES ================= */
   const fetchResources = async () => {
     try {
       const token = localStorage.getItem("token");
-
       const res = await fetch(`${BACKEND_URL}/api/resource/teacher`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       setResources(data.resources || []);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -44,46 +40,67 @@ const TeacherResources = () => {
     fetchResources();
   }, []);
 
-  /* ================= HANDLE CREATE ================= */
+  /* ================= CREATE RESOURCE ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
+    const token = localStorage.getItem("token");
+
     try {
-      const token = localStorage.getItem("token");
+      /* ========= LINK → JSON ========= */
+      if (form.resourceType === "link" && !thumbnailFile) {
+        const payload = {
+          title: form.title,
+          courseTitle: form.courseTitle,
+          resourceType: "link",
+          tags: form.tags.split(","),
+          thumbnail: form.thumbnailUrl,
+          externalLink: form.externalLink,
+        };
 
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) =>
-        value && formData.append(key, value)
-      );
+        const res = await fetch(`${BACKEND_URL}/api/resource`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-      formData.append("thumbnail", thumbnail);
-      if (file) formData.append("file", file);
+        if (!res.ok) throw new Error("Create failed");
+      }
 
-      const res = await fetch(`${BACKEND_URL}/api/resource`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      /* ========= FILE / PDF / VIDEO → FORM-DATA ========= */
+      else {
+        const fd = new FormData();
+        fd.append("title", form.title);
+        fd.append("courseTitle", form.courseTitle);
+        fd.append("resourceType", form.resourceType);
+        fd.append("tags", form.tags);
+        fd.append("thumbnail", thumbnailFile);
+        if (file) fd.append("file", file);
 
-      if (!res.ok) throw new Error("Failed");
+        const res = await fetch(`${BACKEND_URL}/api/resource`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
 
-      // refresh list + close form
+        if (!res.ok) throw new Error("Create failed");
+      }
+
       await fetchResources();
       setShowForm(false);
-
-      // reset form
       setForm({
         title: "",
         courseTitle: "",
-        resourceType: "pdf",
+        resourceType: "link",
         tags: "",
-        pages: "",
         externalLink: "",
+        thumbnailUrl: "",
       });
-      setThumbnail(null);
+      setThumbnailFile(null);
       setFile(null);
     } catch (err) {
       alert("Failed to create resource");
@@ -96,151 +113,97 @@ const TeacherResources = () => {
   const handleDelete = async (id) => {
     if (!confirm("Delete this resource?")) return;
 
-    try {
-      const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    await fetch(`${BACKEND_URL}/api/resource/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      await fetch(`${BACKEND_URL}/api/resource/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setResources(resources.filter((r) => r._id !== id));
-    } catch (err) {
-      alert("Delete failed");
-    }
+    setResources(resources.filter((r) => r._id !== id));
   };
 
   /* ================= UI ================= */
   return (
-    <div style={{ padding: "20px", position: "relative" }}>
+    <div style={{ padding: 20 }}>
       <h2>Teacher Resources</h2>
-
-      {/* ADD BUTTON */}
       <button onClick={() => setShowForm(true)}>➕ Add Resource</button>
 
-      {/* LOADING */}
       {loading && <p>Loading resources...</p>}
+      {!loading && resources.length === 0 && <p>No resources found</p>}
 
-      {/* EMPTY */}
-      {!loading && resources.length === 0 && (
-        <p>No resources available</p>
-      )}
+      {resources.map((r) => (
+        <div key={r._id} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+          <h4>{r.title}</h4>
+          <p>{r.courseTitle}</p>
+          <p>{r.resourceType}</p>
+          <button onClick={() => handleDelete(r._id)}>Delete</button>
+        </div>
+      ))}
 
-      {/* RESOURCE LIST */}
-      <div style={{ marginTop: "20px" }}>
-        {resources.map((r) => (
-          <div
-            key={r._id}
-            style={{
-              border: "1px solid #ccc",
-              padding: "10px",
-              marginBottom: "10px",
-            }}
-          >
-            <h4>{r.title}</h4>
-            <p>{r.courseTitle}</p>
-            <p>Type: {r.resourceType}</p>
-
-            <button>Edit</button>
-            <button onClick={() => handleDelete(r._id)}>Delete</button>
-          </div>
-        ))}
-      </div>
-
-      {/* OVERLAY FORM */}
+      {/* ================= FORM MODAL ================= */}
       {showForm && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <form
-            onSubmit={handleSubmit}
-            style={{
-              background: "#fff",
-              padding: "20px",
-              width: "400px",
-            }}
-          >
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.4)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}>
+          <form onSubmit={handleSubmit} style={{ background: "#fff", padding: 20, width: 400 }}>
             <h3>Add Resource</h3>
 
-            <input
-              placeholder="Title"
+            <input placeholder="Title" required
               value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
-              }
-              required
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
 
-            <input
-              placeholder="Course Title"
+            <input placeholder="Course Title" required
               value={form.courseTitle}
-              onChange={(e) =>
-                setForm({ ...form, courseTitle: e.target.value })
-              }
-              required
+              onChange={(e) => setForm({ ...form, courseTitle: e.target.value })}
             />
 
             <select
               value={form.resourceType}
-              onChange={(e) =>
-                setForm({ ...form, resourceType: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, resourceType: e.target.value })}
             >
+              <option value="link">Link</option>
               <option value="pdf">PDF</option>
               <option value="video">Video</option>
               <option value="file">File</option>
-              <option value="link">Link</option>
             </select>
 
-            {form.resourceType === "pdf" && (
-              <input
-                type="number"
-                placeholder="Pages"
-                value={form.pages}
-                onChange={(e) =>
-                  setForm({ ...form, pages: e.target.value })
-                }
-              />
-            )}
-
-            {form.resourceType === "link" && (
-              <input
-                placeholder="External Link"
-                value={form.externalLink}
-                onChange={(e) =>
-                  setForm({ ...form, externalLink: e.target.value })
-                }
-              />
-            )}
-
-            <input
-              placeholder="Tags (comma separated)"
+            <input placeholder="Tags (comma separated)"
               value={form.tags}
-              onChange={(e) =>
-                setForm({ ...form, tags: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, tags: e.target.value })}
             />
 
-            <input type="file" onChange={(e) => setThumbnail(e.target.files[0])} required />
+            {form.resourceType === "link" && (
+              <>
+                <input placeholder="Thumbnail URL"
+                  value={form.thumbnailUrl}
+                  onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
+                  required
+                />
+                <input placeholder="External Link"
+                  value={form.externalLink}
+                  onChange={(e) => setForm({ ...form, externalLink: e.target.value })}
+                  required
+                />
+              </>
+            )}
+
             {form.resourceType !== "link" && (
-              <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+              <>
+                <input type="file" required onChange={(e) => setThumbnailFile(e.target.files[0])} />
+                <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+              </>
             )}
 
             <button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Create"}
             </button>
-            <button type="button" onClick={() => setShowForm(false)}>
-              Cancel
-            </button>
+            <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
           </form>
         </div>
       )}
