@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -6,8 +6,31 @@ const TeacherResources = () => {
   const [resources, setResources] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
+
+  /* ================= FETCH MY RESOURCES (ON LOAD) ================= */
+  useEffect(() => {
+    const fetchMyResources = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/resource/my`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        setResources(data);
+      } catch (err) {
+        console.error("Failed to load resources");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyResources();
+  }, []);
 
   /* ================= CREATE / UPDATE ================= */
   const handleSubmit = async (e) => {
@@ -36,7 +59,7 @@ const TeacherResources = () => {
         prev.map((r) => (r._id === saved._id ? saved : r))
       );
     } else {
-      setResources((prev) => [...prev, saved]);
+      setResources((prev) => [saved, ...prev]);
     }
 
     setShowForm(false);
@@ -71,7 +94,9 @@ const TeacherResources = () => {
         </button>
       </div>
 
-      {resources.length === 0 && (
+      {loading && <p className="text-gray-500">Loading resources...</p>}
+
+      {!loading && resources.length === 0 && (
         <p className="text-gray-500">No resources yet.</p>
       )}
 
@@ -122,7 +147,7 @@ const TeacherResources = () => {
               {editingResource ? "Edit Resource" : "Add Resource"}
             </h3>
 
-            {/* ✅ COURSE ID INSIDE FORM */}
+            {/* COURSE ID (ADMIN PROVIDED) */}
             <input
               name="course"
               placeholder="Course ID (admin provided)"
