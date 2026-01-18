@@ -1,9 +1,9 @@
-import express from "express"; // ✅ FIX
+import express from "express";
 import upload from "../middlewares/multer.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 
 import {
-  createResource,
+  createResource,      // ✅ FIX
   getAllResources,
   getResourceById,
   updateResource,
@@ -22,16 +22,16 @@ router.get("/:id", protect, getResourceById);
    TEACHER ONLY (WRITE)
 ========================= */
 
-// Create resource (LINK + THUMBNAIL)
+// Create RESOURCE (not course)
 router.post(
   "/create",
   protect,
   teacherOnly,
   upload.single("thumbnail"),
-  createResource
+  createResource            // ✅ FIX
 );
 
-// Update resource (LINK + THUMBNAIL)
+// Update resource
 router.put(
   "/:id",
   protect,
