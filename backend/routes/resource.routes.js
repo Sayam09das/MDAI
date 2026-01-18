@@ -22,21 +22,21 @@ router.get("/:id", protect, getResourceById);
    TEACHER ONLY (WRITE)
 ========================= */
 
-// Create resource
+// Create resource (LINK + THUMBNAIL)
 router.post(
   "/create",
   protect,
   teacherOnly,
-  upload.single("file"),
+  upload.single("thumbnail"),
   createResource
 );
 
-// Update resource
+// Update resource (LINK + THUMBNAIL)
 router.put(
   "/:id",
   protect,
   teacherOnly,
-  upload.single("file"),
+  upload.single("thumbnail"),
   updateResource
 );
 

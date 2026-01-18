@@ -3,6 +3,7 @@ import cloudinary from "../config/cloudinary.js";
 
 /* =========================
    CREATE RESOURCE (Teacher)
+   LINK ONLY + THUMBNAIL
 ========================= */
 export const createResource = async (req, res) => {
     try {
@@ -10,38 +11,30 @@ export const createResource = async (req, res) => {
             return res.status(403).json({ message: "Access denied" });
         }
 
-        const {
-            title,
-            courseTitle,
-            tags,
-            resourceType,
-            externalLink,
-            fileFormat,
-            thumbnail,
-        } = req.body;
+        const { title, courseTitle, tags, externalLink } = req.body;
 
-        let fileUrl = "";
+        if (!externalLink) {
+            return res.status(400).json({ message: "External link is required" });
+        }
 
-        // 🔴 HANDLE FILE UPLOAD
+        let thumbnailUrl = "";
+
+        // ✅ Upload thumbnail to Cloudinary (if provided)
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                resource_type: "auto", // VERY IMPORTANT (pdf, doc, mp3, etc)
+                folder: "resource-thumbnails",
             });
-
-            fileUrl = result.secure_url;
+            thumbnailUrl = result.secure_url;
         }
 
         const resource = await Resource.create({
             title,
             courseTitle,
             tags,
-            resourceType,
-            fileUrl,
+            resourceType: "link",
             externalLink,
-            fileFormat: resourceType === "video" ? "mp3" : undefined,
-            thumbnail,
+            thumbnail: thumbnailUrl,
         });
-
 
         res.status(201).json(resource);
     } catch (error) {
@@ -49,7 +42,6 @@ export const createResource = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 
 /* =========================
    GET ALL RESOURCES (Student + Teacher)
@@ -85,6 +77,7 @@ export const getResourceById = async (req, res) => {
 
 /* =========================
    UPDATE RESOURCE (Teacher)
+   LINK + THUMBNAIL
 ========================= */
 export const updateResource = async (req, res) => {
     try {
@@ -92,9 +85,21 @@ export const updateResource = async (req, res) => {
             return res.status(403).json({ message: "Access denied" });
         }
 
+        const { title, courseTitle, tags, externalLink } = req.body;
+
+        let updateData = { title, courseTitle, tags, externalLink };
+
+        // ✅ Update thumbnail if new one provided
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "resource-thumbnails",
+            });
+            updateData.thumbnail = result.secure_url;
+        }
+
         const updated = await Resource.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -104,6 +109,7 @@ export const updateResource = async (req, res) => {
 
         res.status(200).json(updated);
     } catch (error) {
+        console.error("UPDATE RESOURCE ERROR:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -123,7 +129,7 @@ export const deleteResource = async (req, res) => {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        // Optional: delete from Cloudinary later if needed
+        // ❌ Not deleting Cloudinary image for now (safe & simple)
         await resource.deleteOne();
 
         res.status(200).json({ message: "Resource deleted successfully" });

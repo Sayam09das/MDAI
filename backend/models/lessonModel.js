@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const lessonSchema = new mongoose.Schema(
+const resourceSchema = new mongoose.Schema(
     {
         title: {
             type: String,
@@ -8,39 +8,48 @@ const lessonSchema = new mongoose.Schema(
             trim: true,
         },
 
-        course: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Course",
-            required: true,
-        },
-
-        date: {
-            type: String, // you can also use Date if you want
-            required: true,
-        },
-
-        time: {
-            type: String, // example: "10:30 AM"
-            required: true,
-        },
-
-        duration: {
-            type: String,
-            enum: ["30", "45", "60", "90", "120"],
-            default: "90",
-            required: true,
-        },
-
-        meetLink: {
+        courseTitle: {
             type: String,
             required: true,
+            trim: true,
+            index: true,
+        },
+
+        tags: {
+            type: [String],
+            default: [],
+        },
+
+        // 🔒 ONLY LINK FOR NOW
+        resourceType: {
+            type: String,
+            enum: ["link"],
+            default: "link",
+        },
+
+        externalLink: {
+            type: String,
+            required: true,
+        },
+
+        thumbnail: {
+            type: String,
+            default: "",
+        },
+
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5,
+            default: 5,
+        },
+
+        isActive: {
+            type: Boolean,
+            default: true,
         },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
-const Lesson = mongoose.model("Lesson", lessonSchema);
-
-export default Lesson;
+export default mongoose.model("Resource", resourceSchema);
