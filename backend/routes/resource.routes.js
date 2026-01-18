@@ -14,7 +14,7 @@ const router = express.Router();
 
 /* ================= TEACHER ROUTES ================= */
 router.post(
-    "/",
+    "/create",
     protect,
     teacherOnly,
     upload.fields([
