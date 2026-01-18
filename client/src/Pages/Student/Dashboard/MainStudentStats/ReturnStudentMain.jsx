@@ -5,6 +5,8 @@ import StuddentMotivation from "./StuddentMotivation";
 import StudentCalendar from "./StudentCalendar";
 import StudentOverview from "./StudentOverview";
 import StudentProfile from "./StudentProfile";
+import StudentPerformance from "./StudentPerformance";
+import StudentHourActivity from "./StudentHourActivity";
 
 const ReturnStudentMain = () => {
     return (
@@ -65,7 +67,10 @@ const ReturnStudentMain = () => {
                 </div>
 
             </div>
-
+            <div>
+                <StudentHourActivity />
+                Ï<StudentPerformance />
+            </div>
         </div>
     );
 };
