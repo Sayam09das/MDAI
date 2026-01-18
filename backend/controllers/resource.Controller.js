@@ -1,175 +1,291 @@
 import Resource from "../models/Resource.js";
-import Course from "../models/Course.js";
 import cloudinary from "../config/cloudinary.js";
 
-/* ================= CREATE RESOURCE ================= */
+/* =====================================================
+   CREATE RESOURCE
+===================================================== */
 export const createResource = async (req, res) => {
     try {
         const {
             title,
-            course,
-            tags,
+            courseTitle,
             resourceType,
+            tags,
             pages,
-            rating,
             externalLink,
         } = req.body;
 
-        // ✅ validate course
-        const courseExists = await Course.findById(course);
-        if (!courseExists) {
-            return res.status(404).json({ message: "Course not found" });
+        if (!title || !courseTitle || !resourceType || !tags) {
+            return res.status(400).json({
+                success: false,
+                message: "Required fields are missing",
+            });
         }
 
-        let thumbnailUrl = null;
+        if (!req.files?.thumbnail) {
+            return res.status(400).json({
+                success: false,
+                message: "Thumbnail is required",
+            });
+        }
+
+        /* ---------- Upload Thumbnail ---------- */
+        const thumbnailUpload = await cloudinary.uploader.upload(
+            req.files.thumbnail[0].path,
+            {
+                folder: "resources/thumbnails",
+                resource_type: "image",
+            }
+        );
+
         let fileUrl = null;
 
-        if (req.files?.thumbnail) {
-            const result = await cloudinary.uploader.upload(
-                `data:${req.files.thumbnail[0].mimetype};base64,${req.files.thumbnail[0].buffer.toString("base64")}`,
-                { folder: "resources/thumbnails" }
+        /* ---------- Upload File (pdf/video/file) ---------- */
+        if (["pdf", "video", "file"].includes(resourceType)) {
+            if (!req.files?.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "File is required for pdf, video, or file",
+                });
+            }
+
+            const fileUpload = await cloudinary.uploader.upload(
+                req.files.file[0].path,
+                {
+                    folder: "resources/files",
+                    resource_type: "auto",
+                }
             );
-            thumbnailUrl = result.secure_url;
+
+            fileUrl = fileUpload.secure_url;
         }
 
-        if (req.files?.file) {
-            const result = await cloudinary.uploader.upload(
-                `data:${req.files.file[0].mimetype};base64,${req.files.file[0].buffer.toString("base64")}`,
-                { folder: "resources/files", resource_type: "auto" }
-            );
-            fileUrl = result.secure_url;
+        /* ---------- Link validation ---------- */
+        if (resourceType === "link" && !externalLink) {
+            return res.status(400).json({
+                success: false,
+                message: "External link is required",
+            });
         }
 
         const resource = await Resource.create({
             title,
-            course,
-            tags,
+            courseTitle,
             resourceType,
-            pages,
-            rating,
-            thumbnail: thumbnailUrl,
+            tags: Array.isArray(tags) ? tags : tags.split(","),
+            pages: resourceType === "pdf" ? pages : undefined,
+            thumbnail: thumbnailUpload.secure_url,
             fileUrl,
-            externalLink,
-            createdBy: req.user._id, // ✅ OWNER (TEACHER USER)
+            externalLink: resourceType === "link" ? externalLink : undefined,
         });
 
-        res.status(201).json(resource);
+        res.status(201).json({
+            success: true,
+            message: "Resource created successfully",
+            resource,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Create resource failed",
+            error: error.message,
+        });
     }
 };
 
-/* ================= UPDATE RESOURCE ================= */
+/* =====================================================
+   UPDATE RESOURCE
+===================================================== */
 export const updateResource = async (req, res) => {
     try {
-        const resource = await Resource.findById(req.params.id);
+        const { id } = req.params;
 
+        const resource = await Resource.findById(id);
         if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Resource not found",
+            });
         }
 
-        // 🔐 ownership check
-        if (!resource.createdBy.equals(req.user._id)) {
-            return res.status(403).json({ message: "Not allowed" });
+        const {
+            title,
+            courseTitle,
+            resourceType,
+            tags,
+            pages,
+            externalLink,
+            isActive,
+        } = req.body;
+
+        /* ---------- Update fields ---------- */
+        if (title) resource.title = title;
+        if (courseTitle) resource.courseTitle = courseTitle;
+        if (resourceType) resource.resourceType = resourceType;
+        if (tags) resource.tags = Array.isArray(tags) ? tags : tags.split(",");
+        if (typeof isActive !== "undefined") resource.isActive = isActive;
+
+        if (resourceType === "pdf") {
+            resource.pages = pages;
+        } else {
+            resource.pages = undefined;
         }
 
+        /* ---------- Update Thumbnail ---------- */
         if (req.files?.thumbnail) {
-            const result = await cloudinary.uploader.upload(
-                `data:${req.files.thumbnail[0].mimetype};base64,${req.files.thumbnail[0].buffer.toString("base64")}`,
-                { folder: "resources/thumbnails" }
+            const oldThumbId = resource.thumbnail
+                ?.split("/")
+                .pop()
+                .split(".")[0];
+
+            if (oldThumbId) {
+                await cloudinary.uploader.destroy(
+                    `resources/thumbnails/${oldThumbId}`
+                );
+            }
+
+            const thumbUpload = await cloudinary.uploader.upload(
+                req.files.thumbnail[0].path,
+                {
+                    folder: "resources/thumbnails",
+                    resource_type: "image",
+                }
             );
-            resource.thumbnail = result.secure_url;
+
+            resource.thumbnail = thumbUpload.secure_url;
         }
 
+        /* ---------- Update File ---------- */
         if (req.files?.file) {
-            const result = await cloudinary.uploader.upload(
-                `data:${req.files.file[0].mimetype};base64,${req.files.file[0].buffer.toString("base64")}`,
-                { folder: "resources/files", resource_type: "auto" }
+            const oldFileId = resource.fileUrl
+                ?.split("/")
+                .pop()
+                .split(".")[0];
+
+            if (oldFileId) {
+                await cloudinary.uploader.destroy(
+                    `resources/files/${oldFileId}`,
+                    { resource_type: "auto" }
+                );
+            }
+
+            const fileUpload = await cloudinary.uploader.upload(
+                req.files.file[0].path,
+                {
+                    folder: "resources/files",
+                    resource_type: "auto",
+                }
             );
-            resource.fileUrl = result.secure_url;
+
+            resource.fileUrl = fileUpload.secure_url;
         }
 
-        if (req.body.title) resource.title = req.body.title;
-        if (req.body.tags) resource.tags = req.body.tags;
-        if (req.body.pages) resource.pages = req.body.pages;
-        if (req.body.rating) resource.rating = req.body.rating;
-        if (req.body.externalLink) resource.externalLink = req.body.externalLink;
-        if (req.body.resourceType) resource.resourceType = req.body.resourceType;
+        if (resource.resourceType === "link") {
+            resource.externalLink = externalLink;
+            resource.fileUrl = undefined;
+        }
 
         await resource.save();
-        res.json(resource);
+
+        res.status(200).json({
+            success: true,
+            message: "Resource updated successfully",
+            resource,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Update failed",
+            error: error.message,
+        });
     }
 };
 
-/* ================= DELETE RESOURCE ================= */
+/* =====================================================
+   DELETE RESOURCE
+===================================================== */
 export const deleteResource = async (req, res) => {
     try {
-        const resource = await Resource.findById(req.params.id);
+        const { id } = req.params;
 
+        const resource = await Resource.findById(id);
         if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Resource not found",
+            });
         }
 
-        // 🔐 ownership check
-        if (!resource.createdBy.equals(req.user._id)) {
-            return res.status(403).json({ message: "Not allowed" });
+        /* ---------- Delete thumbnail ---------- */
+        if (resource.thumbnail) {
+            const thumbId = resource.thumbnail.split("/").pop().split(".")[0];
+            await cloudinary.uploader.destroy(
+                `resources/thumbnails/${thumbId}`
+            );
+        }
+
+        /* ---------- Delete file ---------- */
+        if (resource.fileUrl) {
+            const fileId = resource.fileUrl.split("/").pop().split(".")[0];
+            await cloudinary.uploader.destroy(
+                `resources/files/${fileId}`,
+                { resource_type: "auto" }
+            );
         }
 
         await resource.deleteOne();
-        res.json({ message: "Resource deleted successfully" });
+
+        res.status(200).json({
+            success: true,
+            message: "Resource deleted successfully",
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Delete failed",
+            error: error.message,
+        });
     }
 };
 
-/* ================= GET MY RESOURCES (RELOAD FIX) ================= */
-export const getMyResources = async (req, res) => {
+/* =====================================================
+   STUDENT → SHOW RESOURCES (ONLY ACTIVE)
+===================================================== */
+export const getResourcesForStudent = async (req, res) => {
     try {
-        const resources = await Resource.find({
-            createdBy: req.user._id,
-        })
-            .sort({ createdAt: -1 })
-            .populate("course", "title");
+        const resources = await Resource.find({ isActive: true })
+            .sort({ createdAt: -1 });
 
-        res.json(resources);
+        res.status(200).json({
+            success: true,
+            count: resources.length,
+            resources,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch resources",
+        });
     }
 };
 
-/* ================= GET RESOURCES BY COURSE ================= */
-export const getResourcesByCourse = async (req, res) => {
+/* =====================================================
+   TEACHER / ADMIN → SHOW ALL RESOURCES
+===================================================== */
+export const getResourcesForTeacher = async (req, res) => {
     try {
-        const resources = await Resource.find({
-            course: req.params.courseId,
-            isActive: true,
-        }).sort({ createdAt: -1 });
+        const resources = await Resource.find()
+            .sort({ createdAt: -1 });
 
-        res.json(resources);
+        res.status(200).json({
+            success: true,
+            count: resources.length,
+            resources,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/* ================= GET SINGLE RESOURCE ================= */
-export const getResourceById = async (req, res) => {
-    try {
-        const resource = await Resource.findById(req.params.id)
-            .populate("course")
-            .populate("createdBy", "name email");
-
-        if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
-        }
-
-        if (req.user.role !== "teacher" && resource.isActive === false) {
-            return res.status(403).json({ message: "Not allowed" });
-        }
-
-        res.json(resource);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch resources",
+        });
     }
 };

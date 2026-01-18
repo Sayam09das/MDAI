@@ -1,23 +1,22 @@
 import express from "express";
+import upload from "../middlewares/multer.js";
+import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
+
 import {
     createResource,
     updateResource,
     deleteResource,
-    getResourcesByCourse,
-    getResourceById,
-    getMyResources, // ✅ NEW
+    getResourcesForStudent,
+    getResourcesForTeacher,
 } from "../controllers/resource.Controller.js";
-
-import upload from "../middlewares/multer.js";
-import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-/* ================= TEACHER ROUTES ================= */
-
-// ✅ CREATE
+/* =====================================================
+   CREATE RESOURCE (Teacher only)
+===================================================== */
 router.post(
-    "/create",
+    "/",
     protect,
     teacherOnly,
     upload.fields([
@@ -27,7 +26,9 @@ router.post(
     createResource
 );
 
-// ✅ UPDATE
+/* =====================================================
+   UPDATE RESOURCE (Teacher only)
+===================================================== */
 router.put(
     "/:id",
     protect,
@@ -39,7 +40,9 @@ router.put(
     updateResource
 );
 
-// ✅ DELETE
+/* =====================================================
+   DELETE RESOURCE (Teacher only)
+===================================================== */
 router.delete(
     "/:id",
     protect,
@@ -47,28 +50,23 @@ router.delete(
     deleteResource
 );
 
-// ✅ GET MY RESOURCES (RELOAD FIX)
+/* =====================================================
+   STUDENT → GET ACTIVE RESOURCES
+===================================================== */
 router.get(
-    "/my",
+    "/student",
+    protect,
+    getResourcesForStudent
+);
+
+/* =====================================================
+   TEACHER / ADMIN → GET ALL RESOURCES
+===================================================== */
+router.get(
+    "/teacher",
     protect,
     teacherOnly,
-    getMyResources
-);
-
-/* ================= VIEW ROUTES ================= */
-
-// GET BY COURSE (STUDENT / PUBLIC VIEW)
-router.get(
-    "/course/:courseId",
-    protect,
-    getResourcesByCourse
-);
-
-// GET SINGLE RESOURCE
-router.get(
-    "/:id",
-    protect,
-    getResourceById
+    getResourcesForTeacher
 );
 
 export default router;
