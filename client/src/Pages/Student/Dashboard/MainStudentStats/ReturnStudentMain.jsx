@@ -46,23 +46,6 @@ const ReturnStudentMain = () => {
                                 </p>
                             </div>
                         </div>
-
-                        {/* Task List */}
-                        <ul className="space-y-2 sm:space-y-2.5">
-                            <TaskItem text="Attend classes" delay={0.7} />
-                            <TaskItem text="Complete assignments" delay={0.75} />
-                            <TaskItem text="Practice daily" delay={0.8} />
-                            <TaskItem text="Track progress" delay={0.85} />
-                        </ul>
-
-                        {/* Footer */}
-                        <div className="mt-4 pt-3 sm:pt-4 border-t border-orange-200">
-                            <p className="text-xs text-right text-gray-700">
-                                <span className="font-medium">— Leader,</span>
-                                <br />
-                                <span className="text-orange-700 font-semibold">Sayam Das</span>
-                            </p>
-                        </div>
                     </motion.div>
                 </div>
 
@@ -71,24 +54,26 @@ const ReturnStudentMain = () => {
                 <StudentHourActivity />
                 Ï<StudentPerformance />
             </div>
-        </div>
-    );
-};
+            <div>
 
-/* ================= TASK ITEM COMPONENT ================= */
-const TaskItem = ({ text, delay }) => {
-    return (
-        <motion.li
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay }}
-            className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg bg-white/50 hover:bg-white/80 transition-colors"
-        >
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 flex-shrink-0" />
-            <span className="text-xs sm:text-sm text-gray-700 font-medium">
-                {text}
-            </span>
-        </motion.li>
+                {/* Task List */}
+                <ul className="space-y-2 sm:space-y-2.5">
+                    <TaskItem text="Attend classes" delay={0.7} />
+                    <TaskItem text="Complete assignments" delay={0.75} />
+                    <TaskItem text="Practice daily" delay={0.8} />
+                    <TaskItem text="Track progress" delay={0.85} />
+                </ul>
+
+                {/* Footer */}
+                <div className="mt-4 pt-3 sm:pt-4 border-t border-orange-200">
+                    <p className="text-xs text-right text-gray-700">
+                        <span className="font-medium">— Leader,</span>
+                        <br />
+                        <span className="text-orange-700 font-semibold">Sayam Das</span>
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 };
 
