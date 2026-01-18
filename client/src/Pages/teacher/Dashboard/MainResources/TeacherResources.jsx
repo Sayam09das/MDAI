@@ -9,9 +9,8 @@ const TeacherResources = () => {
   const [title, setTitle] = useState("");
   const [courseTitle, setCourseTitle] = useState("");
   const [tags, setTags] = useState("");
-  const [resourceType, setResourceType] = useState("file");
-  const [file, setFile] = useState(null);
   const [externalLink, setExternalLink] = useState("");
+  const [thumbnail, setThumbnail] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const token = localStorage.getItem("token");
@@ -39,8 +38,8 @@ const TeacherResources = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (resourceType !== "link" && !file) {
-      alert("Please select a file");
+    if (!externalLink) {
+      alert("External link is required");
       return;
     }
 
@@ -50,16 +49,15 @@ const TeacherResources = () => {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("courseTitle", courseTitle);
-      formData.append("resourceType", resourceType);
+      formData.append("externalLink", externalLink);
 
       tags.split(",").forEach((tag) => {
         if (tag.trim()) formData.append("tags", tag.trim());
       });
 
-      if (resourceType === "link") {
-        formData.append("externalLink", externalLink);
-      } else {
-        formData.append("file", file);
+      // ✅ Thumbnail image (optional)
+      if (thumbnail) {
+        formData.append("thumbnail", thumbnail);
       }
 
       const res = await fetch(`${BACKEND_URL}/api/resource/create`, {
@@ -73,7 +71,7 @@ const TeacherResources = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // ✅ refresh list & close form
+      // refresh list & close form
       await fetchResources();
       setShowForm(false);
 
@@ -81,8 +79,8 @@ const TeacherResources = () => {
       setTitle("");
       setCourseTitle("");
       setTags("");
-      setFile(null);
       setExternalLink("");
+      setThumbnail(null);
     } catch (error) {
       alert(error.message);
     } finally {
@@ -132,26 +130,20 @@ const TeacherResources = () => {
             onChange={(e) => setTags(e.target.value)}
           />
 
-          <select
-            value={resourceType}
-            onChange={(e) => setResourceType(e.target.value)}
-          >
-            <option value="file">File</option>
-            <option value="video">Video (MP3)</option>
-            <option value="link">Link</option>
-          </select>
+          <input
+            type="text"
+            placeholder="External Link"
+            value={externalLink}
+            onChange={(e) => setExternalLink(e.target.value)}
+            required
+          />
 
-          {resourceType === "link" ? (
-            <input
-              type="text"
-              placeholder="External Link"
-              value={externalLink}
-              onChange={(e) => setExternalLink(e.target.value)}
-              required
-            />
-          ) : (
-            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-          )}
+          {/* Thumbnail upload */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setThumbnail(e.target.files[0])}
+          />
 
           <button type="submit" disabled={loading}>
             {loading ? "Uploading..." : "Submit"}
@@ -174,17 +166,20 @@ const TeacherResources = () => {
               marginBottom: "10px",
             }}
           >
+            {r.thumbnail && (
+              <img
+                src={r.thumbnail}
+                alt="thumbnail"
+                style={{ width: "120px", marginBottom: "10px" }}
+              />
+            )}
+
             <h4>{r.title}</h4>
             <p><b>Course:</b> {r.courseTitle}</p>
-            <p><b>Type:</b> {r.resourceType}</p>
 
-            {r.fileUrl && (
-              <a href={r.fileUrl} target="_blank">Open File</a>
-            )}
-
-            {r.externalLink && (
-              <a href={r.externalLink} target="_blank">Open Link</a>
-            )}
+            <a href={r.externalLink} target="_blank" rel="noreferrer">
+              Open Resource
+            </a>
           </div>
         ))}
       </div>
