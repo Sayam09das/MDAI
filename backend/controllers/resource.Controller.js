@@ -3,14 +3,10 @@ import cloudinary from "../config/cloudinary.js";
 
 /* =========================
    CREATE RESOURCE (Teacher)
-   LINK ONLY + THUMBNAIL
+   LINK + optional THUMBNAIL
 ========================= */
 export const createResource = async (req, res) => {
     try {
-        if (req.user.role !== "teacher") {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
         const { title, courseTitle, tags, externalLink } = req.body;
 
         if (!externalLink) {
@@ -19,11 +15,13 @@ export const createResource = async (req, res) => {
 
         let thumbnailUrl = "";
 
-        // ✅ Upload thumbnail to Cloudinary (if provided)
+        // ✅ Cloudinary upload using BUFFER (memoryStorage safe)
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "resource-thumbnails",
-            });
+            const result = await cloudinary.uploader.upload(
+                `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+                { folder: "resource-thumbnails" }
+            );
+
             thumbnailUrl = result.secure_url;
         }
 
@@ -36,7 +34,10 @@ export const createResource = async (req, res) => {
             thumbnail: thumbnailUrl,
         });
 
-        res.status(201).json(resource);
+        res.status(201).json({
+            success: true,
+            resource,
+        });
     } catch (error) {
         console.error("CREATE RESOURCE ERROR:", error);
         res.status(500).json({ message: error.message });
@@ -44,7 +45,7 @@ export const createResource = async (req, res) => {
 };
 
 /* =========================
-   GET ALL RESOURCES (Student + Teacher)
+   GET ALL RESOURCES
 ========================= */
 export const getAllResources = async (req, res) => {
     try {
@@ -52,14 +53,17 @@ export const getAllResources = async (req, res) => {
             createdAt: -1,
         });
 
-        res.status(200).json(resources);
+        res.status(200).json({
+            success: true,
+            resources,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 /* =========================
-   GET SINGLE RESOURCE (Student + Teacher)
+   GET RESOURCE BY ID
 ========================= */
 export const getResourceById = async (req, res) => {
     try {
@@ -69,7 +73,10 @@ export const getResourceById = async (req, res) => {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        res.status(200).json(resource);
+        res.status(200).json({
+            success: true,
+            resource,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -77,37 +84,41 @@ export const getResourceById = async (req, res) => {
 
 /* =========================
    UPDATE RESOURCE (Teacher)
-   LINK + THUMBNAIL
 ========================= */
 export const updateResource = async (req, res) => {
     try {
-        if (req.user.role !== "teacher") {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
         const { title, courseTitle, tags, externalLink } = req.body;
 
-        let updateData = { title, courseTitle, tags, externalLink };
+        const updateData = {
+            title,
+            courseTitle,
+            tags,
+            externalLink,
+        };
 
-        // ✅ Update thumbnail if new one provided
+        // ✅ Update thumbnail if provided
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "resource-thumbnails",
-            });
+            const result = await cloudinary.uploader.upload(
+                `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+                { folder: "resource-thumbnails" }
+            );
             updateData.thumbnail = result.secure_url;
         }
 
-        const updated = await Resource.findByIdAndUpdate(
+        const updatedResource = await Resource.findByIdAndUpdate(
             req.params.id,
             updateData,
             { new: true, runValidators: true }
         );
 
-        if (!updated) {
+        if (!updatedResource) {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        res.status(200).json(updated);
+        res.status(200).json({
+            success: true,
+            resource: updatedResource,
+        });
     } catch (error) {
         console.error("UPDATE RESOURCE ERROR:", error);
         res.status(500).json({ message: error.message });
@@ -119,20 +130,18 @@ export const updateResource = async (req, res) => {
 ========================= */
 export const deleteResource = async (req, res) => {
     try {
-        if (req.user.role !== "teacher") {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
         const resource = await Resource.findById(req.params.id);
 
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        // ❌ Not deleting Cloudinary image for now (safe & simple)
         await resource.deleteOne();
 
-        res.status(200).json({ message: "Resource deleted successfully" });
+        res.status(200).json({
+            success: true,
+            message: "Resource deleted successfully",
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

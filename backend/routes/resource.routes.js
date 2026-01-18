@@ -3,12 +3,12 @@ import upload from "../middlewares/multer.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 
 import {
-  createResource,      // ✅ FIX
+  createResource,
   getAllResources,
   getResourceById,
   updateResource,
   deleteResource,
-} from "../controllers/resource.Controller.js";
+} from "../controllers/resource.controller.js";
 
 const router = express.Router();
 
@@ -22,13 +22,13 @@ router.get("/:id", protect, getResourceById);
    TEACHER ONLY (WRITE)
 ========================= */
 
-// Create RESOURCE (not course)
+// Create resource (LINK + optional THUMBNAIL)
 router.post(
   "/create",
   protect,
   teacherOnly,
   upload.single("thumbnail"),
-  createResource            // ✅ FIX
+  createResource
 );
 
 // Update resource
