@@ -12,6 +12,7 @@ import ReturnTeacherLibrary from "../Pages/teacher/Dashboard/MainTeacherLibrary/
 import ReturnTeacherprofile from "../Pages/teacher/Dashboard/TeacherProfile/ReturnTeacherprofile";
 import ReturnTeacherSettings from "../Pages/teacher/Dashboard/MainTeacherSettings/ReturnTeacherSettings";
 import ReturnTeacherFinance from "../Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance";
+import ReturnTeacherResources from "../Pages/teacher/Dashboard/MainResources/ReturnTeacherResources";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -23,9 +24,7 @@ const ReturnCoursedashboard = lazy(() =>
 const ReturnCreateCourse = lazy(() =>
     import("../Pages/teacher/Dashboard/MainCreateCourseDashboard/ReturnCreateCourse")
 );
-const ReturnLessonManager = lazy(() =>
-    import("../Pages/teacher/Dashboard/MainLessonManager/ReturnLessonManager")
-);
+
 
 const TeacherRoutes = () => {
     return (
@@ -42,7 +41,7 @@ const TeacherRoutes = () => {
                     <Route index element={<ReturnDashboard />} />
                     <Route path="mycourse" element={<ReturnCoursedashboard />} />
                     <Route path="create-course" element={<ReturnCreateCourse />} />
-                    <Route path="resources" element={<ReturnLessonManager />} />
+                    <Route path="resources" element={< ReturnTeacherResources />} />
                     <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
                     <Route path="students" element={<ReturnEnrolledStudents />} />
                     <Route path="attendance" element={<ReturnStudentAttendance />} />
