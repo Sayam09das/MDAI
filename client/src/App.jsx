@@ -4,9 +4,9 @@ import { ToastContainer } from "react-toastify";
 
 import MainRoutes from "./routes/MainRoutes";
 import CourseRoutes from "./routes/CourseRoutes";
-import AuthRoutes from "./routes/AuthRoutes";
 import AboutRoutes from "./routes/AboutRoutes";
 import ContactRoutes from "./routes/ContactRoutes";
+import AuthRoutes from "./routes/AuthRoutes";
 import TeacherRoutes from "./routes/TeacherRoutes";
 import StudentRoutes from "./routes/StudentRoutes";
 import PaymentRoutes from "./routes/PaymentRoutes";
@@ -19,7 +19,6 @@ const App = () => {
       <ToastContainer />
 
       <Routes>
-        {/* App route groups */}
         <Route path="/*" element={<MainRoutes />} />
         <Route path="/*" element={<CourseRoutes />} />
         <Route path="/*" element={<AboutRoutes />} />
@@ -30,7 +29,7 @@ const App = () => {
         <Route path="/*" element={<PaymentRoutes />} />
         <Route path="/*" element={<AdminRoutes />} />
 
-        {/* 🔥 GLOBAL 404 (LAST ALWAYS) */}
+        {/* 🔥 MUST BE LAST */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
