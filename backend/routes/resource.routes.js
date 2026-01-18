@@ -5,6 +5,7 @@ import {
     deleteResource,
     getResourcesByCourse,
     getResourceById,
+    getMyResources, // ✅ NEW
 } from "../controllers/resource.Controller.js";
 
 import upload from "../middlewares/multer.js";
@@ -13,6 +14,8 @@ import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 /* ================= TEACHER ROUTES ================= */
+
+// ✅ CREATE
 router.post(
     "/create",
     protect,
@@ -24,6 +27,7 @@ router.post(
     createResource
 );
 
+// ✅ UPDATE
 router.put(
     "/:id",
     protect,
@@ -35,6 +39,7 @@ router.put(
     updateResource
 );
 
+// ✅ DELETE
 router.delete(
     "/:id",
     protect,
@@ -42,13 +47,24 @@ router.delete(
     deleteResource
 );
 
+// ✅ GET MY RESOURCES (RELOAD FIX)
+router.get(
+    "/my",
+    protect,
+    teacherOnly,
+    getMyResources
+);
+
 /* ================= VIEW ROUTES ================= */
+
+// GET BY COURSE (STUDENT / PUBLIC VIEW)
 router.get(
     "/course/:courseId",
     protect,
     getResourcesByCourse
 );
 
+// GET SINGLE RESOURCE
 router.get(
     "/:id",
     protect,

@@ -15,6 +15,7 @@ export const createResource = async (req, res) => {
             externalLink,
         } = req.body;
 
+        // ✅ validate course
         const courseExists = await Course.findById(course);
         if (!courseExists) {
             return res.status(404).json({ message: "Course not found" });
@@ -49,6 +50,7 @@ export const createResource = async (req, res) => {
             thumbnail: thumbnailUrl,
             fileUrl,
             externalLink,
+            createdBy: req.user._id, // ✅ OWNER (TEACHER USER)
         });
 
         res.status(201).json(resource);
@@ -57,13 +59,18 @@ export const createResource = async (req, res) => {
     }
 };
 
-
-/* ================= EDIT RESOURCE ================= */
+/* ================= UPDATE RESOURCE ================= */
 export const updateResource = async (req, res) => {
     try {
         const resource = await Resource.findById(req.params.id);
+
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
+        }
+
+        // 🔐 ownership check
+        if (!resource.createdBy.equals(req.user._id)) {
+            return res.status(403).json({ message: "Not allowed" });
         }
 
         if (req.files?.thumbnail) {
@@ -90,7 +97,6 @@ export const updateResource = async (req, res) => {
         if (req.body.resourceType) resource.resourceType = req.body.resourceType;
 
         await resource.save();
-
         res.json(resource);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -101,18 +107,37 @@ export const updateResource = async (req, res) => {
 export const deleteResource = async (req, res) => {
     try {
         const resource = await Resource.findById(req.params.id);
+
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        await resource.deleteOne();
+        // 🔐 ownership check
+        if (!resource.createdBy.equals(req.user._id)) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
 
+        await resource.deleteOne();
         res.json({ message: "Resource deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
+/* ================= GET MY RESOURCES (RELOAD FIX) ================= */
+export const getMyResources = async (req, res) => {
+    try {
+        const resources = await Resource.find({
+            createdBy: req.user._id,
+        })
+            .sort({ createdAt: -1 })
+            .populate("course", "title");
+
+        res.json(resources);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 /* ================= GET RESOURCES BY COURSE ================= */
 export const getResourcesByCourse = async (req, res) => {
@@ -128,19 +153,18 @@ export const getResourcesByCourse = async (req, res) => {
     }
 };
 
-
 /* ================= GET SINGLE RESOURCE ================= */
 export const getResourceById = async (req, res) => {
     try {
-        const resource = await Resource.findById(req.params.id).populate("course");
+        const resource = await Resource.findById(req.params.id)
+            .populate("course")
+            .populate("createdBy", "name email");
+
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        if (
-            req.user.role !== "teacher" &&
-            resource.isActive === false
-        ) {
+        if (req.user.role !== "teacher" && resource.isActive === false) {
             return res.status(403).json({ message: "Not allowed" });
         }
 
