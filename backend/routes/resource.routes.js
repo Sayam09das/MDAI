@@ -3,70 +3,49 @@ import upload from "../middlewares/multer.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 
 import {
-    createResource,
-    updateResource,
-    deleteResource,
-    getResourcesForStudent,
-    getResourcesForTeacher,
+  createResource,
+  getAllResources,
+  getResourceById,
+  updateResource,
+  deleteResource,
 } from "../controllers/resource.Controller.js";
 
 const router = express.Router();
 
-/* =====================================================
-   CREATE RESOURCE (Teacher only)
-===================================================== */
+/* =========================
+   STUDENT + TEACHER (READ)
+========================= */
+router.get("/", protect, getAllResources);
+router.get("/:id", protect, getResourceById);
+
+/* =========================
+   TEACHER ONLY (WRITE)
+========================= */
+
+// Create resource
 router.post(
-    "/",
-    protect,
-    teacherOnly,
-    upload.fields([
-        { name: "thumbnail", maxCount: 1 },
-        { name: "file", maxCount: 1 },
-    ]),
-    createResource
+  "/create",
+  protect,
+  teacherOnly,
+  upload.single("file"),
+  createResource
 );
 
-/* =====================================================
-   UPDATE RESOURCE (Teacher only)
-===================================================== */
+// Update resource
 router.put(
-    "/:id",
-    protect,
-    teacherOnly,
-    upload.fields([
-        { name: "thumbnail", maxCount: 1 },
-        { name: "file", maxCount: 1 },
-    ]),
-    updateResource
+  "/:id",
+  protect,
+  teacherOnly,
+  upload.single("file"),
+  updateResource
 );
 
-/* =====================================================
-   DELETE RESOURCE (Teacher only)
-===================================================== */
+// Delete resource
 router.delete(
-    "/:id",
-    protect,
-    teacherOnly,
-    deleteResource
-);
-
-/* =====================================================
-   STUDENT → GET ACTIVE RESOURCES
-===================================================== */
-router.get(
-    "/student",
-    protect,
-    getResourcesForStudent
-);
-
-/* =====================================================
-   TEACHER / ADMIN → GET ALL RESOURCES
-===================================================== */
-router.get(
-    "/teacher",
-    protect,
-    teacherOnly,
-    getResourcesForTeacher
+  "/:id",
+  protect,
+  teacherOnly,
+  deleteResource
 );
 
 export default router;

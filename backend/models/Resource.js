@@ -17,36 +17,44 @@ const resourceSchema = new mongoose.Schema(
 
         tags: {
             type: [String],
-            required: true,
+            default: [],
         },
 
         resourceType: {
             type: String,
-            enum: ["pdf", "video", "file", "link"],
+            enum: ["video", "file", "link"],
             required: true,
         },
 
-        // 🔒 MUST for ALL resources
+        // 🔹 Thumbnail (NOT required for now)
         thumbnail: {
             type: String,
-            required: true,
+            default: "",
         },
 
-        // Only for PDFs
-        pages: {
-            type: Number,
-            min: 1,
+        // 🔹 For video (mp3) & file (any)
+        fileUrl: {
+            type: String,
             required: function () {
-                return this.resourceType === "pdf";
+                return this.resourceType === "video" || this.resourceType === "file";
             },
         },
 
-        fileUrl: {
-            type: String,
-        },
-
+        // 🔹 Only for external links
         externalLink: {
             type: String,
+            required: function () {
+                return this.resourceType === "link";
+            },
+        },
+
+        // 🔹 Video format validation (mp3 only)
+        fileFormat: {
+            type: String,
+            enum: ["mp3"],
+            required: function () {
+                return this.resourceType === "video";
+            },
         },
 
         rating: {
@@ -65,32 +73,5 @@ const resourceSchema = new mongoose.Schema(
         timestamps: true,
     }
 );
-
-/* ================= CUSTOM VALIDATION ================= */
-resourceSchema.pre("validate", function (next) {
-    // file-based resources must have fileUrl
-    if (
-        ["pdf", "video", "file"].includes(this.resourceType) &&
-        !this.fileUrl
-    ) {
-        return next(
-            new Error("fileUrl is required for pdf, video, or file resources")
-        );
-    }
-
-    // link resource must have externalLink
-    if (this.resourceType === "link" && !this.externalLink) {
-        return next(new Error("externalLink is required for link resources"));
-    }
-
-    // prevent both being empty
-    if (!this.fileUrl && !this.externalLink) {
-        return next(
-            new Error("Either fileUrl or externalLink must be provided")
-        );
-    }
-
-    next();
-});
 
 export default mongoose.model("Resource", resourceSchema);
