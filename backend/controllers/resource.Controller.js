@@ -61,24 +61,17 @@ export const createResource = async (req, res) => {
 /* ================= EDIT RESOURCE ================= */
 export const updateResource = async (req, res) => {
     try {
-        const resource = await Resource.findById(req.params.id).populate("course");
+        const resource = await Resource.findById(req.params.id);
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
         }
-
-        if (resource.course.teacher.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not allowed" });
-        }
-
-        let thumbnailUrl = resource.thumbnail;
-        let fileUrl = resource.fileUrl;
 
         if (req.files?.thumbnail) {
             const result = await cloudinary.uploader.upload(
                 `data:${req.files.thumbnail[0].mimetype};base64,${req.files.thumbnail[0].buffer.toString("base64")}`,
                 { folder: "resources/thumbnails" }
             );
-            thumbnailUrl = result.secure_url;
+            resource.thumbnail = result.secure_url;
         }
 
         if (req.files?.file) {
@@ -86,20 +79,19 @@ export const updateResource = async (req, res) => {
                 `data:${req.files.file[0].mimetype};base64,${req.files.file[0].buffer.toString("base64")}`,
                 { folder: "resources/files", resource_type: "auto" }
             );
-            fileUrl = result.secure_url;
+            resource.fileUrl = result.secure_url;
         }
 
-        const updated = await Resource.findByIdAndUpdate(
-            req.params.id,
-            {
-                ...req.body,
-                thumbnail: thumbnailUrl,
-                fileUrl,
-            },
-            { new: true }
-        );
+        if (req.body.title) resource.title = req.body.title;
+        if (req.body.tags) resource.tags = req.body.tags;
+        if (req.body.pages) resource.pages = req.body.pages;
+        if (req.body.rating) resource.rating = req.body.rating;
+        if (req.body.externalLink) resource.externalLink = req.body.externalLink;
+        if (req.body.resourceType) resource.resourceType = req.body.resourceType;
 
-        res.json(updated);
+        await resource.save();
+
+        res.json(resource);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
