@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import {AlertCircle } from "lucide-react";
 import StuddentMotivation from "./StuddentMotivation";
 import StudentCalendar from "./StudentCalendar";
 import StudentOverview from "./StudentOverview";
@@ -53,25 +53,6 @@ const ReturnStudentMain = () => {
             <div>
                 <StudentHourActivity />
                 Ï<StudentPerformance />
-            </div>
-            <div>
-
-                {/* Task List */}
-                <ul className="space-y-2 sm:space-y-2.5">
-                    <TaskItem text="Attend classes" delay={0.7} />
-                    <TaskItem text="Complete assignments" delay={0.75} />
-                    <TaskItem text="Practice daily" delay={0.8} />
-                    <TaskItem text="Track progress" delay={0.85} />
-                </ul>
-
-                {/* Footer */}
-                <div className="mt-4 pt-3 sm:pt-4 border-t border-orange-200">
-                    <p className="text-xs text-right text-gray-700">
-                        <span className="font-medium">— Leader,</span>
-                        <br />
-                        <span className="text-orange-700 font-semibold">Sayam Das</span>
-                    </p>
-                </div>
             </div>
         </div>
     );
