@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-const TeacherResources = ({ courseId }) => {
+const TeacherResources = () => {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -13,14 +13,11 @@ const TeacherResources = ({ courseId }) => {
   const fetchResources = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `${BACKEND_URL}/api/resource/course/${courseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`${BACKEND_URL}/api/resource`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setResources(data);
     } catch (err) {
@@ -32,27 +29,13 @@ const TeacherResources = ({ courseId }) => {
 
   useEffect(() => {
     fetchResources();
-  }, [courseId]);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this resource?")) return;
-
-    await fetch(`${BACKEND_URL}/api/resource/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    fetchResources();
-  };
+  }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     const formData = new FormData(e.target);
-    formData.append("course", courseId);
 
     await fetch(`${BACKEND_URL}/api/resource`, {
       method: "POST",
@@ -65,6 +48,19 @@ const TeacherResources = ({ courseId }) => {
     setSubmitting(false);
     setShowForm(false);
     e.target.reset();
+    fetchResources();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this resource?")) return;
+
+    await fetch(`${BACKEND_URL}/api/resource/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     fetchResources();
   };
 
@@ -85,26 +81,14 @@ const TeacherResources = ({ courseId }) => {
         <>
           <button onClick={() => setShowForm(true)}>Add Resource</button>
 
-          <ul style={{ marginTop: 20 }}>
+          <ul>
             {resources.map((res) => (
-              <li
-                key={res._id}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: 10,
-                  marginBottom: 10,
-                }}
-              >
+              <li key={res._id}>
                 <h4>{res.title}</h4>
                 <p>{res.tags?.join(", ")}</p>
 
                 <button>Edit</button>
-                <button
-                  style={{ marginLeft: 10, color: "red" }}
-                  onClick={() => handleDelete(res._id)}
-                >
-                  Delete
-                </button>
+                <button onClick={() => handleDelete(res._id)}>Delete</button>
               </li>
             ))}
           </ul>
@@ -112,31 +96,27 @@ const TeacherResources = ({ courseId }) => {
       )}
 
       {showForm && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <form
-            onSubmit={handleCreate}
-            style={{
-              background: "#fff",
-              padding: 20,
-              width: 400,
-            }}
-          >
+        <div className="modal">
+          <form onSubmit={handleCreate}>
             <h3>Add Resource</h3>
 
-            <input name="title" placeholder="Title" required />
-            <br />
+            <input
+              name="course"
+              placeholder="Course ID"
+              required
+            />
 
-            <input name="tags" placeholder="react,frontend" required />
-            <br />
+            <input
+              name="title"
+              placeholder="Title"
+              required
+            />
+
+            <input
+              name="tags"
+              placeholder="react,frontend"
+              required
+            />
 
             <select name="resourceType" required>
               <option value="">Select type</option>
@@ -145,29 +125,17 @@ const TeacherResources = ({ courseId }) => {
               <option value="video">Video</option>
               <option value="link">Link</option>
             </select>
-            <br />
 
             <input name="pages" placeholder="Pages (optional)" />
-            <br />
-
             <input name="externalLink" placeholder="External link" />
-            <br />
-
             <input type="file" name="thumbnail" />
-            <br />
-
             <input type="file" name="file" />
-            <br />
 
             <button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Submit"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              style={{ marginLeft: 10 }}
-            >
+            <button type="button" onClick={() => setShowForm(false)}>
               Cancel
             </button>
           </form>
