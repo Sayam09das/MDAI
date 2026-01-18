@@ -4,7 +4,7 @@ import {
     LayoutDashboard,
     BookOpen,
     Plus,
-    FileText,
+    FolderOpen,
     Video,
     Users,
     Calendar,
@@ -24,7 +24,7 @@ const mainMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/teacher-dashboard" },
     { icon: BookOpen, label: "My Courses", path: "/teacher-dashboard/mycourse" },
     { icon: Plus, label: "Create Course", path: "/teacher-dashboard/create-course" },
-    { icon: FileText, label: "Lessons", path: "/teacher-dashboard/lessons" },
+    { icon: FolderOpen, label: "Resources", path: "/teacher-dashboard/resources" },
     { icon: Video, label: "Live Sessions", path: "/teacher-dashboard/live-sessions" },
     { icon: Users, label: "Students", path: "/teacher-dashboard/students" },
 ];
