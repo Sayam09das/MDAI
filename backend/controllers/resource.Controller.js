@@ -100,21 +100,19 @@ export const updateResource = async (req, res) => {
 /* ================= DELETE RESOURCE ================= */
 export const deleteResource = async (req, res) => {
     try {
-        const resource = await Resource.findById(req.params.id).populate("course");
+        const resource = await Resource.findById(req.params.id);
         if (!resource) {
             return res.status(404).json({ message: "Resource not found" });
         }
 
-        if (resource.course.teacher.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not allowed" });
-        }
-
         await resource.deleteOne();
+
         res.json({ message: "Resource deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 /* ================= GET RESOURCES BY COURSE ================= */
 export const getResourcesByCourse = async (req, res) => {
