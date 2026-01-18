@@ -11,7 +11,6 @@ import courseRoutes from "./routes/course.routes.js"
 import enrollmentRoutes from "./routes/enrollment.routes.js";
 import lessonRoutes from "./routes/lesson.routes.js"
 import adminRoutes from "./routes/admin.routes.js";
-import resourceRoutes from "./routes/resource.routes.js"
 import database from "./database/db.js";
 
 dotenv.config();
@@ -50,7 +49,6 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/enroll", enrollmentRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/resource", resourceRoutes);
 
 app.get("/ping", (req, res) => {
    res.status(200).send("ok");
