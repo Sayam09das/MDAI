@@ -1,55 +1,25 @@
 import mongoose from "mongoose";
 
-const resourceSchema = new mongoose.Schema(
+const lessonSchema = new mongoose.Schema(
     {
         title: {
             type: String,
             required: true,
-            trim: true,
         },
 
-        courseTitle: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true,
-        },
-
-        tags: {
-            type: [String],
-            default: [],
-        },
-
-        // 🔒 ONLY LINK FOR NOW
-        resourceType: {
-            type: String,
-            enum: ["link"],
-            default: "link",
-        },
-
-        externalLink: {
-            type: String,
+        // 🔥 THIS WAS MISSING OR WRONG
+        course: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Course",
             required: true,
         },
 
-        thumbnail: {
-            type: String,
-            default: "",
-        },
-
-        rating: {
-            type: Number,
-            min: 1,
-            max: 5,
-            default: 5,
-        },
-
-        isActive: {
-            type: Boolean,
-            default: true,
-        },
+        date: String,
+        time: String,
+        duration: String,
+        meetLink: String,
     },
     { timestamps: true }
 );
 
-export default mongoose.model("Resource", resourceSchema);
+export default mongoose.model("Lesson", lessonSchema);
