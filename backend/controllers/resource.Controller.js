@@ -5,38 +5,50 @@ import cloudinary from "../config/cloudinary.js";
    CREATE RESOURCE (Teacher)
 ========================= */
 export const createResource = async (req, res) => {
-    try {
-        if (req.user.role !== "teacher") {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        const {
-            title,
-            courseTitle,
-            tags,
-            resourceType,
-            fileUrl,
-            externalLink,
-            fileFormat,
-            thumbnail,
-        } = req.body;
-
-        const resource = await Resource.create({
-            title,
-            courseTitle,
-            tags,
-            resourceType,
-            fileUrl,
-            externalLink,
-            fileFormat,
-            thumbnail,
-        });
-
-        res.status(201).json(resource);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  try {
+    if (req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Access denied" });
     }
+
+    const {
+      title,
+      courseTitle,
+      tags,
+      resourceType,
+      externalLink,
+      fileFormat,
+      thumbnail,
+    } = req.body;
+
+    let fileUrl = "";
+
+    // 🔴 HANDLE FILE UPLOAD
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "auto", // VERY IMPORTANT (pdf, doc, mp3, etc)
+      });
+
+      fileUrl = result.secure_url;
+    }
+
+    const resource = await Resource.create({
+      title,
+      courseTitle,
+      tags,
+      resourceType,
+      fileUrl,
+      externalLink,
+      fileFormat,
+      thumbnail,
+    });
+
+    res.status(201).json(resource);
+  } catch (error) {
+    console.error("CREATE RESOURCE ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
 };
+
 
 /* =========================
    GET ALL RESOURCES (Student + Teacher)
