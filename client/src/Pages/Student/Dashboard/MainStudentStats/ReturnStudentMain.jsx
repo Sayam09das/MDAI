@@ -2,6 +2,7 @@ import React from "react";
 import StuddentMotivation from "./StuddentMotivation";
 import StudentCalendar from "./StudentCalendar";
 import StudentOverview from "./StudentOverview";
+import StudentProfile from "./StudentProfile";
 
 const ReturnStudentMain = () => {
     return (
@@ -17,6 +18,7 @@ const ReturnStudentMain = () => {
 
                 {/* ================= RIGHT COLUMN (25%) ================= */}
                 <div className="w-full md:w-1/4 flex flex-col gap-6">
+                    <StudentProfile />
                     <StudentCalendar />
 
                     <div className="bg-white rounded-xl p-4 shadow text-sm text-gray-700">
