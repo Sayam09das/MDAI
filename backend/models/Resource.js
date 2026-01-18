@@ -26,9 +26,10 @@ const resourceSchema = new mongoose.Schema(
 
         thumbnail: {
             type: String,
-            required: true,
+            required: function () {
+                return this.resourceType !== "link";
+            },
         },
-
         resourceType: {
             type: String,
             enum: ["pdf", "video", "file", "link", "other"],
