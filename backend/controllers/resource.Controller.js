@@ -15,6 +15,7 @@ export const createResource = async (req, res) => {
             externalLink,
         } = req.body;
 
+        // REQUIRED FIELDS ONLY
         if (!title || !courseTitle || !resourceType || !tags) {
             return res.status(400).json({
                 success: false,
@@ -22,25 +23,9 @@ export const createResource = async (req, res) => {
             });
         }
 
-        if (!req.files?.thumbnail) {
-            return res.status(400).json({
-                success: false,
-                message: "Thumbnail is required",
-            });
-        }
-
-        /* ---------- Upload Thumbnail ---------- */
-        const thumbnailUpload = await cloudinary.uploader.upload(
-            req.files.thumbnail[0].path,
-            {
-                folder: "resources/thumbnails",
-                resource_type: "image",
-            }
-        );
-
         let fileUrl = null;
 
-        /* ---------- Upload File (pdf/video/file) ---------- */
+        /* ---------- FILE BASED RESOURCE ---------- */
         if (["pdf", "video", "file"].includes(resourceType)) {
             if (!req.files?.file) {
                 return res.status(400).json({
@@ -60,7 +45,7 @@ export const createResource = async (req, res) => {
             fileUrl = fileUpload.secure_url;
         }
 
-        /* ---------- Link validation ---------- */
+        /* ---------- LINK RESOURCE ---------- */
         if (resourceType === "link" && !externalLink) {
             return res.status(400).json({
                 success: false,
@@ -74,9 +59,9 @@ export const createResource = async (req, res) => {
             resourceType,
             tags: Array.isArray(tags) ? tags : tags.split(","),
             pages: resourceType === "pdf" ? pages : undefined,
-            thumbnail: thumbnailUpload.secure_url,
             fileUrl,
             externalLink: resourceType === "link" ? externalLink : undefined,
+            // ❌ NO thumbnail saved
         });
 
         res.status(201).json({
@@ -92,6 +77,7 @@ export const createResource = async (req, res) => {
         });
     }
 };
+
 
 /* =====================================================
    UPDATE RESOURCE
