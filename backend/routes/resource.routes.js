@@ -1,4 +1,4 @@
-import express from "express";
+import express from "express"; // ✅ FIX
 import upload from "../middlewares/multer.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 

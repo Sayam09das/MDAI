@@ -68,4 +68,9 @@ const resourceSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-export default mongoose.model("Resource", resourceSchema);
+// ✅ FIX HERE
+const Resource =
+    mongoose.models.Resource ||
+    mongoose.model("Resource", resourceSchema);
+
+export default Resource;
