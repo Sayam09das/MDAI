@@ -18,80 +18,84 @@ const TeacherResources = () => {
   });
 
   const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [file, setFile] = useState(null);
+  const [resourceFile, setResourceFile] = useState(null);
 
-  /* ================= FETCH RESOURCES ================= */
+  /* ================= FETCH ================= */
   const fetchResources = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${BACKEND_URL}/api/resource/teacher`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setResources(data.resources || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${BACKEND_URL}/api/resource/teacher`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setResources(data.resources || []);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchResources();
   }, []);
 
-  /* ================= CREATE RESOURCE ================= */
+  /* ================= CREATE ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
 
+    // FRONTEND VALIDATION
+    if (!form.title || !form.courseTitle || !form.tags) {
+      return alert("Title, course title, and tags are required");
+    }
+
+    if (!thumbnailFile && !form.thumbnailUrl) {
+      return alert("Thumbnail (file or URL) is required");
+    }
+
+    if (form.resourceType === "link" && !form.externalLink) {
+      return alert("Resource link is required");
+    }
+
+    if (form.resourceType !== "link" && !resourceFile) {
+      return alert("Resource file is required");
+    }
+
+    setSubmitting(true);
     const token = localStorage.getItem("token");
 
     try {
-      /* ========= LINK → JSON ========= */
-      if (form.resourceType === "link" && !thumbnailFile) {
-        const payload = {
-          title: form.title,
-          courseTitle: form.courseTitle,
-          resourceType: "link",
-          tags: form.tags.split(","),
-          thumbnail: form.thumbnailUrl,
-          externalLink: form.externalLink,
-        };
+      const fd = new FormData();
 
-        const res = await fetch(`${BACKEND_URL}/api/resource`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
+      fd.append("title", form.title);
+      fd.append("courseTitle", form.courseTitle);
+      fd.append("resourceType", form.resourceType);
+      fd.append("tags", form.tags);
 
-        if (!res.ok) throw new Error("Create failed");
+      // thumbnail (file OR url)
+      if (thumbnailFile) {
+        fd.append("thumbnail", thumbnailFile);
+      } else {
+        fd.append("thumbnail", form.thumbnailUrl);
       }
 
-      /* ========= FILE / PDF / VIDEO → FORM-DATA ========= */
-      else {
-        const fd = new FormData();
-        fd.append("title", form.title);
-        fd.append("courseTitle", form.courseTitle);
-        fd.append("resourceType", form.resourceType);
-        fd.append("tags", form.tags);
-        fd.append("thumbnail", thumbnailFile);
-        if (file) fd.append("file", file);
+      // main resource
+      if (form.resourceType === "link") {
+        fd.append("externalLink", form.externalLink);
+      } else {
+        fd.append("file", resourceFile);
+      }
 
-        const res = await fetch(`${BACKEND_URL}/api/resource`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        });
+      const res = await fetch(`${BACKEND_URL}/api/resource`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
 
-        if (!res.ok) throw new Error("Create failed");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message);
       }
 
       await fetchResources();
       setShowForm(false);
+
+      // reset
       setForm({
         title: "",
         courseTitle: "",
@@ -101,9 +105,9 @@ const TeacherResources = () => {
         thumbnailUrl: "",
       });
       setThumbnailFile(null);
-      setFile(null);
+      setResourceFile(null);
     } catch (err) {
-      alert("Failed to create resource");
+      alert(err.message || "Create failed");
     } finally {
       setSubmitting(false);
     }
@@ -112,13 +116,11 @@ const TeacherResources = () => {
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
     if (!confirm("Delete this resource?")) return;
-
     const token = localStorage.getItem("token");
     await fetch(`${BACKEND_URL}/api/resource/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-
     setResources(resources.filter((r) => r._id !== id));
   };
 
@@ -140,7 +142,7 @@ const TeacherResources = () => {
         </div>
       ))}
 
-      {/* ================= FORM MODAL ================= */}
+      {/* FORM */}
       {showForm && (
         <div style={{
           position: "fixed",
@@ -150,7 +152,7 @@ const TeacherResources = () => {
           justifyContent: "center",
           alignItems: "center",
         }}>
-          <form onSubmit={handleSubmit} style={{ background: "#fff", padding: 20, width: 400 }}>
+          <form onSubmit={handleSubmit} style={{ background: "#fff", padding: 20, width: 420 }}>
             <h3>Add Resource</h3>
 
             <input placeholder="Title" required
@@ -178,26 +180,29 @@ const TeacherResources = () => {
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
             />
 
-            {form.resourceType === "link" && (
-              <>
-                <input placeholder="Thumbnail URL"
-                  value={form.thumbnailUrl}
-                  onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
-                  required
-                />
-                <input placeholder="External Link"
-                  value={form.externalLink}
-                  onChange={(e) => setForm({ ...form, externalLink: e.target.value })}
-                  required
-                />
-              </>
-            )}
+            {/* THUMBNAIL */}
+            <p><b>Thumbnail</b></p>
+            <input type="file" onChange={(e) => setThumbnailFile(e.target.files[0])} />
+            <input
+              placeholder="Or thumbnail image URL"
+              value={form.thumbnailUrl}
+              onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
+            />
 
-            {form.resourceType !== "link" && (
-              <>
-                <input type="file" required onChange={(e) => setThumbnailFile(e.target.files[0])} />
-                <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-              </>
+            {/* RESOURCE */}
+            {form.resourceType === "link" ? (
+              <input
+                placeholder="Resource link (externalLink)"
+                value={form.externalLink}
+                onChange={(e) => setForm({ ...form, externalLink: e.target.value })}
+                required
+              />
+            ) : (
+              <input
+                type="file"
+                onChange={(e) => setResourceFile(e.target.files[0])}
+                required
+              />
             )}
 
             <button type="submit" disabled={submitting}>
