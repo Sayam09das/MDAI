@@ -37,7 +37,7 @@ const TeacherResources = () => {
 
     const formData = new FormData(e.target);
 
-    await fetch(`${BACKEND_URL}/api/resource`, {
+    await fetch(`${BACKEND_URL}/api/resource/create`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
