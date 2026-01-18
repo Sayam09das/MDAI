@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const TeacherResources = () => {
+  const [resources, setResources] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+
   const [title, setTitle] = useState("");
   const [courseTitle, setCourseTitle] = useState("");
   const [tags, setTags] = useState("");
@@ -13,13 +16,28 @@ const TeacherResources = () => {
 
   const token = localStorage.getItem("token");
 
+  /* ================= FETCH RESOURCES ================= */
+  const fetchResources = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/resource`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setResources(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  /* ================= CREATE RESOURCE ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!token) {
-      alert("Login required");
-      return;
-    }
 
     if (resourceType !== "link" && !file) {
       alert("Please select a file");
@@ -35,20 +53,13 @@ const TeacherResources = () => {
       formData.append("resourceType", resourceType);
 
       tags.split(",").forEach((tag) => {
-        formData.append("tags", tag.trim());
+        if (tag.trim()) formData.append("tags", tag.trim());
       });
 
       if (resourceType === "link") {
         formData.append("externalLink", externalLink);
       } else {
         formData.append("file", file);
-      }
-
-      // video → mp3 validation (frontend safety)
-      if (resourceType === "video" && !file.type.includes("audio")) {
-        alert("Only MP3 allowed for video");
-        setLoading(false);
-        return;
       }
 
       const res = await fetch(`${BACKEND_URL}/api/resource/create`, {
@@ -60,14 +71,13 @@ const TeacherResources = () => {
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
 
-      if (!res.ok) {
-        throw new Error(data.message || "Upload failed");
-      }
+      // ✅ refresh list & close form
+      await fetchResources();
+      setShowForm(false);
 
-      alert("Resource uploaded successfully");
-
-      // reset
+      // reset form
       setTitle("");
       setCourseTitle("");
       setTags("");
@@ -81,58 +91,103 @@ const TeacherResources = () => {
   };
 
   return (
-    <div style={{ maxWidth: "500px", margin: "auto" }}>
-      <h2>Create Resource</h2>
+    <div style={{ maxWidth: "900px", margin: "auto" }}>
+      <h2>Teacher Resources</h2>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
+      {/* ADD RESOURCE BUTTON */}
+      <button onClick={() => setShowForm(!showForm)}>
+        {showForm ? "Close Form" : "Add Resource"}
+      </button>
 
-        <input
-          type="text"
-          placeholder="Course Title"
-          value={courseTitle}
-          onChange={(e) => setCourseTitle(e.target.value)}
-          required
-        />
-
-        <input
-          type="text"
-          placeholder="Tags (comma separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
-
-        <select
-          value={resourceType}
-          onChange={(e) => setResourceType(e.target.value)}
+      {/* CREATE FORM */}
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            marginTop: "20px",
+            padding: "15px",
+            border: "1px solid #ddd",
+          }}
         >
-          <option value="file">File (PDF / Word / Code)</option>
-          <option value="video">Video (MP3)</option>
-          <option value="link">Link</option>
-        </select>
-
-        {resourceType === "link" ? (
           <input
             type="text"
-            placeholder="External Link"
-            value={externalLink}
-            onChange={(e) => setExternalLink(e.target.value)}
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             required
           />
-        ) : (
-          <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-        )}
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Uploading..." : "Upload Resource"}
-        </button>
-      </form>
+          <input
+            type="text"
+            placeholder="Course Title"
+            value={courseTitle}
+            onChange={(e) => setCourseTitle(e.target.value)}
+            required
+          />
+
+          <input
+            type="text"
+            placeholder="Tags (comma separated)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+
+          <select
+            value={resourceType}
+            onChange={(e) => setResourceType(e.target.value)}
+          >
+            <option value="file">File</option>
+            <option value="video">Video (MP3)</option>
+            <option value="link">Link</option>
+          </select>
+
+          {resourceType === "link" ? (
+            <input
+              type="text"
+              placeholder="External Link"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.target.value)}
+              required
+            />
+          ) : (
+            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+          )}
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Uploading..." : "Submit"}
+          </button>
+        </form>
+      )}
+
+      {/* RESOURCE LIST */}
+      <div style={{ marginTop: "30px" }}>
+        <h3>All Resources</h3>
+
+        {resources.length === 0 && <p>No resources yet</p>}
+
+        {resources.map((r) => (
+          <div
+            key={r._id}
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <h4>{r.title}</h4>
+            <p><b>Course:</b> {r.courseTitle}</p>
+            <p><b>Type:</b> {r.resourceType}</p>
+
+            {r.fileUrl && (
+              <a href={r.fileUrl} target="_blank">Open File</a>
+            )}
+
+            {r.externalLink && (
+              <a href={r.externalLink} target="_blank">Open Link</a>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
