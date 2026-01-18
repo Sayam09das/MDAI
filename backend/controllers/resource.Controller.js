@@ -15,13 +15,9 @@ export const createResource = async (req, res) => {
             externalLink,
         } = req.body;
 
-        const courseData = await Course.findById(course);
-        if (!courseData) {
+        const courseExists = await Course.findById(course);
+        if (!courseExists) {
             return res.status(404).json({ message: "Course not found" });
-        }
-
-        if (courseData.teacher.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not allowed" });
         }
 
         let thumbnailUrl = null;
@@ -60,6 +56,7 @@ export const createResource = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 /* ================= EDIT RESOURCE ================= */
 export const updateResource = async (req, res) => {
@@ -130,27 +127,17 @@ export const deleteResource = async (req, res) => {
 /* ================= GET RESOURCES BY COURSE ================= */
 export const getResourcesByCourse = async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        if (!course) {
-            return res.status(404).json({ message: "Course not found" });
-        }
+        const resources = await Resource.find({
+            course: req.params.courseId,
+            isActive: true,
+        }).sort({ createdAt: -1 });
 
-        let filter = { course: req.params.courseId };
-
-        if (req.user.role !== "teacher") {
-            filter.isActive = true;
-        } else {
-            if (course.teacher.toString() !== req.user._id.toString()) {
-                filter.isActive = true;
-            }
-        }
-
-        const resources = await Resource.find(filter).sort({ createdAt: -1 });
         res.json(resources);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 /* ================= GET SINGLE RESOURCE ================= */
 export const getResourceById = async (req, res) => {

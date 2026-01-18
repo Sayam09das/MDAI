@@ -5,7 +5,7 @@ import {
     deleteResource,
     getResourcesByCourse,
     getResourceById,
-} from "../controllers/resourceController.js";
+} from "../controllers/resource.Controller.js";
 
 import upload from "../middlewares/multer.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
