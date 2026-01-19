@@ -10,14 +10,14 @@ export const createResource = async (req, res) => {
       description,
       courseTitle,
       teacherName,
-      thumbnail, // ✅ URL from body
       driveLink,
       resourceType,
     } = req.body;
 
-    if (!thumbnail) {
+    // 🔥 FIX: accept thumbnail from FILE
+    if (!req.file || !req.file.path) {
       return res.status(400).json({
-        message: "Thumbnail image URL is required",
+        message: "Thumbnail image is required",
       });
     }
 
@@ -26,7 +26,7 @@ export const createResource = async (req, res) => {
       description,
       courseTitle,
       teacherName,
-      thumbnail, // ✅ save URL directly
+      thumbnail: req.file.path, // ✅ Cloudinary URL
       driveLink,
       resourceType,
     });
@@ -36,7 +36,7 @@ export const createResource = async (req, res) => {
       resource,
     });
   } catch (error) {
-    console.error(error);
+    console.error("CREATE RESOURCE ERROR:", error);
     res.status(500).json({ message: "Failed to create resource" });
   }
 };
@@ -45,45 +45,45 @@ export const createResource = async (req, res) => {
    UPDATE RESOURCE (TEACHER)
 ===================================================== */
 export const updateResource = async (req, res) => {
-    try {
-        const resource = await Resource.findById(req.params.id);
-
-        if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
-        }
-
-        const {
-            title,
-            description,
-            courseTitle,
-            teacherName,
-            driveLink,
-            resourceType,
-        } = req.body;
-
-        resource.title = title ?? resource.title;
-        resource.description = description ?? resource.description;
-        resource.courseTitle = courseTitle ?? resource.courseTitle;
-        resource.teacherName = teacherName ?? resource.teacherName;
-        resource.driveLink = driveLink ?? resource.driveLink;
-        resource.resourceType = resourceType ?? resource.resourceType;
-
-        /* ===== Update thumbnail ONLY if new one uploaded ===== */
-        if (req.file && req.file.path) {
-            resource.thumbnail = req.file.path; // ✅ Cloudinary URL
-        }
-
-        await resource.save();
-
-        res.json({
-            message: "Resource updated successfully",
-            resource,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Failed to update resource" });
+  try {
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found" });
     }
+
+    const {
+      title,
+      description,
+      courseTitle,
+      teacherName,
+      driveLink,
+      resourceType,
+    } = req.body;
+
+    resource.title = title ?? resource.title;
+    resource.description = description ?? resource.description;
+    resource.courseTitle = courseTitle ?? resource.courseTitle;
+    resource.teacherName = teacherName ?? resource.teacherName;
+    resource.driveLink = driveLink ?? resource.driveLink;
+    resource.resourceType = resourceType ?? resource.resourceType;
+
+    // 🔥 FIX: thumbnail optional on edit
+    if (req.file?.path) {
+      resource.thumbnail = req.file.path;
+    }
+
+    await resource.save();
+
+    res.json({
+      message: "Resource updated successfully",
+      resource,
+    });
+  } catch (error) {
+    console.error("UPDATE RESOURCE ERROR:", error);
+    res.status(500).json({ message: "Failed to update resource" });
+  }
 };
+
 
 /* =====================================================
    DELETE RESOURCE (TEACHER)
