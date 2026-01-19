@@ -1,4 +1,4 @@
-import Resource from "../models/Resource.js";
+import Resource from "../models/ResourceModel.js";
 
 /* =====================================================
    CREATE RESOURCE (TEACHER)
