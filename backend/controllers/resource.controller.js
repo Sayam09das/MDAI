@@ -4,40 +4,41 @@ import Resource from "../models/ResourceModel.js";
    CREATE RESOURCE (TEACHER)
 ===================================================== */
 export const createResource = async (req, res) => {
-    try {
-        const {
-            title,
-            description,
-            courseTitle,
-            teacherName,
-            driveLink,
-            resourceType,
-        } = req.body;
+  try {
+    const {
+      title,
+      description,
+      courseTitle,
+      teacherName,
+      thumbnail, // ✅ URL from body
+      driveLink,
+      resourceType,
+    } = req.body;
 
-        if (!req.file || !req.file.path) {
-            return res.status(400).json({
-                message: "Thumbnail image is required",
-            });
-        }
-
-        const resource = await Resource.create({
-            title,
-            description,
-            courseTitle,
-            teacherName,
-            thumbnail: req.file.path, // ✅ already Cloudinary URL
-            driveLink,
-            resourceType,
-        });
-
-        res.status(201).json({
-            message: "Resource created successfully",
-            resource,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Failed to create resource" });
+    if (!thumbnail) {
+      return res.status(400).json({
+        message: "Thumbnail image URL is required",
+      });
     }
+
+    const resource = await Resource.create({
+      title,
+      description,
+      courseTitle,
+      teacherName,
+      thumbnail, // ✅ save URL directly
+      driveLink,
+      resourceType,
+    });
+
+    res.status(201).json({
+      message: "Resource created successfully",
+      resource,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to create resource" });
+  }
 };
 
 /* =====================================================
