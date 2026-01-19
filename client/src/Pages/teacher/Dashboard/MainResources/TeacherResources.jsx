@@ -13,15 +13,18 @@ const TeacherResources = () => {
     description: "",
     courseTitle: "",
     teacherName: "",
-    thumbnail: "",
     driveLink: "",
     resourceType: "pdf",
   });
+
+  const [thumbnail, setThumbnail] = useState(null);
 
   const token = localStorage.getItem("token");
 
   /* ================= FETCH TEACHER RESOURCES ================= */
   const fetchResources = async () => {
+    if (!formData.teacherName) return;
+
     try {
       setLoading(true);
       const res = await fetch(
@@ -41,14 +44,23 @@ const TeacherResources = () => {
     }
   };
 
-  /* ================= HANDLE INPUT ================= */
+  /* ================= HANDLE TEXT INPUT ================= */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  /* ================= CREATE / UPDATE ================= */
+  /* ================= SUBMIT (CREATE / UPDATE) ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const fd = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      fd.append(key, value);
+    });
+
+    if (thumbnail) {
+      fd.append("thumbnail", thumbnail); // 🔥 FILE UPLOAD
+    }
 
     try {
       const method = editingId ? "PUT" : "POST";
@@ -59,31 +71,29 @@ const TeacherResources = () => {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // ❌ DO NOT SET Content-Type
         },
-        body: JSON.stringify(formData),
+        body: fd,
       });
 
       if (!res.ok) throw new Error("Failed");
 
-      // refresh + close form
       await fetchResources();
       setShowForm(false);
       setEditingId(null);
+      setThumbnail(null);
 
-      // reset form
       setFormData({
         title: "",
         description: "",
         courseTitle: "",
         teacherName: formData.teacherName,
-        thumbnail: "",
         driveLink: "",
         resourceType: "pdf",
       });
     } catch (err) {
-      alert("Something went wrong");
+      alert("Failed to save resource");
     }
   };
 
@@ -91,23 +101,27 @@ const TeacherResources = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this resource?")) return;
 
-    try {
-      await fetch(`${BACKEND_URL}/api/resource/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      fetchResources();
-    } catch (err) {
-      alert("Delete failed");
-    }
+    await fetch(`${BACKEND_URL}/api/resource/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    fetchResources();
   };
 
   /* ================= EDIT ================= */
-  const handleEdit = (resource) => {
-    setFormData(resource);
-    setEditingId(resource._id);
+  const handleEdit = (r) => {
+    setFormData({
+      title: r.title,
+      description: r.description,
+      courseTitle: r.courseTitle,
+      teacherName: r.teacherName,
+      driveLink: r.driveLink,
+      resourceType: r.resourceType,
+    });
+    setEditingId(r._id);
     setShowForm(true);
   };
 
@@ -115,10 +129,9 @@ const TeacherResources = () => {
     <div style={{ padding: "20px" }}>
       <h2>Teacher Resources</h2>
 
-      {/* ADD BUTTON */}
       <button onClick={() => setShowForm(true)}>➕ Add Resource</button>
 
-      {/* FORM OVERLAY */}
+      {/* FORM MODAL */}
       {showForm && (
         <div style={overlayStyle}>
           <form style={formStyle} onSubmit={handleSubmit}>
@@ -128,8 +141,15 @@ const TeacherResources = () => {
             <textarea name="description" placeholder="Description" onChange={handleChange} value={formData.description} required />
             <input name="courseTitle" placeholder="Course Title" onChange={handleChange} value={formData.courseTitle} required />
             <input name="teacherName" placeholder="Teacher Name" onChange={handleChange} value={formData.teacherName} required />
-            <input name="thumbnail" placeholder="Thumbnail URL" onChange={handleChange} value={formData.thumbnail} required />
             <input name="driveLink" placeholder="Drive Link" onChange={handleChange} value={formData.driveLink} required />
+
+            {/* 🔥 FILE INPUT */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setThumbnail(e.target.files[0])}
+              required={!editingId}
+            />
 
             <select name="resourceType" onChange={handleChange} value={formData.resourceType}>
               <option value="pdf">PDF</option>
@@ -138,7 +158,7 @@ const TeacherResources = () => {
               <option value="notes">Notes</option>
             </select>
 
-            <div style={{ marginTop: "10px" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button type="submit">Save</button>
               <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
@@ -146,23 +166,21 @@ const TeacherResources = () => {
         </div>
       )}
 
-      {/* RESOURCE LIST */}
+      {/* LIST */}
       {loading ? (
         <p>Loading...</p>
       ) : resources.length === 0 ? (
         <p>No resources found</p>
       ) : (
-        <div style={{ marginTop: "20px" }}>
-          {resources.map((r) => (
-            <div key={r._id} style={cardStyle}>
-              <img src={r.thumbnail} alt="" style={{ width: "100%" }} />
-              <h4>{r.title}</h4>
-              <p>{r.courseTitle}</p>
-              <button onClick={() => handleEdit(r)}>Edit</button>
-              <button onClick={() => handleDelete(r._id)}>Delete</button>
-            </div>
-          ))}
-        </div>
+        resources.map((r) => (
+          <div key={r._id} style={cardStyle}>
+            <img src={r.thumbnail} alt="" width="100%" />
+            <h4>{r.title}</h4>
+            <p>{r.courseTitle}</p>
+            <button onClick={() => handleEdit(r)}>Edit</button>
+            <button onClick={() => handleDelete(r._id)}>Delete</button>
+          </div>
+        ))
       )}
     </div>
   );
@@ -171,10 +189,7 @@ const TeacherResources = () => {
 /* ================= STYLES ================= */
 const overlayStyle = {
   position: "fixed",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
+  inset: 0,
   background: "rgba(0,0,0,0.5)",
   display: "flex",
   justifyContent: "center",
@@ -184,7 +199,7 @@ const overlayStyle = {
 const formStyle = {
   background: "#fff",
   padding: "20px",
-  width: "400px",
+  width: "420px",
   display: "flex",
   flexDirection: "column",
   gap: "10px",
@@ -193,7 +208,7 @@ const formStyle = {
 const cardStyle = {
   border: "1px solid #ccc",
   padding: "10px",
-  marginBottom: "10px",
+  marginTop: "10px",
 };
 
 export default TeacherResources;
