@@ -1,4 +1,5 @@
 import Resource from "../models/ResourceModel.js";
+import cloudinary from "../config/cloudinary.js";
 
 /* =====================================================
    CREATE RESOURCE (TEACHER)
