@@ -50,15 +50,14 @@ const resourceSchema = new mongoose.Schema(
         /* ================= DRIVE LINK ================= */
         driveLink: {
             type: String,
-            required: [true, "Google Drive link is required"],
+            required: [true, "Drive link is required"],
             trim: true,
-            validate: {
-                validator: function (v) {
-                    return /^https?:\/\/(www\.)?drive\.google\.com\/.+/.test(v);
-                },
-                message: "Please provide a valid Google Drive link",
-            },
+            match: [
+                /^(https?:\/\/)(www\.)?.+/,
+                "Please provide a valid URL",
+            ],
         },
+
 
         /* ================= RESOURCE TYPE ================= */
         resourceType: {
