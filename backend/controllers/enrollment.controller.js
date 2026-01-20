@@ -78,3 +78,48 @@ export const getMyEnrollments = async (req, res) => {
         });
     }
 };
+
+
+/* ===============================
+   TEACHER: GET ENROLLED STUDENTS OF A COURSE
+================================ */
+export const getCourseEnrollmentsForTeacher = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const teacherId = req.user.id;
+
+        // ✅ 1. CHECK COURSE EXISTS & BELONGS TO TEACHER
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: "Course not found",
+            });
+        }
+
+        if (course.teacher.toString() !== teacherId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        // ✅ 2. GET ENROLLMENTS FOR THIS COURSE
+        const enrollments = await Enrollment.find({
+            course: courseId,
+        })
+            .populate("student", "name email")
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            enrollments,
+        });
+    } catch (error) {
+        console.error("Get Course Enrollments Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
