@@ -1,5 +1,5 @@
 import express from "express";
-import { enrollCourse, getMyEnrollments,getCourseEnrollmentsForTeacher } from "../controllers/enrollment.controller.js";
+import { enrollCourse, getMyEnrollments } from "../controllers/enrollment.controller.js";
 import { protect, userOnly } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
