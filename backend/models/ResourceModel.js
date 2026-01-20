@@ -35,10 +35,16 @@ const resourceSchema = new mongoose.Schema(
         },
 
         /* ================= THUMBNAIL IMAGE ================= */
+        // ✅ Cloudinary image data
         thumbnail: {
-            type: String, // Cloudinary URL / Image URL
-            required: [true, "Thumbnail image is required"],
-            trim: true,
+            public_id: {
+                type: String,
+                required: true,
+            },
+            url: {
+                type: String,
+                required: true,
+            },
         },
 
         /* ================= DRIVE LINK ================= */
