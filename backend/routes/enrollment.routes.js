@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.post("/:courseId", protect, userOnly, enrollCourse);
 router.get("/my-courses", protect, userOnly, getMyEnrollments);
-router.get("/teacher/course/:courseId",protect,teacherOnly,getCourseEnrollmentsForTeacher);
+// router.get("/teacher/course/:courseId",protect,teacherOnly,getCourseEnrollmentsForTeacher);
 
 export default router;
