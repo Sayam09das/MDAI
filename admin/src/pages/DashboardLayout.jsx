@@ -21,26 +21,82 @@ import {
     ChevronRight
 } from 'lucide-react';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+
 // Navbar Component
 const Navbar = ({ onMenuClick, currentPage, isDarkMode, setIsDarkMode }) => {
+    const [adminProfile, setAdminProfile] = useState(null);
+    const [profileLoading, setProfileLoading] = useState(true);
     const logoUrl = import.meta.env.VITE_LOGO_URL;
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [notificationCount] = useState(3);
     const profileRef = useRef(null);
-
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
+        const fetchAdminProfile = async () => {
+            try {
+                const token = localStorage.getItem("adminToken");
+
+                if (!token) return;
+
+                const res = await fetch(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/admin/profile`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch admin profile");
+                }
+
+                const data = await res.json();
+                setAdminProfile(data.admin);
+            } catch (err) {
+                console.error("PROFILE FETCH ERROR:", err.message);
+            } finally {
+                setProfileLoading(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        fetchAdminProfile();
     }, []);
 
-    const handleLogout = () => {
-        console.log('Logging out...');
+
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem("adminToken");
+
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/logout`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.error("LOGOUT ERROR:", err.message);
+        } finally {
+            // ✅ Always clear token (even if API fails)
+            localStorage.removeItem("adminToken");
+
+            // ✅ Redirect to login
+            window.location.href = "/login";
+        }
     };
+
 
     return (
         <nav className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
@@ -108,10 +164,22 @@ const Navbar = ({ onMenuClick, currentPage, isDarkMode, setIsDarkMode }) => {
                                 className="flex items-center space-x-2 p-2 pr-3 hover:bg-slate-100 rounded-lg transition-colors"
                             >
                                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                    AD
+                                    {profileLoading
+                                        ? "..."
+                                        : adminProfile?.name
+                                            ?.split(" ")
+                                            .map(word => word[0])
+                                            .join("")
+                                            .slice(0, 2)
+                                            .toUpperCase() || "AD"}
                                 </div>
-                                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+
+                                <ChevronDown
+                                    className={`w-4 h-4 text-slate-500 transition-transform ${isProfileOpen ? "rotate-180" : ""
+                                        }`}
+                                />
                             </button>
+
 
                             <AnimatePresence>
                                 {isProfileOpen && (
