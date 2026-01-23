@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Shield, Lock, Mail, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 
 const Login = () => {
+    const navigate = useNavigate();
     const logoUrl = import.meta.env.VITE_LOGO_URL;
     const [formData, setFormData] = useState({
         email: '',
@@ -50,11 +52,8 @@ const Login = () => {
 
     // Handle form submission
     const handleSubmit = async (e) => {
-        if (e && e.preventDefault) {
-            e.preventDefault();
-        }
+        e.preventDefault();
 
-        // Validate all fields
         const emailError = validateEmail(formData.email);
         const passwordError = validatePassword(formData.password);
 
@@ -67,36 +66,50 @@ const Login = () => {
         }
 
         setIsLoading(true);
-        setError('');
+        setError("");
 
         try {
-            // Simulate API call - Replace with actual authentication
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const res = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email: formData.email.trim(),
+                        password: formData.password.trim(),
+                    }),
+                }
+            );
 
-            // Example: Simulated error for demo
-            // In production, replace with actual API call
-            const mockAuth = Math.random() > 0.5;
+            const data = await res.json();
 
-            if (!mockAuth) {
-                throw new Error('Invalid credentials');
+            if (!res.ok) {
+                throw new Error(data.message || "Login failed");
             }
 
-            // On success, redirect or set auth token
-            console.log('Login successful');
-            // window.location.href = '/admin/dashboard';
+            // ✅ Store token (temporary — httpOnly cookie is better later)
+            localStorage.setItem("adminToken", data.token);
+
+            // ✅ Redirect to dashboard
+            navigate("/admin/dashboard");
 
         } catch (err) {
-            if (err.message === 'Invalid credentials') {
-                setError('Invalid email or password. Please try again.');
-            } else if (err.message.includes('Network')) {
-                setError('Network error. Please check your connection and try again.');
+            console.error("LOGIN ERROR:", err.message);
+
+            if (err.message.includes("Invalid")) {
+                setError("Invalid email or password.");
+            } else if (err.message.includes("Network")) {
+                setError("Network error. Please try again.");
             } else {
-                setError('An error occurred. Please try again later.');
+                setError(err.message || "Something went wrong.");
             }
         } finally {
             setIsLoading(false);
         }
     };
+
 
     const cardVariants = {
         hidden: { opacity: 0, y: 20 },

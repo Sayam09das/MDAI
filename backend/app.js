@@ -24,6 +24,7 @@ const app = express();
 app.use(cors({
    origin: [
       "https://mdai-self.vercel.app",
+      "https://mdai-admin.vercel.app"
    ],
    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"],
    credentials: true,
