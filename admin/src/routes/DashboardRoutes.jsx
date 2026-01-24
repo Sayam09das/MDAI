@@ -12,7 +12,7 @@ const DashboardRoutes = () => {
                 <Route path="/admin" element={<DashboardLayout />}>
                     <Route path="dashboard" element={<ReturnDashboard />} />
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />
-                    <Route path="dashboard/user/students" element={<ReturnDashboardStudent />} />
+                    <Route path="dashboard/students" element={<ReturnDashboardStudent />} />
                 </Route>
             </Route>
         </Routes>
