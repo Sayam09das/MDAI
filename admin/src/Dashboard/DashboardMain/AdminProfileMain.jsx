@@ -110,7 +110,7 @@ const AdminProfileMain = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6">
+        <div className="bg-slate-50 p-6">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Welcome Card */}
                 <div className="relative bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-500 rounded-2xl shadow-xl overflow-hidden">
