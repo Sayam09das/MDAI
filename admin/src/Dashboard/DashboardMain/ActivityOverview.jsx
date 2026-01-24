@@ -279,15 +279,6 @@ const ActivityOverview = () => {
             >
                 {/* Breadcrumb & Header */}
                 <motion.div variants={itemVariants}>
-                    {/* Breadcrumb */}
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 mb-3">
-                        <Home className="w-4 h-4" />
-                        <ChevronRight className="w-4 h-4" />
-                        <span className="text-slate-600">Dashboard</span>
-                        <ChevronRight className="w-4 h-4" />
-                        <span className="text-indigo-600 font-medium">Activity Overview</span>
-                    </div>
-
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>

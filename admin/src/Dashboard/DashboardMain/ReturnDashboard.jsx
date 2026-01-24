@@ -6,15 +6,15 @@ import QuickActions from './QuickActions'
 import AdminProfileMain from './AdminProfileMain'
 
 const ReturnDashboard = () => {
-  return (
-    <div>
-        <DashboardOverview />
-        <ActivityOverview />
-        <RecentActivity />
-        <QuickActions />
-        <AdminProfileMain />
-    </div>
-  )
+    return (
+        <div>
+            <AdminProfileMain />
+            <DashboardOverview />
+            <ActivityOverview />
+            <RecentActivity />
+            <QuickActions />
+        </div>
+    )
 }
 
 export default ReturnDashboard

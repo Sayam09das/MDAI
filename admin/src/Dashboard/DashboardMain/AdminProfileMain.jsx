@@ -112,18 +112,6 @@ const AdminProfileMain = () => {
     return (
         <div className="min-h-screen bg-slate-50 p-6">
             <div className="max-w-4xl mx-auto space-y-6">
-
-                {/* Breadcrumb */}
-                <div className="flex items-center space-x-2 text-sm text-slate-600">
-                    <Home className="w-4 h-4" />
-                    <ChevronRight className="w-4 h-4" />
-                    <span>Dashboard</span>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-indigo-600 font-medium">
-                        Admin Profile
-                    </span>
-                </div>
-
                 {/* Welcome Card */}
                 <div className="relative bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-500 rounded-2xl shadow-xl overflow-hidden">
                     <div className="p-10">
