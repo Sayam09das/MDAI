@@ -26,8 +26,12 @@ import {
     Home
 } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+
 /* ===================== NAVBAR ===================== */
 const Navbar = ({ onMenuClick, currentPage }) => {
+    const logoUrl = import.meta.env.VITE_LOGO_URL;
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [notificationCount] = useState(3);
@@ -45,9 +49,55 @@ const Navbar = ({ onMenuClick, currentPage }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleLogout = () => {
-        console.log("Logging out...");
-        // Add logout logic here
+    useEffect(() => {
+        const fetchAdminProfile = async () => {
+            try {
+                const token = localStorage.getItem("adminToken");
+                if (!token) return;
+
+                const res = await fetch(
+                    `${BACKEND_URL}/api/admin/profile`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const data = await res.json();
+                setAdminProfile(data.admin);
+            } catch (err) {
+                console.error("ADMIN PROFILE ERROR:", err);
+            } finally {
+                setProfileLoading(false);
+            }
+        };
+
+        fetchAdminProfile();
+    }, []);
+
+
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem("adminToken");
+
+            if (token) {
+                await fetch(
+                    "https://mdai-0jhi.onrender.com/api/admin/logout",
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+            }
+        } catch (err) {
+            console.error("LOGOUT ERROR:", err);
+        } finally {
+            localStorage.removeItem("adminToken");
+            navigate("/login");
+        }
     };
 
     return (
@@ -68,9 +118,18 @@ const Navbar = ({ onMenuClick, currentPage }) => {
 
                     {/* Logo - Hidden on mobile when page title shows */}
                     <div className="hidden sm:flex items-center gap-2">
-                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
-                            <span className="text-white font-bold text-sm">M</span>
-                        </div>
+                        <a
+                            href="/"
+                            className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-md"
+                        >
+                            <img
+                                src={logoUrl || "/logo.png"}
+                                alt="MDAI Logo"
+                                className="w-full h-full object-contain"
+                                loading="lazy"
+                            />
+                        </a>
+
                         <div className="hidden lg:block">
                             <div className="text-sm font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
                                 MDAI
@@ -135,6 +194,7 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                     </motion.button>
 
                     {/* Profile Dropdown */}
+                    {/* Profile Dropdown */}
                     <div className="relative" ref={profileRef}>
                         <motion.button
                             whileHover={{ scale: 1.02 }}
@@ -144,8 +204,16 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                             aria-label="User menu"
                         >
                             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-500 text-white rounded-full flex items-center justify-center font-semibold text-sm shadow-md">
-                                AD
+                                {profileLoading
+                                    ? "..."
+                                    : adminProfile?.name
+                                        ?.split(" ")
+                                        .map(w => w[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase() || "AD"}
                             </div>
+
                             <motion.div
                                 animate={{ rotate: isProfileOpen ? 180 : 0 }}
                                 transition={{ duration: 0.2 }}
@@ -163,15 +231,21 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                                     transition={{ duration: 0.15 }}
                                     className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"
                                 >
+                                    {/* Header */}
                                     <div className="p-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-slate-100">
-                                        <div className="font-semibold text-slate-900 text-sm">Admin User</div>
-                                        <div className="text-xs text-slate-500">admin@mdai.com</div>
+                                        <div className="font-semibold text-slate-900 text-sm">
+                                            {profileLoading ? "Loading..." : adminProfile?.name || "Admin"}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                            {profileLoading ? "" : adminProfile?.email || ""}
+                                        </div>
                                     </div>
 
+                                    {/* Actions */}
                                     <div className="py-2">
                                         <button
                                             onClick={() => {
-                                                navigate('/admin/profile');
+                                                navigate("/admin/profile");
                                                 setIsProfileOpen(false);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -179,9 +253,10 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                                             <User className="w-4 h-4" />
                                             <span>Profile</span>
                                         </button>
+
                                         <button
                                             onClick={() => {
-                                                navigate('/admin/settings');
+                                                navigate("/admin/settings");
                                                 setIsProfileOpen(false);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -191,6 +266,7 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                                         </button>
                                     </div>
 
+                                    {/* Logout */}
                                     <div className="py-2 border-t border-slate-100">
                                         <button
                                             onClick={handleLogout}
@@ -204,6 +280,7 @@ const Navbar = ({ onMenuClick, currentPage }) => {
                             )}
                         </AnimatePresence>
                     </div>
+
                 </div>
             </div>
 
@@ -328,9 +405,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         </div>
                         {!isCollapsed && (
                             <div>
-                                <h2 className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                                    MDAI
-                                </h2>
+                                <h1 className="text-xl font-bold text-slate-900">MDAI</h1>
                                 <p className="text-xs text-slate-500">Admin Panel</p>
                             </div>
                         )}
