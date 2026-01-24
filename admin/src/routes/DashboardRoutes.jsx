@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import ReturnDashboard from "../Dashboard/DashboardMain/ReturnDashboard";
 import DashboardLayout from "../pages/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import ReturnDashboardUser from "../Dashboard/DashboardUser/ReturnDashboardUser";
 
 const DashboardRoutes = () => {
     return (
@@ -10,6 +11,7 @@ const DashboardRoutes = () => {
             <Route element={<ProtectedRoute />}>
                 <Route path="/admin" element={<DashboardLayout />}>
                     <Route path="dashboard" element={<ReturnDashboard />} />
+                    <Route path="dashboard/user" element={<ReturnDashboardUser />} />
                 </Route>
             </Route>
         </Routes>

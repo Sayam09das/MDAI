@@ -21,6 +21,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import ReturnDashboard from '../Dashboard/DashboardMain/ReturnDashboard';
+import ReturnDashboardUser from '../Dashboard/DashboardUser/ReturnDashboardUser';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -427,6 +428,9 @@ const DashboardLayout = () => {
                 {/* PAGE CONTENT */}
                 <div className="p-6">
                     <ReturnDashboard />
+                </div>
+                <div className="p-6">
+                    <ReturnDashboardUser />
                 </div>
             </main>
         </div>
