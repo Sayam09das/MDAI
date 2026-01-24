@@ -32,6 +32,24 @@ const Navbar = ({ onMenuClick, currentPage, isDarkMode, setIsDarkMode }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [notificationCount] = useState(3);
     const profileRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                profileRef.current &&
+                !profileRef.current.contains(event.target)
+            ) {
+                setIsProfileOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     useEffect(() => {
         const fetchAdminProfile = async () => {
             try {
