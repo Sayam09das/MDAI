@@ -1,10 +1,10 @@
 import React from 'react'
-import DashboardUser from './DashboardUser'
+import StudentAnalytics from './StudentAnalytics'
 
 const ReturnDashboardUser = () => {
   return (
     <div>
-        <DashboardUser />
+        <StudentAnalytics />
     </div>
   )
 }
