@@ -176,13 +176,6 @@ const DashboardOverview = () => {
             >
                 {/* Breadcrumb & Header */}
                 <motion.div variants={itemVariants}>
-                    {/* Breadcrumb */}
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 mb-3">
-                        <Home className="w-4 h-4" />
-                        <ChevronRight className="w-4 h-4" />
-                        <span className="text-indigo-600 font-medium">Dashboard</span>
-                    </div>
-
                     {/* Page Header */}
                     <div className="mb-6">
                         <h1 className="text-3xl font-bold text-slate-900 mb-2">
