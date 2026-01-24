@@ -3,6 +3,7 @@ import DashboardLayout from "../pages/DashboardLayout";
 import ReturnDashboard from "../Dashboard/DashboardMain/ReturnDashboard";
 import ReturnDashboardUser from "../Dashboard/DashboardUser/ReturnDashboardUser";
 import ProtectedRoute from "./ProtectedRoute";
+import ReturnDashboardStudent from "../Dashboard/DashboardStudent/ReturnDashboardStudent";
 
 const DashboardRoutes = () => {
     return (
@@ -11,6 +12,7 @@ const DashboardRoutes = () => {
                 <Route path="/admin" element={<DashboardLayout />}>
                     <Route path="dashboard" element={<ReturnDashboard />} />
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />
+                    <Route path="dashboard/user/students" element={<ReturnDashboardStudent />} />
                 </Route>
             </Route>
         </Routes>
