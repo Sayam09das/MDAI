@@ -383,6 +383,13 @@ const DashboardLayout = () => {
     const [currentRoute, setCurrentRoute] = useState('/dashboard');
     const [isDarkMode, setIsDarkMode] = useState(false);
 
+    const sidebarWidth =
+        window.innerWidth >= 768
+            ? isCollapsed
+                ? '80px'
+                : '280px'
+            : '0px';
+
     const pageNames = {
         '/dashboard': 'Dashboard',
         '/users': 'Users',
@@ -405,11 +412,10 @@ const DashboardLayout = () => {
                 setIsCollapsed={setIsCollapsed}
             />
 
-            <div
-                className="transition-all duration-300"
-                style={{
-                    marginLeft: window.innerWidth >= 768 ? (isCollapsed ? '80px' : '280px') : '0'
-                }}
+            {/* MAIN CONTENT AREA */}
+            <main
+                className="transition-all duration-300 min-h-screen"
+                style={{ marginLeft: sidebarWidth }}
             >
                 <Navbar
                     onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -417,9 +423,12 @@ const DashboardLayout = () => {
                     isDarkMode={isDarkMode}
                     setIsDarkMode={setIsDarkMode}
                 />
-            </div>
 
-            <ReturnDashboard />
+                {/* PAGE CONTENT */}
+                <div className="p-6">
+                    <ReturnDashboard />
+                </div>
+            </main>
         </div>
     );
 };
