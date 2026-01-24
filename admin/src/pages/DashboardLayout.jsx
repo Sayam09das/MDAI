@@ -20,6 +20,7 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
+import ReturnDashboard from '../Dashboard/DashboardMain/ReturnDashboard';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -416,30 +417,9 @@ const DashboardLayout = () => {
                     isDarkMode={isDarkMode}
                     setIsDarkMode={setIsDarkMode}
                 />
-
-                <main className="p-4 sm:p-6 lg:p-8">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-4">
-                                Welcome to {pageNames[currentRoute]}
-                            </h2>
-                            <p className="text-slate-600">
-                                This is your {pageNames[currentRoute].toLowerCase()} page content. The sidebar and navbar are fully integrated and responsive across all devices.
-                            </p>
-
-                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {[1, 2, 3, 4, 5, 6].map((item) => (
-                                    <div key={item} className="p-6 bg-gradient-to-br from-indigo-50 to-cyan-50 rounded-lg border border-indigo-100">
-                                        <div className="text-sm font-semibold text-indigo-600 mb-2">Card {item}</div>
-                                        <div className="text-2xl font-bold text-slate-800">{Math.floor(Math.random() * 1000)}</div>
-                                        <div className="text-xs text-slate-500 mt-1">Sample data</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </main>
             </div>
+
+            <ReturnDashboard />
         </div>
     );
 };
