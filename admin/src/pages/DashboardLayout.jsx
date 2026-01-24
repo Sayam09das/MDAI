@@ -494,29 +494,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         );
                     })}
                 </nav>
-
-                {/* User Section */}
-                <div className="p-4 border-t border-slate-200">
-                    <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
-                            AD
-                        </div>
-                        {!isCollapsed && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex-1 min-w-0"
-                            >
-                                <div className="text-sm font-semibold text-slate-900 truncate">
-                                    Admin User
-                                </div>
-                                <div className="text-xs text-slate-500 truncate">
-                                    Administrator
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
-                </div>
             </motion.aside>
         </>
     );
