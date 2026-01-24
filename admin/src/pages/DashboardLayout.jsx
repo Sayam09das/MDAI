@@ -36,6 +36,8 @@ const Navbar = ({ onMenuClick, currentPage }) => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [notificationCount] = useState(3);
     const [searchOpen, setSearchOpen] = useState(false);
+    const [adminProfile, setAdminProfile] = useState(null);
+    const [profileLoading, setProfileLoading] = useState(true);
     const profileRef = useRef(null);
     const navigate = useNavigate();
 
@@ -96,7 +98,7 @@ const Navbar = ({ onMenuClick, currentPage }) => {
             console.error("LOGOUT ERROR:", err);
         } finally {
             localStorage.removeItem("adminToken");
-            navigate("/login");
+            navigate("/");
         }
     };
 
