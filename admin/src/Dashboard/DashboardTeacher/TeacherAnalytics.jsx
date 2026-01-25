@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
     Users,
     UserCheck,
@@ -206,6 +207,7 @@ const TeacherAnalytics = () => {
             {/* Page Header */}
             <div className="bg-white border-b border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
                     {/* Breadcrumb */}
                     <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-4">
                         <Home className="w-4 h-4" />
@@ -215,15 +217,30 @@ const TeacherAnalytics = () => {
                         <span>Teachers</span>
                     </nav>
 
-                    {/* Title */}
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Teacher Analytics</h1>
-                        <p className="mt-2 text-slate-600">
-                            Track teacher engagement, course activity, and platform impact.
-                        </p>
+                    {/* Title + Action */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-slate-900">
+                                Teacher Analytics
+                            </h1>
+                            <p className="mt-2 text-slate-600">
+                                Track teacher engagement, course activity, and platform impact.
+                            </p>
+                        </div>
+
+                        {/* 🔥 Add Teacher Button */}
+                        <button
+                            onClick={() => navigate("/admin/dashboard/create/teacher")}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow transition"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Add Teacher
+                        </button>
                     </div>
+
                 </div>
             </div>
+
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
