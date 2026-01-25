@@ -950,11 +950,11 @@ const ProfileModal = ({ teacher, onClose }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="p-6">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="p-6 border-b border-slate-200 shrink-0">
+                        <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-slate-900">Teacher Profile</h2>
                             <button
                                 onClick={onClose}
@@ -963,9 +963,10 @@ const ProfileModal = ({ teacher, onClose }) => {
                                 <X className="w-5 h-5 text-slate-600" />
                             </button>
                         </div>
+                    </div>
 
+                    <div className="p-6 overflow-y-auto flex-1">
                         <div className="space-y-6">
-                            {/* Profile Image */}
                             <div className="flex items-center space-x-4">
                                 <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-xl">
                                     {teacher.avatar}
@@ -1010,7 +1011,7 @@ const ProfileModal = ({ teacher, onClose }) => {
                                 </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg">{teacher.address}</p>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg overflow-wrap-anywhere whitespace-pre-wrap">{teacher.address}</p>
                                 </div>
                             </div>
 
