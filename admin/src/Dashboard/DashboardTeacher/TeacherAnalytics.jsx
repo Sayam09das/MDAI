@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users,
@@ -22,176 +23,128 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const TeacherAnalytics = () => {
+    const getAuthHeaders = () => ({
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+    });
+    Ï
     const navigate = useNavigate();
     const [selectedAction, setSelectedAction] = useState(null);
     const [actionTeacher, setActionTeacher] = useState(null);
 
-    // Mock data - replace with API calls
-    const metrics = [
-        {
-            id: 1,
-            label: 'Total Teachers',
-            value: '1,248',
-            icon: Users,
-            trend: { value: '+12.5%', isPositive: true },
-            color: 'indigo'
-        },
-        {
-            id: 2,
-            label: 'Active Teachers',
-            value: '892',
-            icon: UserCheck,
-            trend: { value: '+8.3%', isPositive: true },
-            color: 'emerald'
-        },
-        {
-            id: 3,
-            label: 'Courses Published',
-            value: '3,456',
-            icon: BookOpen,
-            trend: { value: '+15.7%', isPositive: true },
-            color: 'blue'
-        },
-        {
-            id: 4,
-            label: 'Average Rating',
-            value: '4.6',
-            icon: Star,
-            trend: { value: '-0.2', isPositive: false },
-            color: 'amber'
-        }
-    ];
+    /* ================= FETCH STATS ================= */
+    const fetchStats = async () => {
+        try {
+            const res = await axios.get(
+                `${BASE_URL}/api/teacher/stats`,
+                getAuthHeaders()
+            );
 
-    const teachers = [
-        {
-            id: 1,
-            name: 'Dr. Sarah Johnson',
-            email: 'sarah.j@mdai.edu',
-            courses: 12,
-            rating: 4.8,
-            status: 'active',
-            avatar: 'SJ'
-        },
-        {
-            id: 2,
-            name: 'Prof. Michael Chen',
-            email: 'michael.c@mdai.edu',
-            courses: 8,
-            rating: 4.9,
-            status: 'active',
-            avatar: 'MC'
-        },
-        {
-            id: 3,
-            name: 'Dr. Emily Rodriguez',
-            email: 'emily.r@mdai.edu',
-            courses: 15,
-            rating: 4.7,
-            status: 'active',
-            avatar: 'ER'
-        },
-        {
-            id: 4,
-            name: 'Prof. David Williams',
-            email: 'david.w@mdai.edu',
-            courses: 6,
-            rating: 4.5,
-            status: 'suspended',
-            avatar: 'DW'
-        },
-        {
-            id: 5,
-            name: 'Dr. Lisa Anderson',
-            email: 'lisa.a@mdai.edu',
-            courses: 10,
-            rating: 4.6,
-            status: 'active',
-            avatar: 'LA'
-        },
-        {
-            id: 6,
-            name: 'Prof. James Taylor',
-            email: 'james.t@mdai.edu',
-            courses: 9,
-            rating: 4.8,
-            status: 'active',
-            avatar: 'JT'
-        },
-        {
-            id: 7,
-            name: 'Dr. Maria Garcia',
-            email: 'maria.g@mdai.edu',
-            courses: 11,
-            rating: 4.9,
-            status: 'active',
-            avatar: 'MG'
-        },
-        {
-            id: 8,
-            name: 'Prof. Robert Brown',
-            email: 'robert.b@mdai.edu',
-            courses: 7,
-            rating: 4.4,
-            status: 'active',
-            avatar: 'RB'
-        },
-        {
-            id: 9,
-            name: 'Dr. Jennifer Lee',
-            email: 'jennifer.l@mdai.edu',
-            courses: 13,
-            rating: 4.7,
-            status: 'active',
-            avatar: 'JL'
-        },
-        {
-            id: 10,
-            name: 'Prof. Thomas Martin',
-            email: 'thomas.m@mdai.edu',
-            courses: 5,
-            rating: 4.6,
-            status: 'active',
-            avatar: 'TM'
+            setMetrics([
+                {
+                    id: 1,
+                    label: "Total Teachers",
+                    value: res.data.totalTeachers,
+                    icon: Users,
+                    color: "indigo",
+                },
+                {
+                    id: 2,
+                    label: "Active Teachers",
+                    value: res.data.activeTeachers,
+                    icon: UserCheck,
+                    color: "emerald",
+                },
+                {
+                    id: 3,
+                    label: "Suspended Teachers",
+                    value: res.data.suspendedTeachers,
+                    icon: UserX,
+                    color: "rose",
+                },
+            ]);
+        } catch (err) {
+            toast.error("Failed to load teacher stats");
         }
-    ];
+    };
 
+    /* ================= FETCH TEACHERS ================= */
+    const fetchTeachers = async () => {
+        try {
+            const res = await axios.get(
+                `${BASE_URL}/api/teacher`,
+                getAuthHeaders()
+            );
+
+            setTeachers(
+                res.data.map((t) => ({
+                    id: t._id,
+                    name: t.fullName,
+                    email: t.email,
+                    status: t.isSuspended ? "suspended" : "active",
+                    avatar: t.fullName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join(""),
+                }))
+            );
+        } catch (err) {
+            toast.error("Failed to load teachers");
+        }
+    };
+
+    useEffect(() => {
+        fetchStats();
+        fetchTeachers();
+    }, []);
+
+    /* ================= ACTION HANDLERS ================= */
     const handleAction = (action, teacher) => {
         setSelectedAction(action);
         setActionTeacher(teacher);
     };
 
-    const confirmAction = () => {
-        const actions = {
-            suspend: () => toast.warning(`${actionTeacher.name} has been suspended`, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            }),
-            activate: () => toast.success(`${actionTeacher.name} has been activated`, {
-                position: "top-right",
-                autoClose: 3000
-            }),
-            remove: () => toast.error(`${actionTeacher.name} has been removed`, {
-                position: "top-right",
-                autoClose: 3000
-            })
-        };
+    const confirmAction = async () => {
+        if (!actionTeacher) return;
 
-        if (actions[selectedAction]) {
-            actions[selectedAction]();
+        try {
+            setLoading(true);
+
+            if (selectedAction === "suspend") {
+                await axios.patch(
+                    `${BASE_URL}/api/teacher/${actionTeacher.id}/suspend`,
+                    {},
+                    getAuthHeaders()
+                );
+                toast.warning(`${actionTeacher.name} suspended`);
+            }
+
+            if (selectedAction === "activate") {
+                await axios.patch(
+                    `${BASE_URL}/api/teacher/${actionTeacher.id}/resume`,
+                    {},
+                    getAuthHeaders()
+                );
+                toast.success(`${actionTeacher.name} activated`);
+            }
+
+            await fetchStats();
+            await fetchTeachers();
+        } catch (err) {
+            toast.error("Action failed");
+        } finally {
+            setLoading(false);
+            setSelectedAction(null);
+            setActionTeacher(null);
         }
-
-        setSelectedAction(null);
-        setActionTeacher(null);
     };
 
     const cancelAction = () => {
         setSelectedAction(null);
         setActionTeacher(null);
     };
+
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -357,8 +310,8 @@ const TeacherAnalytics = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${teacher.status === 'active'
-                                                    ? 'bg-emerald-100 text-emerald-800'
-                                                    : 'bg-red-100 text-red-800'
+                                                ? 'bg-emerald-100 text-emerald-800'
+                                                : 'bg-red-100 text-red-800'
                                                 }`}>
                                                 {teacher.status}
                                             </span>
@@ -424,8 +377,8 @@ const TeacherAnalytics = () => {
                                         </div>
                                     </div>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${teacher.status === 'active'
-                                            ? 'bg-emerald-100 text-emerald-800'
-                                            : 'bg-red-100 text-red-800'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-red-100 text-red-800'
                                         }`}>
                                         {teacher.status}
                                     </span>
@@ -542,10 +495,10 @@ const TeacherAnalytics = () => {
                                 <button
                                     onClick={confirmAction}
                                     className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${selectedAction === 'remove'
-                                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                                            : selectedAction === 'suspend'
-                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                                        : selectedAction === 'suspend'
+                                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                         }`}
                                 >
                                     {selectedAction === 'remove' ? 'Remove' :
