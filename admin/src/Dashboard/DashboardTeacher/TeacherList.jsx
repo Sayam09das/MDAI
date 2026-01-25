@@ -25,8 +25,33 @@ import {
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from "axios";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const TeacherList = () => {
+    const navigate = useNavigate();
+
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem("adminToken");
+
+        if (!token) {
+            toast.error("Session expired, please login again");
+            navigate("/admin/login");
+            return {};
+        }
+
+        return {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+    };
+
+    const [teachers, setTeachers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('courses');
@@ -38,145 +63,92 @@ const TeacherList = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
-    // Mock data - replace with API
-    const allTeachers = [
-        {
-            id: 1,
-            name: 'Dr. Sarah Johnson',
-            email: 'sarah.j@mdai.edu',
-            courses: 12,
-            students: 2340,
-            rating: 4.8,
-            joined: '2023-01-15',
-            status: 'active',
-            avatar: 'SJ'
-        },
-        {
-            id: 2,
-            name: 'Prof. Michael Chen',
-            email: 'michael.c@mdai.edu',
-            courses: 8,
-            students: 1890,
-            rating: 4.9,
-            joined: '2023-02-20',
-            status: 'active',
-            avatar: 'MC'
-        },
-        {
-            id: 3,
-            name: 'Dr. Emily Rodriguez',
-            email: 'emily.r@mdai.edu',
-            courses: 15,
-            students: 3120,
-            rating: 4.7,
-            joined: '2022-11-10',
-            status: 'active',
-            avatar: 'ER'
-        },
-        {
-            id: 4,
-            name: 'Prof. David Williams',
-            email: 'david.w@mdai.edu',
-            courses: 6,
-            students: 980,
-            rating: 4.5,
-            joined: '2023-03-05',
-            status: 'suspended',
-            avatar: 'DW'
-        },
-        {
-            id: 5,
-            name: 'Dr. Lisa Anderson',
-            email: 'lisa.a@mdai.edu',
-            courses: 10,
-            students: 2100,
-            rating: 4.6,
-            joined: '2023-01-28',
-            status: 'active',
-            avatar: 'LA'
-        },
-        {
-            id: 6,
-            name: 'Prof. James Taylor',
-            email: 'james.t@mdai.edu',
-            courses: 9,
-            students: 1750,
-            rating: 4.8,
-            joined: '2022-12-12',
-            status: 'active',
-            avatar: 'JT'
-        },
-        {
-            id: 7,
-            name: 'Dr. Maria Garcia',
-            email: 'maria.g@mdai.edu',
-            courses: 11,
-            students: 2450,
-            rating: 4.9,
-            joined: '2023-02-14',
-            status: 'active',
-            avatar: 'MG'
-        },
-        {
-            id: 8,
-            name: 'Prof. Robert Brown',
-            email: 'robert.b@mdai.edu',
-            courses: 7,
-            students: 1320,
-            rating: 4.4,
-            joined: '2023-03-20',
-            status: 'active',
-            avatar: 'RB'
-        },
-        {
-            id: 9,
-            name: 'Dr. Jennifer Lee',
-            email: 'jennifer.l@mdai.edu',
-            courses: 13,
-            students: 2890,
-            rating: 4.7,
-            joined: '2022-10-08',
-            status: 'active',
-            avatar: 'JL'
-        },
-        {
-            id: 10,
-            name: 'Prof. Thomas Martin',
-            email: 'thomas.m@mdai.edu',
-            courses: 5,
-            students: 850,
-            rating: 4.6,
-            joined: '2023-04-01',
-            status: 'suspended',
-            avatar: 'TM'
-        },
-        {
-            id: 11,
-            name: 'Dr. Patricia Davis',
-            email: 'patricia.d@mdai.edu',
-            courses: 14,
-            students: 3050,
-            rating: 4.8,
-            joined: '2022-09-15',
-            status: 'active',
-            avatar: 'PD'
-        },
-        {
-            id: 12,
-            name: 'Prof. Christopher Wilson',
-            email: 'chris.w@mdai.edu',
-            courses: 9,
-            students: 1950,
-            rating: 4.7,
-            joined: '2023-01-10',
-            status: 'active',
-            avatar: 'CW'
+    /* ================= FETCH TEACHERS ================= */
+    const fetchTeachers = async () => {
+        try {
+            const res = await axios.get(
+                `${BASE_URL}/api/teacher`,
+                getAuthHeaders()
+            );
+
+            setTeachers(
+                res.data.map((t) => ({
+                    id: t._id,
+                    name: t.fullName,
+                    email: t.email,
+                    status: t.isSuspended ? "suspended" : "active",
+                    avatar: t.fullName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join(""),
+                    courses: t.courseCount,   // 🔥 backend value
+                    students: 0, // Placeholder
+                    rating: 0, // Placeholder
+                    joined: t.createdAt,
+                }))
+            );
+        } catch (err) {
+            toast.error("Failed to load teachers");
         }
-    ];
+    };
+
+    const suspendTeacher = async (teacherId) => {
+        try {
+            await axios.patch(
+                `${BASE_URL}/api/teacher/${teacherId}/suspend`,
+                {},
+                getAuthHeaders()
+            );
+            toast.warning("Teacher suspended");
+            fetchTeachers();
+        } catch {
+            toast.error("Failed to suspend teacher");
+        }
+    };
+
+    const resumeTeacher = async (teacherId) => {
+        try {
+            await axios.patch(
+                `${BASE_URL}/api/teacher/${teacherId}/resume`,
+                {},
+                getAuthHeaders()
+            );
+            toast.success("Teacher activated");
+            fetchTeachers();
+        } catch {
+            toast.error("Failed to activate teacher");
+        }
+    };
+    const confirmAction = async () => {
+        const { action, teacher } = confirmModal;
+
+        if (action === "suspend") {
+            await suspendTeacher(teacher.id);
+        }
+
+        if (action === "activate") {
+            await resumeTeacher(teacher.id);
+        }
+
+        if (action === "view") {
+            navigate(`/admin/dashboard/teacher/${teacher.id}`);
+        }
+
+        if (action === "courses") {
+            navigate(`/admin/dashboard/teacher/${teacher.id}/courses`);
+        }
+
+        setConfirmModal(null);
+    };
+
+
+    useEffect(() => {
+        fetchTeachers();
+    }, []);
 
     // Filter and sort logic
     const filteredAndSortedTeachers = useMemo(() => {
-        let result = [...allTeachers];
+        let result = [...teachers];
 
         // Search filter
         if (searchQuery) {
@@ -239,20 +211,7 @@ const TeacherList = () => {
         setShowActionMenu(null);
     };
 
-    const confirmAction = () => {
-        const { action, teacher } = confirmModal;
 
-        const messages = {
-            suspend: () => toast.warning(`${teacher.name} has been suspended`),
-            activate: () => toast.success(`${teacher.name} has been activated`),
-            remove: () => toast.error(`${teacher.name} has been removed`),
-            view: () => toast.info(`Viewing ${teacher.name}'s profile`),
-            courses: () => toast.info(`Managing courses for ${teacher.name}`)
-        };
-
-        if (messages[action]) messages[action]();
-        setConfirmModal(null);
-    };
 
     const handleBulkAction = (action) => {
         if (selectedTeachers.length === 0) {
@@ -516,8 +475,8 @@ const TeacherList = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${teacher.status === 'active'
-                                                            ? 'bg-emerald-100 text-emerald-800'
-                                                            : 'bg-red-100 text-red-800'
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : 'bg-red-100 text-red-800'
                                                         }`}>
                                                         {teacher.status}
                                                     </span>
@@ -660,7 +619,7 @@ const TeacherCard = ({ teacher, isSelected, onToggleSelect, onAction, formatDate
                         )}
                     </button>
                     <div className="flex items-start space-x-3 flex-1">
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold shrink-0">
                             {teacher.avatar}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -671,8 +630,8 @@ const TeacherCard = ({ teacher, isSelected, onToggleSelect, onAction, formatDate
                 </div>
                 <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${teacher.status === 'active'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-red-100 text-red-800'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
                         {teacher.status}
                     </span>
@@ -828,8 +787,8 @@ const Pagination = ({ currentPage, totalPages, rowsPerPage, totalItems, onPageCh
                                     key={pageNum}
                                     onClick={() => onPageChange(pageNum)}
                                     className={`px-3 py-1 rounded ${currentPage === pageNum
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-slate-700 hover:bg-slate-100'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-slate-700 hover:bg-slate-100'
                                         }`}
                                 >
                                     {pageNum}
@@ -931,7 +890,7 @@ const ConfirmationModal = ({ modal, onConfirm, onCancel }) => {
                     className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
                 >
                     <div className={`flex items-center justify-center w-12 h-12 rounded-full mb-4 ${isDestructive ? 'bg-red-100' :
-                            modal.action.includes('suspend') ? 'bg-amber-100' : 'bg-emerald-100'
+                        modal.action.includes('suspend') ? 'bg-amber-100' : 'bg-emerald-100'
                         }`}>
                         {isDestructive ? (
                             <Trash2 className="w-6 h-6 text-red-600" />
@@ -960,10 +919,10 @@ const ConfirmationModal = ({ modal, onConfirm, onCancel }) => {
                         <button
                             onClick={onConfirm}
                             className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${isDestructive
-                                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                                    : modal.action.includes('suspend')
-                                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                ? 'bg-red-600 hover:bg-red-700 text-white'
+                                : modal.action.includes('suspend')
+                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                 }`}
                         >
                             Confirm
