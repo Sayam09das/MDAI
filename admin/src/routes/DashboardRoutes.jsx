@@ -4,7 +4,8 @@ import ReturnDashboard from "../Dashboard/DashboardMain/ReturnDashboard";
 import ReturnDashboardUser from "../Dashboard/DashboardUser/ReturnDashboardUser";
 import ProtectedRoute from "./ProtectedRoute";
 import ReturnDashboardStudent from "../Dashboard/DashboardStudent/ReturnDashboardStudent";
-import ReturnDashboardTeacher from "../Dashboard/DashboardTeacher/ReturnDashboardTeacher";
+import TeacherAnalytics from "../Dashboard/DashboardTeacher/TeacherAnalytics";
+import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 
 const DashboardRoutes = () => {
     return (
@@ -14,7 +15,8 @@ const DashboardRoutes = () => {
                     <Route path="dashboard" element={<ReturnDashboard />} />
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />
                     <Route path="dashboard/students" element={<ReturnDashboardStudent />} />
-                    <Route path="dashboard/teachers" element={<ReturnDashboardTeacher />} />
+                    <Route path="dashboard/teachers" element={< TeacherAnalytics/>} />
+                    <Route path="dashboard/teachers/teacherlist" element={<TeacherList />} />
                     <Route path="dashboard/courses" element={<div>Courses Page</div>} />
                     <Route path="dashboard/analytics" element={<div>Analytics Page</div>} />
                     <Route path="dashboard/settings" element={<div>Settings Page</div>} />
