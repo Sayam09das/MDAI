@@ -99,21 +99,19 @@ export const getAllTeachers = async (req, res) => {
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ["$teacher", "$$teacherId"] },
+                $expr: { $eq: ["$instructor", "$$teacherId"] },
               },
             },
             {
-              $count: "count",
+              $project: { title: 1 },
             },
           ],
-          as: "courseStats",
+          as: "courses",
         },
       },
       {
         $addFields: {
-          courseCount: {
-            $ifNull: [{ $arrayElemAt: ["$courseStats.count", 0] }, 0],
-          },
+          courseCount: { $size: "$courses" },
         },
       },
       {
@@ -123,6 +121,7 @@ export const getAllTeachers = async (req, res) => {
           isSuspended: 1,
           createdAt: 1,
           courseCount: 1,
+          courses: 1,
         },
       },
     ]);
