@@ -58,6 +58,7 @@ const TeacherList = () => {
     const [confirmModal, setConfirmModal] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [profileModal, setProfileModal] = useState(null);
 
     /* ================= FETCH TEACHERS ================= */
     const fetchTeachers = async () => {
@@ -74,6 +75,14 @@ const TeacherList = () => {
                     id: t._id,
                     name: t.fullName,
                     email: t.email,
+                    phone: t.phone,
+                    address: t.address,
+                    gender: t.gender,
+                    class10Certificate: t.class10Certificate,
+                    class12Certificate: t.class12Certificate,
+                    collegeCertificate: t.collegeCertificate,
+                    phdOrOtherCertificate: t.phdOrOtherCertificate,
+                    profileImage: t.profileImage,
                     courses: t.courseCount || 0,
                     courseNames: t.courses || [],
                     students: Math.floor(Math.random() * 3000) + 500, // Mock data
@@ -209,7 +218,7 @@ const TeacherList = () => {
         } else if (action === 'activate') {
             await resumeTeacher(teacher.id, teacher.name);
         } else if (action === 'view') {
-            toast.info(`Viewing ${teacher.name}'s profile`);
+            setProfileModal(teacher);
         } else if (action === 'courses') {
             toast.info(`Managing courses for ${teacher.name}`);
         } else if (action === 'remove') {
