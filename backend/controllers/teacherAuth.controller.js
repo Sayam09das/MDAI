@@ -26,9 +26,10 @@ export const registerTeacher = async (req, res) => {
       return res.status(409).json({ message: "Teacher already registered" });
     }
 
-    const teacher = await Teacher.create({
+    await Teacher.create({
       ...data,
-      isVerified: true, // ✅ auto-verified (no OTP)
+      isVerified: true,
+      isSuspended: false, // ✅ active by default
     });
 
     res.status(201).json({
@@ -36,10 +37,54 @@ export const registerTeacher = async (req, res) => {
       message: "Teacher registered successfully",
     });
   } catch (error) {
-    console.error("Teacher Register Error:", error);
-    res.status(500).json({
-      message: "Teacher registration failed",
+    res.status(500).json({ message: "Teacher registration failed" });
+  }
+};
+
+
+export const getTeacherStats = async (req, res) => {
+  try {
+    const totalTeachers = await Teacher.countDocuments();
+    const activeTeachers = await Teacher.countDocuments({ isSuspended: false });
+    const suspendedTeachers = await Teacher.countDocuments({ isSuspended: true });
+
+    res.json({
+      totalTeachers,
+      activeTeachers,
+      suspendedTeachers,
     });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch teacher stats" });
+  }
+};
+
+
+export const suspendTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    await Teacher.findByIdAndUpdate(teacherId, {
+      isSuspended: true,
+    });
+
+    res.json({ message: "Teacher suspended successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to suspend teacher" });
+  }
+};
+
+
+export const resumeTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    await Teacher.findByIdAndUpdate(teacherId, {
+      isSuspended: false,
+    });
+
+    res.json({ message: "Teacher activated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to activate teacher" });
   }
 };
 

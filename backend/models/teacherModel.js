@@ -76,6 +76,7 @@ const teacherSchema = new mongoose.Schema(
       type: String, // image URL
       default: "",
     },
+    isSuspended: { type: Boolean, default: false },
 
   },
   {
