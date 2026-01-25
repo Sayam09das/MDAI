@@ -118,6 +118,8 @@ const TeacherAnalytics = () => {
                         .split(" ")
                         .map((n) => n[0])
                         .join(""),
+                    courseCount: t.courseCount,
+                    courses: t.courses,
                 }))
             );
         } catch (err) {
@@ -360,7 +362,7 @@ const TeacherAnalytics = () => {
                                         Courses
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                                        Rating
+                                        Courses Count
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                                         Status
@@ -392,12 +394,12 @@ const TeacherAnalytics = () => {
                                             <div className="text-sm text-slate-600">{teacher.email}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-900 font-medium">{teacher.courses}</div>
+                                            <div className="text-sm text-slate-900 font-medium">{teacher.courses.map(c => c.title).join(', ') || 'No courses'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <Star className="w-4 h-4 text-amber-400 fill-amber-400 mr-1" />
-                                                <span className="text-sm font-medium text-slate-900">{teacher.rating}</span>
+                                                <span className="text-sm font-medium text-slate-900">{teacher.courseCount}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -479,13 +481,13 @@ const TeacherAnalytics = () => {
                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                     <div>
                                         <p className="text-xs text-slate-600">Courses</p>
-                                        <p className="font-medium text-slate-900">{teacher.courses}</p>
+                                        <p className="font-medium text-slate-900">{teacher.courses.map(c => c.title).join(', ') || 'No courses'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-600">Rating</p>
+                                        <p className="text-xs text-slate-600">Course Count</p>
                                         <div className="flex items-center">
                                             <Star className="w-3 h-3 text-amber-400 fill-amber-400 mr-1" />
-                                            <span className="font-medium text-slate-900">{teacher.rating}</span>
+                                            <span className="font-medium text-slate-900">{teacher.courseCount}</span>
                                         </div>
                                     </div>
                                 </div>
