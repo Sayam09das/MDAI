@@ -4,6 +4,7 @@ import {
     getTeacherStats,
     suspendTeacher,
     resumeTeacher,
+    getAllTeachers,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -15,8 +16,14 @@ const router = express.Router();
 // Register teacher (public)
 router.post("/register", registerTeacher);
 
+
 // 🔥 Admin / Dashboard stats
 router.get("/stats", protect, getTeacherStats);
+
+
+// 🔥 GET ALL TEACHERS (THIS FIXES 404)
+router.get("/", protect, getAllTeachers);
+
 
 // 🔥 Suspend a teacher (admin action)
 router.patch("/:teacherId/suspend", protect, suspendTeacher);

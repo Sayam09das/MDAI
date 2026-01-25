@@ -89,3 +89,17 @@ export const resumeTeacher = async (req, res) => {
 };
 
 
+export const getAllTeachers = async (req, res) => {
+  try {
+    const teachers = await Teacher.find().select(
+      "fullName email isSuspended createdAt"
+    );
+
+    res.status(200).json(teachers);
+  } catch (error) {
+    console.error("Get Teachers Error:", error);
+    res.status(500).json({
+      message: "Failed to fetch teachers",
+    });
+  }
+};
