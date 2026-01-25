@@ -34,6 +34,9 @@ const TeacherAnalytics = () => {
     const navigate = useNavigate();
     const [selectedAction, setSelectedAction] = useState(null);
     const [actionTeacher, setActionTeacher] = useState(null);
+    const [metrics, setMetrics] = useState([]);
+    const [teachers, setTeachers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     /* ================= FETCH STATS ================= */
     const fetchStats = async () => {
