@@ -5,540 +5,581 @@ import {
     ChevronRight,
     Search,
     Filter,
-    Download,
+    ArrowUpDown,
     RefreshCw,
     MoreVertical,
     Eye,
-    Edit,
     Ban,
+    CheckCircle,
     Trash2,
-    Mail,
-    UserCheck,
-    UserX,
-    ExternalLink,
-    CheckCircle2,
-    XCircle,
-    AlertCircle
+    ChevronLeft,
+    AlertTriangle,
+    Loader2,
+    X,
+    CheckSquare,
+    Square
 } from 'lucide-react';
 
-const StudentListPreview = () => {
-    const [mounted, setMounted] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeMenu, setActiveMenu] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState('all');
+// Mock data generator
+const generateStudents = (count) => {
+    const firstNames = ['Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'James', 'Maria', 'Robert', 'Jennifer', 'Christopher', 'Amanda', 'Daniel', 'Jessica', 'Matthew', 'Ashley', 'Joshua', 'Stephanie', 'Andrew', 'Melissa', 'Ryan'];
+    const lastNames = ['Johnson', 'Chen', 'Rodriguez', 'Kim', 'Anderson', 'Wilson', 'Garcia', 'Taylor', 'Brown', 'Lee', 'White', 'Martinez', 'Davis', 'Miller', 'Moore', 'Jackson', 'Martin', 'Thompson', 'Young', 'Allen'];
+    const statuses = ['active', 'active', 'active', 'active', 'suspended'];
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    return Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        firstName: firstNames[i % firstNames.length],
+        lastName: lastNames[i % lastNames.length],
+        email: `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}@example.com`,
+        enrolledCourses: Math.floor(Math.random() * 8) + 1,
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        joinedDate: new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }));
+};
 
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.05,
-                delayChildren: 0.1
-            }
-        }
-    };
+// Confirm Modal Component
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText, isDanger = false, isProcessing = false }) => {
+    if (!isOpen) return null;
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
-        }
-    };
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {/* Backdrop */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                />
 
-    const rowVariants = {
-        hidden: { opacity: 0, x: -20 },
-        visible: {
-            opacity: 1,
-            x: 0,
-            transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
-        }
-    };
-
-    // Sample student data (10-15 students)
-    const students = [
-        {
-            id: 1,
-            name: 'Sarah Johnson',
-            email: 'sarah.johnson@example.com',
-            enrolledCourses: 5,
-            status: 'active',
-            joinDate: 'Jan 15, 2026',
-            lastActive: '2 hours ago'
-        },
-        {
-            id: 2,
-            name: 'Michael Chen',
-            email: 'michael.chen@example.com',
-            enrolledCourses: 3,
-            status: 'active',
-            joinDate: 'Jan 18, 2026',
-            lastActive: '1 day ago'
-        },
-        {
-            id: 3,
-            name: 'Emily Rodriguez',
-            email: 'emily.rodriguez@example.com',
-            enrolledCourses: 7,
-            status: 'active',
-            joinDate: 'Jan 20, 2026',
-            lastActive: '3 hours ago'
-        },
-        {
-            id: 4,
-            name: 'David Kim',
-            email: 'david.kim@example.com',
-            enrolledCourses: 2,
-            status: 'suspended',
-            joinDate: 'Dec 10, 2025',
-            lastActive: '2 weeks ago'
-        },
-        {
-            id: 5,
-            name: 'Lisa Anderson',
-            email: 'lisa.anderson@example.com',
-            enrolledCourses: 4,
-            status: 'active',
-            joinDate: 'Jan 22, 2026',
-            lastActive: '30 min ago'
-        },
-        {
-            id: 6,
-            name: 'James Wilson',
-            email: 'james.wilson@example.com',
-            enrolledCourses: 6,
-            status: 'active',
-            joinDate: 'Jan 12, 2026',
-            lastActive: '5 hours ago'
-        },
-        {
-            id: 7,
-            name: 'Maria Garcia',
-            email: 'maria.garcia@example.com',
-            enrolledCourses: 3,
-            status: 'active',
-            joinDate: 'Jan 25, 2026',
-            lastActive: 'Just now'
-        },
-        {
-            id: 8,
-            name: 'Robert Taylor',
-            email: 'robert.taylor@example.com',
-            enrolledCourses: 1,
-            status: 'suspended',
-            joinDate: 'Nov 28, 2025',
-            lastActive: '1 month ago'
-        },
-        {
-            id: 9,
-            name: 'Jennifer Brown',
-            email: 'jennifer.brown@example.com',
-            enrolledCourses: 5,
-            status: 'active',
-            joinDate: 'Jan 19, 2026',
-            lastActive: '1 hour ago'
-        },
-        {
-            id: 10,
-            name: 'Christopher Lee',
-            email: 'christopher.lee@example.com',
-            enrolledCourses: 4,
-            status: 'active',
-            joinDate: 'Jan 23, 2026',
-            lastActive: '4 hours ago'
-        },
-        {
-            id: 11,
-            name: 'Amanda White',
-            email: 'amanda.white@example.com',
-            enrolledCourses: 2,
-            status: 'active',
-            joinDate: 'Jan 21, 2026',
-            lastActive: '6 hours ago'
-        },
-        {
-            id: 12,
-            name: 'Daniel Martinez',
-            email: 'daniel.martinez@example.com',
-            enrolledCourses: 8,
-            status: 'active',
-            joinDate: 'Jan 10, 2026',
-            lastActive: '2 hours ago'
-        }
-    ];
-
-    // Filter options
-    const statusFilters = [
-        { value: 'all', label: 'All Students', count: students.length },
-        { value: 'active', label: 'Active', count: students.filter(s => s.status === 'active').length },
-        { value: 'suspended', label: 'Suspended', count: students.filter(s => s.status === 'suspended').length }
-    ];
-
-    // Filtered students
-    const filteredStudents = students.filter(student => {
-        const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === 'all' || student.status === selectedStatus;
-        return matchesSearch && matchesStatus;
-    });
-
-    // Status badge component
-    const StatusBadge = ({ status }) => {
-        const config = {
-            active: {
-                bg: 'bg-green-50',
-                text: 'text-green-700',
-                border: 'border-green-200',
-                icon: CheckCircle2,
-                label: 'Active'
-            },
-            suspended: {
-                bg: 'bg-red-50',
-                text: 'text-red-700',
-                border: 'border-red-200',
-                icon: XCircle,
-                label: 'Suspended'
-            }
-        };
-
-        const { bg, text, border, icon: Icon, label } = config[status] || config.active;
-
-        return (
-            <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
-                <Icon className="w-3.5 h-3.5" />
-                <span>{label}</span>
-            </span>
-        );
-    };
-
-    // Action Menu Component
-    const ActionMenu = ({ studentId, studentName, status }) => {
-        const isOpen = activeMenu === studentId;
-
-        const handleAction = (action) => {
-            console.log(`${action} student:`, studentName);
-            setActiveMenu(null);
-            // Add your action logic here
-        };
-
-        return (
-            <div className="relative">
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveMenu(isOpen ? null : studentId)}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                {/* Modal */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
                 >
-                    <MoreVertical className="w-4 h-4" />
-                </motion.button>
+                    {/* Icon */}
+                    <div className={`p-6 ${isDanger ? 'bg-red-50' : 'bg-slate-50'}`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDanger ? 'bg-red-100' : 'bg-slate-100'}`}>
+                            <AlertTriangle className={`w-6 h-6 ${isDanger ? 'text-red-600' : 'text-slate-600'}`} />
+                        </div>
+                    </div>
 
-                <AnimatePresence>
-                    {isOpen && (
-                        <>
-                            {/* Backdrop */}
-                            <div
-                                className="fixed inset-0 z-10"
-                                onClick={() => setActiveMenu(null)}
-                            />
+                    {/* Content */}
+                    <div className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                            {title}
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                            {message}
+                        </p>
+                    </div>
 
-                            {/* Menu */}
-                            <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-20"
-                            >
-                                <div className="py-1">
-                                    <button
-                                        onClick={() => handleAction('view')}
-                                        className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <Eye className="w-4 h-4 text-slate-500" />
-                                        <span>View Profile</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleAction('edit')}
-                                        className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <Edit className="w-4 h-4 text-slate-500" />
-                                        <span>Edit Details</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleAction('email')}
-                                        className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <Mail className="w-4 h-4 text-slate-500" />
-                                        <span>Send Email</span>
-                                    </button>
-                                </div>
+                    {/* Actions */}
+                    <div className="flex items-center justify-end space-x-3 p-6 bg-slate-50 border-t border-slate-200">
+                        <button
+                            onClick={onClose}
+                            disabled={isProcessing}
+                            className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            disabled={isProcessing}
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 ${isDanger
+                                    ? 'bg-red-600 hover:bg-red-700'
+                                    : 'bg-indigo-600 hover:bg-indigo-700'
+                                }`}
+                        >
+                            {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                            <span>{confirmText}</span>
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
 
-                                <div className="border-t border-slate-100 py-1">
-                                    <button
-                                        onClick={() => handleAction(status === 'active' ? 'suspend' : 'activate')}
-                                        className={`w-full flex items-center space-x-3 px-4 py-2.5 text-sm ${status === 'active'
-                                                ? 'text-amber-600 hover:bg-amber-50'
-                                                : 'text-green-600 hover:bg-green-50'
-                                            } transition-colors`}
-                                    >
-                                        <Ban className="w-4 h-4" />
-                                        <span>{status === 'active' ? 'Suspend Account' : 'Activate Account'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleAction('delete')}
-                                        className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Delete Student</span>
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
+// Action Dropdown Component
+const ActionDropdown = ({ student, onAction }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const actions = [
+        { id: 'view', label: 'View Profile', icon: Eye, color: 'text-slate-700' },
+        {
+            id: student.status === 'active' ? 'suspend' : 'activate',
+            label: student.status === 'active' ? 'Suspend Account' : 'Activate Account',
+            icon: student.status === 'active' ? Ban : CheckCircle,
+            color: student.status === 'active' ? 'text-amber-600' : 'text-green-600'
+        },
+        { id: 'delete', label: 'Delete Account', icon: Trash2, color: 'text-red-600', isDanger: true }
+    ];
+
+    const handleAction = (actionId) => {
+        setIsOpen(false);
+        onAction(student, actionId);
+    };
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+                <MoreVertical className="w-4 h-4" />
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-20"
+                        >
+                            {actions.map((action, index) => {
+                                const Icon = action.icon;
+                                return (
+                                    <React.Fragment key={action.id}>
+                                        {action.isDanger && index > 0 && (
+                                            <div className="border-t border-slate-100" />
+                                        )}
+                                        <button
+                                            onClick={() => handleAction(action.id)}
+                                            className={`w-full flex items-center space-x-3 px-4 py-2.5 text-sm ${action.color} hover:bg-slate-50 transition-colors`}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span>{action.label}</span>
+                                        </button>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// Status Badge Component
+const StatusBadge = ({ status }) => {
+    const config = {
+        active: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Active' },
+        suspended: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: 'Suspended' }
+    };
+    const { bg, text, border, label } = config[status] || config.active;
+
+    return (
+        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
+            {label}
+        </span>
+    );
+};
+
+// Student Table Component
+const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll, onAction, isLoading }) => {
+    if (isLoading) {
+        return (
+            <div className="space-y-3 p-6">
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />
+                ))}
             </div>
         );
+    }
+
+    if (students.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
+                    <Search className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No students found</h3>
+                <p className="text-sm text-slate-600">Try adjusting your search or filter criteria</p>
+            </div>
+        );
+    }
+
+    const allSelected = students.length > 0 && students.every(s => selectedStudents.includes(s.id));
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th className="px-6 py-4 text-left w-12">
+                            <button
+                                onClick={() => onSelectAll(!allSelected)}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                {allSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                            </button>
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Student Name</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Joined</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                    {students.map((student, index) => (
+                        <motion.tr
+                            key={student.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.03, duration: 0.3 }}
+                            className="hover:bg-slate-50 transition-colors"
+                        >
+                            <td className="px-6 py-4">
+                                <button
+                                    onClick={() => onSelectStudent(student.id)}
+                                    className="text-slate-400 hover:text-slate-600"
+                                >
+                                    {selectedStudents.includes(student.id)
+                                        ? <CheckSquare className="w-5 h-5" />
+                                        : <Square className="w-5 h-5" />
+                                    }
+                                </button>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="flex items-center">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                                        {student.firstName[0]}{student.lastName[0]}
+                                    </div>
+                                    <div className="text-sm font-semibold text-slate-900">
+                                        {student.firstName} {student.lastName}
+                                    </div>
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{student.email}</td>
+                            <td className="px-6 py-4">
+                                <span className="text-sm font-semibold text-slate-900">{student.enrolledCourses}</span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{student.joinedDate}</td>
+                            <td className="px-6 py-4">
+                                <StatusBadge status={student.status} />
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                                <ActionDropdown student={student} onAction={onAction} />
+                            </td>
+                        </motion.tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+// Main Student List Component
+const StudentListPreview = () => {
+    const [allStudents] = useState(generateStudents(50));
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [sortBy, setSortBy] = useState('newest');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null, student: null });
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isLoading] = useState(false);
+
+    // Filter and sort logic
+    const filteredStudents = allStudents
+        .filter(student => {
+            const matchesSearch = `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                student.email.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = filterStatus === 'all' || student.status === filterStatus;
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => {
+            if (sortBy === 'newest') return b.id - a.id;
+            if (sortBy === 'oldest') return a.id - b.id;
+            return 0;
+        });
+
+    // Pagination
+    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedStudents = filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+
+    // Handlers
+    const handleAction = (student, action) => {
+        if (action === 'view') {
+            console.log('View student:', student);
+        } else if (action === 'delete' || action === 'suspend' || action === 'activate') {
+            setConfirmModal({
+                isOpen: true,
+                action,
+                student,
+                isBulk: false
+            });
+        }
+    };
+
+    const handleConfirm = async () => {
+        setIsProcessing(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('Action confirmed:', confirmModal.action, confirmModal.student);
+        setIsProcessing(false);
+        setConfirmModal({ isOpen: false, action: null, student: null });
+        if (confirmModal.isBulk) {
+            setSelectedStudents([]);
+        }
+    };
+
+    const handleSelectStudent = (id) => {
+        setSelectedStudents(prev =>
+            prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = (selectAll) => {
+        setSelectedStudents(selectAll ? paginatedStudents.map(s => s.id) : []);
+    };
+
+    const handleBulkAction = (action) => {
+        setConfirmModal({
+            isOpen: true,
+            action,
+            student: null,
+            isBulk: true
+        });
+    };
+
+    const getModalConfig = () => {
+        const { action, student, isBulk } = confirmModal;
+        const count = selectedStudents.length;
+
+        if (action === 'delete') {
+            return {
+                title: isBulk ? `Delete ${count} Students?` : 'Delete Student?',
+                message: isBulk
+                    ? `You are about to permanently delete ${count} student accounts. This action cannot be undone.`
+                    : `You are about to permanently delete ${student?.firstName} ${student?.lastName}'s account. This action cannot be undone.`,
+                confirmText: 'Delete',
+                isDanger: true
+            };
+        } else if (action === 'suspend') {
+            return {
+                title: isBulk ? `Suspend ${count} Students?` : 'Suspend Student?',
+                message: isBulk
+                    ? `${count} student accounts will be suspended and unable to access courses.`
+                    : `${student?.firstName} ${student?.lastName} will be suspended and unable to access courses.`,
+                confirmText: 'Suspend',
+                isDanger: false
+            };
+        } else if (action === 'activate') {
+            return {
+                title: isBulk ? `Activate ${count} Students?` : 'Activate Student?',
+                message: isBulk
+                    ? `${count} student accounts will be reactivated.`
+                    : `${student?.firstName} ${student?.lastName} will be reactivated.`,
+                confirmText: 'Activate',
+                isDanger: false
+            };
+        }
+        return {};
     };
 
     return (
         <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
-            <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate={mounted ? "visible" : "hidden"}
-                className="max-w-7xl mx-auto space-y-6"
-            >
-                {/* Breadcrumb & Header */}
-                <motion.div variants={itemVariants}>
-                    {/* Breadcrumb */}
+            <div className="max-w-7xl mx-auto space-y-6">
+
+                {/* Header */}
+                <div>
                     <div className="flex items-center space-x-2 text-sm text-slate-600 mb-3">
                         <Home className="w-4 h-4" />
                         <ChevronRight className="w-4 h-4" />
-                        <span className="text-slate-600">Dashboard</span>
+                        <span>Dashboard</span>
                         <ChevronRight className="w-4 h-4" />
-                        <span className="text-slate-600">Students</span>
+                        <span>Students</span>
                         <ChevronRight className="w-4 h-4" />
-                        <span className="text-indigo-600 font-medium">Student List</span>
+                        <span className="text-slate-900 font-medium">Student List</span>
                     </div>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">All Students</h1>
+                    <p className="text-slate-600">Manage student accounts, access, and activity.</p>
+                </div>
 
-                    {/* Page Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                                Student List Preview
-                            </h1>
-                            <p className="text-slate-600">
-                                Showing {filteredStudents.length} of {students.length} students
-                            </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center space-x-3">
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition-colors flex items-center space-x-2 border border-slate-200 bg-white shadow-sm"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span className="text-sm font-medium hidden sm:inline">Export</span>
-                            </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.05, rotate: 90 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors border border-slate-200 bg-white shadow-sm"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </motion.button>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Filters and Search */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        {/* Status Filter Tabs */}
-                        <div className="flex flex-wrap gap-2">
-                            {statusFilters.map((filter) => (
-                                <button
-                                    key={filter.value}
-                                    onClick={() => setSelectedStatus(filter.value)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedStatus === filter.value
-                                            ? 'bg-indigo-600 text-white shadow-sm'
-                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                        }`}
-                                >
-                                    {filter.label}
-                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${selectedStatus === filter.value
-                                            ? 'bg-indigo-500'
-                                            : 'bg-slate-200'
-                                        }`}>
-                                        {filter.count}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Search */}
-                        <div className="relative flex-1 lg:max-w-md">
+                {/* Controls Bar */}
+                <div className="bg-white rounded-lg border border-slate-200 p-4">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Search by name or email..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                             />
                         </div>
-                    </div>
-                </motion.div>
-
-                {/* Student Table */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
-                >
-                    {/* Table Header */}
-                    <div className="p-6 border-b border-slate-200 bg-slate-50">
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            Student Records
-                        </h2>
-                        <p className="text-sm text-slate-600 mt-1">
-                            Manage and monitor student accounts
-                        </p>
-                    </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                        Student Name
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                        Email
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                        Enrolled Courses
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                        Account Status
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                <AnimatePresence mode="popLayout">
-                                    {filteredStudents.length > 0 ? (
-                                        filteredStudents.map((student, index) => (
-                                            <motion.tr
-                                                key={student.id}
-                                                variants={rowVariants}
-                                                initial="hidden"
-                                                animate="visible"
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ delay: index * 0.03 }}
-                                                className="hover:bg-slate-50 transition-colors"
-                                            >
-                                                {/* Student Name */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3 flex-shrink-0">
-                                                            {student.name.split(' ').map(n => n[0]).join('')}
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm font-semibold text-slate-900">
-                                                                {student.name}
-                                                            </div>
-                                                            <div className="text-xs text-slate-500">
-                                                                Joined {student.joinDate}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* Email */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-900">
-                                                        {student.email}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500">
-                                                        Last active: {student.lastActive}
-                                                    </div>
-                                                </td>
-
-                                                {/* Enrolled Courses */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <span className="text-2xl font-bold text-indigo-600">
-                                                            {student.enrolledCourses}
-                                                        </span>
-                                                        <span className="text-xs text-slate-500 ml-2">
-                                                            {student.enrolledCourses === 1 ? 'course' : 'courses'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-
-                                                {/* Account Status */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <StatusBadge status={student.status} />
-                                                </td>
-
-                                                {/* Actions */}
-                                                <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                    <ActionMenu
-                                                        studentId={student.id}
-                                                        studentName={student.name}
-                                                        status={student.status}
-                                                    />
-                                                </td>
-                                            </motion.tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="5" className="px-6 py-12 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <AlertCircle className="w-12 h-12 text-slate-300 mb-3" />
-                                                    <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                                                        No students found
-                                                    </h3>
-                                                    <p className="text-sm text-slate-600">
-                                                        Try adjusting your search or filter criteria
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </AnimatePresence>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Table Footer */}
-                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm text-slate-600">
-                                Showing <span className="font-semibold text-slate-900">{filteredStudents.length}</span> of <span className="font-semibold text-slate-900">{students.length}</span> students
-                            </div>
-                            <button className="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors flex items-center space-x-2">
-                                <span>View All Students</span>
-                                <ExternalLink className="w-4 h-4" />
+                        <div className="flex gap-3">
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="newest">Newest</option>
+                                <option value="oldest">Oldest</option>
+                            </select>
+                            <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                <RefreshCw className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
-                </motion.div>
-            </motion.div>
+                </div>
+
+                {/* Bulk Actions Bar */}
+                <AnimatePresence>
+                    {selectedStudents.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="bg-indigo-50 border border-indigo-200 rounded-lg p-4"
+                        >
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <span className="text-sm font-medium text-indigo-900">
+                                    {selectedStudents.length} student{selectedStudents.length > 1 ? 's' : ''} selected
+                                </span>
+                                <div className="flex gap-2 flex-wrap">
+                                    <button
+                                        onClick={() => handleBulkAction('activate')}
+                                        className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
+                                    >
+                                        Activate
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkAction('suspend')}
+                                        className="px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100"
+                                    >
+                                        Suspend
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkAction('delete')}
+                                        className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
+                                    >
+                                        Delete
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedStudents([])}
+                                        className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Table */}
+                <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <StudentTable
+                        students={paginatedStudents}
+                        selectedStudents={selectedStudents}
+                        onSelectStudent={handleSelectStudent}
+                        onSelectAll={handleSelectAll}
+                        onAction={handleAction}
+                        isLoading={isLoading}
+                    />
+
+                    {/* Pagination */}
+                    {filteredStudents.length > 0 && (
+                        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                    <span>Rows per page:</span>
+                                    <select
+                                        value={rowsPerPage}
+                                        onChange={(e) => {
+                                            setRowsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="px-2 py-1 border border-slate-200 rounded text-sm"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                    <span className="ml-4">
+                                        {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredStudents.length)} of {filteredStudents.length}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                                        let page;
+                                        if (totalPages <= 5) {
+                                            page = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            page = i + 1;
+                                        } else if (currentPage >= totalPages - 2) {
+                                            page = totalPages - 4 + i;
+                                        } else {
+                                            page = currentPage - 2 + i;
+                                        }
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === page
+                                                        ? 'bg-indigo-600 text-white'
+                                                        : 'border border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, action: null, student: null })}
+                onConfirm={handleConfirm}
+                isProcessing={isProcessing}
+                {...getModalConfig()}
+            />
         </div>
     );
 };
