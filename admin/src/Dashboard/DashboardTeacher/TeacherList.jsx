@@ -589,6 +589,12 @@ const TeacherList = () => {
                 onConfirm={confirmModal?.bulk ? confirmBulkAction : confirmAction}
                 onCancel={() => setConfirmModal(null)}
             />
+
+            {/* Profile Modal */}
+            <ProfileModal
+                teacher={profileModal}
+                onClose={() => setProfileModal(null)}
+            />
         </div>
     );
 };
@@ -926,6 +932,169 @@ const EmptyState = ({ searchQuery }) => (
         </div>
     </motion.div>
 );
+
+/* ================= PROFILE MODAL ================= */
+const ProfileModal = ({ teacher, onClose }) => {
+    if (!teacher) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-slate-900">Teacher Profile</h2>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-slate-600" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Profile Image */}
+                            <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-xl">
+                                    {teacher.avatar}
+                                </div>
+                                {teacher.profileImage && (
+                                    <img
+                                        src={teacher.profileImage}
+                                        alt="Profile"
+                                        className="w-20 h-20 rounded-full object-cover"
+                                    />
+                                )}
+                                <div>
+                                    <h3 className="text-xl font-semibold text-slate-900">{teacher.name}</h3>
+                                    <p className="text-slate-600">{teacher.email}</p>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
+                                        teacher.status === 'active'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : 'bg-red-100 text-red-800'
+                                    }`}>
+                                        {teacher.status}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg">{teacher.name}</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg">{teacher.email}</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg">{teacher.phone}</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg capitalize">{teacher.gender}</p>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                    <p className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg">{teacher.address}</p>
+                                </div>
+                            </div>
+
+                            {/* Certificates */}
+                            <div>
+                                <h4 className="text-lg font-semibold text-slate-900 mb-4">Certificates</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Class 10 Certificate</label>
+                                        <a
+                                            href={teacher.class10Certificate}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-indigo-600 hover:text-indigo-800 underline"
+                                        >
+                                            View Certificate
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Class 12 Certificate</label>
+                                        <a
+                                            href={teacher.class12Certificate}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-indigo-600 hover:text-indigo-800 underline"
+                                        >
+                                            View Certificate
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">College Certificate</label>
+                                        <a
+                                            href={teacher.collegeCertificate}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-indigo-600 hover:text-indigo-800 underline"
+                                        >
+                                            View Certificate
+                                        </a>
+                                    </div>
+                                    {teacher.phdOrOtherCertificate && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">PhD/Other Certificate</label>
+                                            <a
+                                                href={teacher.phdOrOtherCertificate}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-indigo-600 hover:text-indigo-800 underline"
+                                            >
+                                                View Certificate
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Stats */}
+                            <div>
+                                <h4 className="text-lg font-semibold text-slate-900 mb-4">Statistics</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-slate-50 p-4 rounded-lg text-center">
+                                        <div className="text-2xl font-bold text-indigo-600">{teacher.courses}</div>
+                                        <div className="text-sm text-slate-600">Courses</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-lg text-center">
+                                        <div className="text-2xl font-bold text-emerald-600">{teacher.students}</div>
+                                        <div className="text-sm text-slate-600">Students</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-lg text-center">
+                                        <div className="text-2xl font-bold text-amber-600">{teacher.rating}</div>
+                                        <div className="text-sm text-slate-600">Rating</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-lg text-center">
+                                        <div className="text-2xl font-bold text-slate-600">{formatDate(teacher.joined)}</div>
+                                        <div className="text-sm text-slate-600">Joined</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </AnimatePresence>
+    );
+};
 
 /* ================= CONFIRMATION MODAL ================= */
 const ConfirmationModal = ({ modal, onConfirm, onCancel }) => {
