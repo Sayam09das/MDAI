@@ -124,13 +124,49 @@ export const teacherOnboardingAnalytics = async (req, res) => {
 };
 
 
-export const teacherStatusAnalytics = async (req, res) => {
+export const courseCreationAnalytics = async (req, res) => {
   try {
-    const active = await Teacher.countDocuments({ isSuspended: false });
-    const suspended = await Teacher.countDocuments({ isSuspended: true });
+    const data = await Course.aggregate([
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id": 1 } }
+    ]);
 
-    res.json({ active, suspended });
+    res.json(
+      data.map(d => ({
+        month: `Month ${d._id}`,
+        value: d.count
+      }))
+    );
   } catch {
-    res.status(500).json({ message: "Analytics failed" });
+    res.status(500).json({ message: "Failed course analytics" });
+  }
+};
+
+
+export const feedbackAnalytics = async (req, res) => {
+  try {
+    const data = await Review.aggregate([
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          avgRating: { $avg: "$rating" }
+        }
+      },
+      { $sort: { "_id": 1 } }
+    ]);
+
+    res.json(
+      data.map(d => ({
+        month: `Month ${d._id}`,
+        value: Number(d.avgRating.toFixed(2))
+      }))
+    );
+  } catch {
+    res.status(500).json({ message: "Failed feedback analytics" });
   }
 };
