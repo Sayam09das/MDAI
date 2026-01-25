@@ -94,7 +94,7 @@ export const getAllTeachers = async (req, res) => {
     const teachers = await Teacher.aggregate([
       {
         $lookup: {
-          from: "courses",          // MongoDB collection name
+          from: "courses",          // collection name
           localField: "_id",        // Teacher _id
           foreignField: "teacher",  // Course.teacher
           as: "courses",
@@ -102,7 +102,7 @@ export const getAllTeachers = async (req, res) => {
       },
       {
         $addFields: {
-          courseCount: { $size: "$courses" }, // 🔥 only count
+          courseCount: { $size: "$courses" },
         },
       },
       {
@@ -112,7 +112,7 @@ export const getAllTeachers = async (req, res) => {
           isSuspended: 1,
           createdAt: 1,
           courseCount: 1,
-          courses: 0, // ❌ REMOVE courses array completely
+          // ❌ DO NOT mention "courses" at all
         },
       },
     ]);
