@@ -1,0 +1,563 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Users,
+    UserCheck,
+    BookOpen,
+    Star,
+    TrendingUp,
+    TrendingDown,
+    Eye,
+    UserX,
+    UserPlus,
+    Trash2,
+    ChevronRight,
+    Home,
+    BarChart3,
+    Clock,
+    Award
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const TeacherAnalytics = () => {
+    const navigate = useNavigate();
+    const [selectedAction, setSelectedAction] = useState(null);
+    const [actionTeacher, setActionTeacher] = useState(null);
+
+    // Mock data - replace with API calls
+    const metrics = [
+        {
+            id: 1,
+            label: 'Total Teachers',
+            value: '1,248',
+            icon: Users,
+            trend: { value: '+12.5%', isPositive: true },
+            color: 'indigo'
+        },
+        {
+            id: 2,
+            label: 'Active Teachers',
+            value: '892',
+            icon: UserCheck,
+            trend: { value: '+8.3%', isPositive: true },
+            color: 'emerald'
+        },
+        {
+            id: 3,
+            label: 'Courses Published',
+            value: '3,456',
+            icon: BookOpen,
+            trend: { value: '+15.7%', isPositive: true },
+            color: 'blue'
+        },
+        {
+            id: 4,
+            label: 'Average Rating',
+            value: '4.6',
+            icon: Star,
+            trend: { value: '-0.2', isPositive: false },
+            color: 'amber'
+        }
+    ];
+
+    const teachers = [
+        {
+            id: 1,
+            name: 'Dr. Sarah Johnson',
+            email: 'sarah.j@mdai.edu',
+            courses: 12,
+            rating: 4.8,
+            status: 'active',
+            avatar: 'SJ'
+        },
+        {
+            id: 2,
+            name: 'Prof. Michael Chen',
+            email: 'michael.c@mdai.edu',
+            courses: 8,
+            rating: 4.9,
+            status: 'active',
+            avatar: 'MC'
+        },
+        {
+            id: 3,
+            name: 'Dr. Emily Rodriguez',
+            email: 'emily.r@mdai.edu',
+            courses: 15,
+            rating: 4.7,
+            status: 'active',
+            avatar: 'ER'
+        },
+        {
+            id: 4,
+            name: 'Prof. David Williams',
+            email: 'david.w@mdai.edu',
+            courses: 6,
+            rating: 4.5,
+            status: 'suspended',
+            avatar: 'DW'
+        },
+        {
+            id: 5,
+            name: 'Dr. Lisa Anderson',
+            email: 'lisa.a@mdai.edu',
+            courses: 10,
+            rating: 4.6,
+            status: 'active',
+            avatar: 'LA'
+        },
+        {
+            id: 6,
+            name: 'Prof. James Taylor',
+            email: 'james.t@mdai.edu',
+            courses: 9,
+            rating: 4.8,
+            status: 'active',
+            avatar: 'JT'
+        },
+        {
+            id: 7,
+            name: 'Dr. Maria Garcia',
+            email: 'maria.g@mdai.edu',
+            courses: 11,
+            rating: 4.9,
+            status: 'active',
+            avatar: 'MG'
+        },
+        {
+            id: 8,
+            name: 'Prof. Robert Brown',
+            email: 'robert.b@mdai.edu',
+            courses: 7,
+            rating: 4.4,
+            status: 'active',
+            avatar: 'RB'
+        },
+        {
+            id: 9,
+            name: 'Dr. Jennifer Lee',
+            email: 'jennifer.l@mdai.edu',
+            courses: 13,
+            rating: 4.7,
+            status: 'active',
+            avatar: 'JL'
+        },
+        {
+            id: 10,
+            name: 'Prof. Thomas Martin',
+            email: 'thomas.m@mdai.edu',
+            courses: 5,
+            rating: 4.6,
+            status: 'active',
+            avatar: 'TM'
+        }
+    ];
+
+    const handleAction = (action, teacher) => {
+        setSelectedAction(action);
+        setActionTeacher(teacher);
+    };
+
+    const confirmAction = () => {
+        const actions = {
+            suspend: () => toast.warning(`${actionTeacher.name} has been suspended`, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+            }),
+            activate: () => toast.success(`${actionTeacher.name} has been activated`, {
+                position: "top-right",
+                autoClose: 3000
+            }),
+            remove: () => toast.error(`${actionTeacher.name} has been removed`, {
+                position: "top-right",
+                autoClose: 3000
+            })
+        };
+
+        if (actions[selectedAction]) {
+            actions[selectedAction]();
+        }
+
+        setSelectedAction(null);
+        setActionTeacher(null);
+    };
+
+    const cancelAction = () => {
+        setSelectedAction(null);
+        setActionTeacher(null);
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50">
+            <ToastContainer />
+
+            {/* Page Header */}
+            <div className="bg-white border-b border-slate-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    {/* Breadcrumb */}
+                    <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-4">
+                        <Home className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4" />
+                        <span className="text-slate-900 font-medium">Dashboard</span>
+                        <ChevronRight className="w-4 h-4" />
+                        <span>Teachers</span>
+                    </nav>
+
+                    {/* Title */}
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900">Teacher Analytics</h1>
+                        <p className="mt-2 text-slate-600">
+                            Track teacher engagement, course activity, and platform impact.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {/* Metrics Overview */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {metrics.map((metric, index) => (
+                        <motion.div
+                            key={metric.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className={`p-3 rounded-lg bg-${metric.color}-50`}>
+                                    <metric.icon className={`w-6 h-6 text-${metric.color}-600`} />
+                                </div>
+                                {metric.trend && (
+                                    <div className={`flex items-center space-x-1 ${metric.trend.isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {metric.trend.isPositive ? (
+                                            <TrendingUp className="w-4 h-4" />
+                                        ) : (
+                                            <TrendingDown className="w-4 h-4" />
+                                        )}
+                                        <span className="text-sm font-medium">{metric.trend.value}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-4">
+                                <p className="text-sm text-slate-600">{metric.label}</p>
+                                <p className="text-2xl font-bold text-slate-900 mt-1">{metric.value}</p>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Analytics Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-8"
+                >
+                    <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+                        <BarChart3 className="w-5 h-5 mr-2 text-indigo-600" />
+                        Teacher Activity Analytics
+                    </h2>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Chart Placeholders */}
+                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
+                            <Clock className="w-12 h-12 text-slate-400 mb-3" />
+                            <p className="text-slate-600 font-medium">Teacher Onboarding Growth</p>
+                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
+                            <BookOpen className="w-12 h-12 text-slate-400 mb-3" />
+                            <p className="text-slate-600 font-medium">Courses Created Over Time</p>
+                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
+                            <Award className="w-12 h-12 text-slate-400 mb-3" />
+                            <p className="text-slate-600 font-medium">Student Feedback Trends</p>
+                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Teacher List Preview */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden"
+                >
+                    <div className="px-6 py-4 border-b border-slate-200">
+                        <h2 className="text-xl font-semibold text-slate-900">Recent Teachers</h2>
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden lg:block overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Teacher
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Email
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Courses
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Rating
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                                {teachers.map((teacher) => (
+                                    <motion.tr
+                                        key={teacher.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="hover:bg-slate-50 transition-colors"
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
+                                                    {teacher.avatar}
+                                                </div>
+                                                <div className="ml-4">
+                                                    <div className="text-sm font-medium text-slate-900">{teacher.name}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-slate-600">{teacher.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-slate-900 font-medium">{teacher.courses}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400 mr-1" />
+                                                <span className="text-sm font-medium text-slate-900">{teacher.rating}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${teacher.status === 'active'
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {teacher.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => toast.info(`Viewing ${teacher.name}'s profile`)}
+                                                    className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                                    title="View Profile"
+                                                >
+                                                    <Eye className="w-4 h-4 text-slate-600" />
+                                                </button>
+                                                {teacher.status === 'active' ? (
+                                                    <button
+                                                        onClick={() => handleAction('suspend', teacher)}
+                                                        className="p-1 hover:bg-amber-50 rounded transition-colors"
+                                                        title="Suspend Account"
+                                                    >
+                                                        <UserX className="w-4 h-4 text-amber-600" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleAction('activate', teacher)}
+                                                        className="p-1 hover:bg-emerald-50 rounded transition-colors"
+                                                        title="Activate Account"
+                                                    >
+                                                        <UserPlus className="w-4 h-4 text-emerald-600" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleAction('remove', teacher)}
+                                                    className="p-1 hover:bg-red-50 rounded transition-colors"
+                                                    title="Remove Teacher"
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </motion.tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile/Tablet Card View */}
+                    <div className="lg:hidden divide-y divide-slate-200">
+                        {teachers.map((teacher) => (
+                            <motion.div
+                                key={teacher.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="p-4"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center">
+                                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
+                                            {teacher.avatar}
+                                        </div>
+                                        <div className="ml-3">
+                                            <div className="font-medium text-slate-900">{teacher.name}</div>
+                                            <div className="text-sm text-slate-600">{teacher.email}</div>
+                                        </div>
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${teacher.status === 'active'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : 'bg-red-100 text-red-800'
+                                        }`}>
+                                        {teacher.status}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <p className="text-xs text-slate-600">Courses</p>
+                                        <p className="font-medium text-slate-900">{teacher.courses}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-600">Rating</p>
+                                        <div className="flex items-center">
+                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400 mr-1" />
+                                            <span className="font-medium text-slate-900">{teacher.rating}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => toast.info(`Viewing ${teacher.name}'s profile`)}
+                                        className="flex-1 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors flex items-center justify-center"
+                                    >
+                                        <Eye className="w-4 h-4 mr-1" />
+                                        View
+                                    </button>
+                                    {teacher.status === 'active' ? (
+                                        <button
+                                            onClick={() => handleAction('suspend', teacher)}
+                                            className="flex-1 px-3 py-2 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 rounded transition-colors flex items-center justify-center"
+                                        >
+                                            <UserX className="w-4 h-4 mr-1" />
+                                            Suspend
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleAction('activate', teacher)}
+                                            className="flex-1 px-3 py-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded transition-colors flex items-center justify-center"
+                                        >
+                                            <UserPlus className="w-4 h-4 mr-1" />
+                                            Activate
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => handleAction('remove', teacher)}
+                                        className="px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* View All Teachers CTA */}
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                        <button
+                            onClick={() => navigate('/admin/dashboard/teacherlist')}
+                            className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center"
+                        >
+                            <Users className="w-5 h-5 mr-2" />
+                            View All Teachers
+                            <ChevronRight className="w-5 h-5 ml-2" />
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Confirmation Modal */}
+            <AnimatePresence>
+                {selectedAction && actionTeacher && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                        onClick={cancelAction}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+                        >
+                            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+                                {selectedAction === 'remove' ? (
+                                    <Trash2 className="w-6 h-6 text-red-600" />
+                                ) : selectedAction === 'suspend' ? (
+                                    <UserX className="w-6 h-6 text-amber-600" />
+                                ) : (
+                                    <UserPlus className="w-6 h-6 text-emerald-600" />
+                                )}
+                            </div>
+
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                {selectedAction === 'remove' ? 'Remove Teacher' :
+                                    selectedAction === 'suspend' ? 'Suspend Account' : 'Activate Account'}
+                            </h3>
+
+                            <p className="text-slate-600 mb-6">
+                                Are you sure you want to {selectedAction} <strong>{actionTeacher.name}</strong>?
+                                {selectedAction === 'remove' && ' This action cannot be undone.'}
+                            </p>
+
+                            <div className="flex space-x-3">
+                                <button
+                                    onClick={cancelAction}
+                                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmAction}
+                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${selectedAction === 'remove'
+                                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                                            : selectedAction === 'suspend'
+                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        }`}
+                                >
+                                    {selectedAction === 'remove' ? 'Remove' :
+                                        selectedAction === 'suspend' ? 'Suspend' : 'Activate'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+export default TeacherAnalytics;
