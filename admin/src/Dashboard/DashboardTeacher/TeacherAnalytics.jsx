@@ -19,6 +19,15 @@ import {
     Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
+
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -48,6 +57,8 @@ const TeacherAnalytics = () => {
     const [metrics, setMetrics] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [onboardingData, setOnboardingData] = useState([]);
+
 
     /* ================= FETCH STATS ================= */
     const fetchStats = async () => {
@@ -160,7 +171,31 @@ const TeacherAnalytics = () => {
         setSelectedAction(null);
         setActionTeacher(null);
     };
+    const fetchOnboardingAnalytics = async () => {
+        const res = await axios.get(
+            `${BASE_URL}/api/teacher/analytics/onboarding`,
+            getAuthHeaders()
+        );
 
+        setOnboardingData(
+            res.data.map(d => ({
+                month: `Month ${d._id}`,
+                teachers: d.count,
+            }))
+        );
+    };
+
+
+    useEffect(() => {
+        fetchOnboardingAnalytics();
+    }, []);
+
+    useEffect(() => {
+        fetchOnboardingAnalytics();
+
+        const interval = setInterval(fetchOnboardingAnalytics, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -238,11 +273,23 @@ const TeacherAnalytics = () => {
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Chart Placeholders */}
-                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
-                            <Clock className="w-12 h-12 text-slate-400 mb-3" />
-                            <p className="text-slate-600 font-medium">Teacher Onboarding Growth</p>
-                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        <div className="bg-white rounded-lg p-4 border">
+                            <p className="font-medium mb-2">Teacher Onboarding Growth</p>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={onboardingData}>
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="teachers"
+                                        stroke="#6366f1"
+                                        strokeWidth={2}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
+
 
                         <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
                             <BookOpen className="w-12 h-12 text-slate-400 mb-3" />
