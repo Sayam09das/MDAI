@@ -30,7 +30,6 @@ const TeacherAnalytics = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
     });
-    Ï
     const navigate = useNavigate();
     const [selectedAction, setSelectedAction] = useState(null);
     const [actionTeacher, setActionTeacher] = useState(null);
