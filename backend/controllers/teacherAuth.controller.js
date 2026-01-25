@@ -103,3 +103,34 @@ export const getAllTeachers = async (req, res) => {
     });
   }
 };
+
+
+export const teacherOnboardingAnalytics = async (req, res) => {
+  try {
+    const data = await Teacher.aggregate([
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Analytics failed" });
+  }
+};
+
+
+export const teacherStatusAnalytics = async (req, res) => {
+  try {
+    const active = await Teacher.countDocuments({ isSuspended: false });
+    const suspended = await Teacher.countDocuments({ isSuspended: true });
+
+    res.json({ active, suspended });
+  } catch {
+    res.status(500).json({ message: "Analytics failed" });
+  }
+};

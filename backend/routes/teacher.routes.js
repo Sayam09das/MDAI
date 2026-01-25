@@ -5,6 +5,8 @@ import {
     suspendTeacher,
     resumeTeacher,
     getAllTeachers,
+    teacherOnboardingAnalytics,
+    teacherStatusAnalytics,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -33,5 +35,10 @@ router.patch("/:teacherId/resume", protect, resumeTeacher);
 
 // (Future) Teacher dashboard
 // router.get("/dashboard", protect, teacherOnly, getTeacherDashboard);
+
+
+router.get("/analytics/onboarding", protect, teacherOnboardingAnalytics);
+router.get("/analytics/status", protect, teacherStatusAnalytics);
+
 
 export default router;
