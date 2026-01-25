@@ -58,6 +58,9 @@ const TeacherAnalytics = () => {
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [onboardingData, setOnboardingData] = useState([]);
+    const [courseData, setCourseData] = useState([]);
+    const [feedbackData, setFeedbackData] = useState([]);
+
 
 
     /* ================= FETCH STATS ================= */
@@ -171,24 +174,32 @@ const TeacherAnalytics = () => {
         setSelectedAction(null);
         setActionTeacher(null);
     };
-    const fetchOnboardingAnalytics = async () => {
-        const res = await axios.get(
-            `${BASE_URL}/api/teacher/analytics/onboarding`,
-            getAuthHeaders()
-        );
 
-        setOnboardingData(
-            res.data.map(d => ({
-                month: `Month ${d._id}`,
-                teachers: d.count,
-            }))
-        );
+
+    const fetchAnalytics = async () => {
+        try {
+            const [onboard, courses, feedback] = await Promise.all([
+                axios.get(`${BASE_URL}/api/teacher/analytics/onboarding`, getAuthHeaders()),
+                axios.get(`${BASE_URL}/api/teacher/analytics/courses`, getAuthHeaders()),
+                axios.get(`${BASE_URL}/api/teacher/analytics/feedback`, getAuthHeaders()),
+            ]);
+
+            setOnboardingData(onboard.data);
+            setCourseData(courses.data);
+            setFeedbackData(feedback.data);
+        } catch {
+            toast.error("Failed to load analytics");
+        }
     };
 
-
     useEffect(() => {
-        fetchOnboardingAnalytics();
+        fetchAnalytics();
+
+        // 🔄 auto-refresh every 30s (REAL-TIME feel)
+        const interval = setInterval(fetchAnalytics, 30000);
+        return () => clearInterval(interval);
     }, []);
+
 
     useEffect(() => {
         fetchOnboardingAnalytics();
@@ -272,7 +283,8 @@ const TeacherAnalytics = () => {
                     </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Chart Placeholders */}
+
+                        {/* 1️⃣ Teacher Onboarding Growth */}
                         <div className="bg-white rounded-lg p-4 border">
                             <p className="font-medium mb-2">Teacher Onboarding Growth</p>
                             <ResponsiveContainer width="100%" height={200}>
@@ -280,28 +292,37 @@ const TeacherAnalytics = () => {
                                     <XAxis dataKey="month" />
                                     <YAxis />
                                     <Tooltip />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="teachers"
-                                        stroke="#6366f1"
-                                        strokeWidth={2}
-                                    />
+                                    <Line type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={2} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
 
-
-                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
-                            <BookOpen className="w-12 h-12 text-slate-400 mb-3" />
-                            <p className="text-slate-600 font-medium">Courses Created Over Time</p>
-                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        {/* 2️⃣ Courses Created Over Time */}
+                        <div className="bg-white rounded-lg p-4 border">
+                            <p className="font-medium mb-2">Courses Created Over Time</p>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={courseData}>
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
 
-                        <div className="bg-slate-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px] border border-slate-200">
-                            <Award className="w-12 h-12 text-slate-400 mb-3" />
-                            <p className="text-slate-600 font-medium">Student Feedback Trends</p>
-                            <p className="text-sm text-slate-500 mt-1">Chart data loading...</p>
+                        {/* 3️⃣ Student Feedback Trends */}
+                        <div className="bg-white rounded-lg p-4 border">
+                            <p className="font-medium mb-2">Student Feedback Trends</p>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={feedbackData}>
+                                    <XAxis dataKey="month" />
+                                    <YAxis domain={[0, 5]} />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="value" stroke="#f59e0b" strokeWidth={2} />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
+
                     </div>
                 </motion.div>
 
