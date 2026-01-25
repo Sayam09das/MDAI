@@ -25,6 +25,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 
 const TeacherAnalytics = () => {
+    const BASE_URL = import.meta.env.VITE_BACKEND_URL;
     const getAuthHeaders = () => ({
         headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
