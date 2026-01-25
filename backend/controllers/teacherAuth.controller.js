@@ -89,12 +89,33 @@ export const resumeTeacher = async (req, res) => {
   }
 };
 
-
 export const getAllTeachers = async (req, res) => {
   try {
-    const teachers = await Teacher.find().select(
-      "fullName email isSuspended createdAt"
-    );
+    const teachers = await Teacher.aggregate([
+      {
+        $lookup: {
+          from: "courses",          // MongoDB collection name
+          localField: "_id",        // Teacher _id
+          foreignField: "teacher",  // Course.teacher
+          as: "courses",
+        },
+      },
+      {
+        $addFields: {
+          courseCount: { $size: "$courses" }, // 🔥 only count
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          email: 1,
+          isSuspended: 1,
+          createdAt: 1,
+          courseCount: 1,
+          courses: 0, // ❌ REMOVE courses array completely
+        },
+      },
+    ]);
 
     res.status(200).json(teachers);
   } catch (error) {
@@ -104,6 +125,7 @@ export const getAllTeachers = async (req, res) => {
     });
   }
 };
+
 
 
 export const teacherOnboardingAnalytics = async (req, res) => {
