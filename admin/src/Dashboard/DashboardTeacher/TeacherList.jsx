@@ -1,25 +1,42 @@
-import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
+    Filter,
+    SortAsc,
+    RefreshCw,
     MoreVertical,
+    Eye,
     UserX,
     UserPlus,
-} from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+    Trash2,
+    BookOpen,
+    ChevronLeft,
+    ChevronRight,
+    Home,
+    Users,
+    Star,
+    Calendar,
+    GraduationCap,
+    CheckSquare,
+    Square,
+    AlertCircle,
+    Loader2,
+    X,
+    Award,
+    TrendingUp
+} from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const TeacherList = () => {
-    const navigate = useNavigate();
-
     /* ================= AUTH ================= */
     const getAuthHeaders = () => {
         const token = localStorage.getItem("adminToken");
         if (!token) {
-            navigate("/admin/login");
+            window.location.href = "/admin/login";
             return {};
         }
         return {
@@ -31,33 +48,47 @@ const TeacherList = () => {
 
     /* ================= STATE ================= */
     const [teachers, setTeachers] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [sortBy, setSortBy] = useState('courses');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [selectedTeachers, setSelectedTeachers] = useState([]);
+    const [showActionMenu, setShowActionMenu] = useState(null);
+    const [confirmModal, setConfirmModal] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
 
     /* ================= FETCH TEACHERS ================= */
     const fetchTeachers = async () => {
         try {
-            setLoading(true);
-            const res = await axios.get(
-                `${BASE_URL}/api/teacher`,
-                getAuthHeaders()
-            );
+            setIsLoading(true);
+            const response = await fetch(`${BASE_URL}/api/teacher`, getAuthHeaders());
+
+            if (!response.ok) throw new Error('Failed to fetch');
+
+            const data = await response.json();
 
             setTeachers(
-                res.data.map((t) => ({
+                data.map((t) => ({
                     id: t._id,
                     name: t.fullName,
                     email: t.email,
-                    status: t.isSuspended ? "suspended" : "active",
+                    courses: t.courseCount || 0,
+                    courseNames: t.courses || [],
+                    students: Math.floor(Math.random() * 3000) + 500, // Mock data
+                    rating: (Math.random() * 0.5 + 4.4).toFixed(1), // Mock data
                     joined: t.createdAt,
-                    courseCount: t.courseCount,
-                    courses: t.courses || [], // 👈 COURSE NAMES
+                    status: t.isSuspended ? 'suspended' : 'active',
+                    avatar: t.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                 }))
             );
-        } catch {
-            toast.error("Failed to load teachers");
+            toast.success('Teachers loaded successfully');
+        } catch (error) {
+            toast.error('Failed to load teachers');
+            console.error(error);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
@@ -66,159 +97,910 @@ const TeacherList = () => {
     }, []);
 
     /* ================= ACTIONS ================= */
-    const suspendTeacher = async (id) => {
+    const suspendTeacher = async (id, name) => {
         try {
-            await axios.patch(
+            const response = await fetch(
                 `${BASE_URL}/api/teacher/${id}/suspend`,
-                {},
-                getAuthHeaders()
+                {
+                    method: 'PATCH',
+                    ...getAuthHeaders()
+                }
             );
-            toast.warning("Teacher suspended");
+
+            if (!response.ok) throw new Error('Failed to suspend');
+
+            toast.warning(`${name} has been suspended`);
             fetchTeachers();
-        } catch {
-            toast.error("Suspend failed");
+        } catch (error) {
+            toast.error('Failed to suspend teacher');
         }
     };
 
-    const resumeTeacher = async (id) => {
+    const resumeTeacher = async (id, name) => {
         try {
-            await axios.patch(
+            const response = await fetch(
                 `${BASE_URL}/api/teacher/${id}/resume`,
-                {},
-                getAuthHeaders()
+                {
+                    method: 'PATCH',
+                    ...getAuthHeaders()
+                }
             );
-            toast.success("Teacher activated");
+
+            if (!response.ok) throw new Error('Failed to activate');
+
+            toast.success(`${name} has been activated`);
             fetchTeachers();
-        } catch {
-            toast.error("Resume failed");
+        } catch (error) {
+            toast.error('Failed to activate teacher');
         }
     };
 
-    /* ================= FILTER ================= */
-    const filteredTeachers = useMemo(() => {
-        return teachers.filter(
-            (t) =>
+    /* ================= FILTER & SORT ================= */
+    const filteredAndSortedTeachers = useMemo(() => {
+        let result = [...teachers];
+
+        // Search filter
+        if (searchQuery) {
+            result = result.filter(t =>
                 t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.email.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [teachers, searchQuery]);
+            );
+        }
 
-    const formatDate = (date) =>
-        new Date(date).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
+        // Status filter
+        if (filterStatus !== 'all') {
+            result = result.filter(t => t.status === filterStatus);
+        }
+
+        // Sort
+        result.sort((a, b) => {
+            if (sortBy === 'courses') return b.courses - a.courses;
+            if (sortBy === 'rating') return b.rating - a.rating;
+            if (sortBy === 'students') return b.students - a.students;
+            if (sortBy === 'joined') return new Date(b.joined) - new Date(a.joined);
+            return 0;
         });
 
-    /* ================= UI ================= */
+        return result;
+    }, [teachers, searchQuery, filterStatus, sortBy]);
+
+    /* ================= PAGINATION ================= */
+    const totalPages = Math.ceil(filteredAndSortedTeachers.length / rowsPerPage);
+    const paginatedTeachers = filteredAndSortedTeachers.slice(
+        (currentPage - 1) * rowsPerPage,
+        currentPage * rowsPerPage
+    );
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterStatus, sortBy]);
+
+    /* ================= SELECTION ================= */
+    const toggleSelectAll = () => {
+        if (selectedTeachers.length === paginatedTeachers.length) {
+            setSelectedTeachers([]);
+        } else {
+            setSelectedTeachers(paginatedTeachers.map(t => t.id));
+        }
+    };
+
+    const toggleSelectTeacher = (id) => {
+        setSelectedTeachers(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    /* ================= ACTION HANDLERS ================= */
+    const handleRefresh = () => {
+        fetchTeachers();
+    };
+
+    const handleAction = (action, teacher) => {
+        setConfirmModal({ action, teacher });
+        setShowActionMenu(null);
+    };
+
+    const confirmAction = async () => {
+        const { action, teacher } = confirmModal;
+
+        if (action === 'suspend') {
+            await suspendTeacher(teacher.id, teacher.name);
+        } else if (action === 'activate') {
+            await resumeTeacher(teacher.id, teacher.name);
+        } else if (action === 'view') {
+            toast.info(`Viewing ${teacher.name}'s profile`);
+        } else if (action === 'courses') {
+            toast.info(`Managing courses for ${teacher.name}`);
+        } else if (action === 'remove') {
+            toast.error(`${teacher.name} removal functionality not implemented`);
+        }
+
+        setConfirmModal(null);
+    };
+
+    const handleBulkAction = (action) => {
+        if (selectedTeachers.length === 0) {
+            toast.warning('Please select teachers first');
+            return;
+        }
+        setConfirmModal({ action, bulk: true, count: selectedTeachers.length });
+    };
+
+    const confirmBulkAction = async () => {
+        const { action, count } = confirmModal;
+
+        if (action === 'bulk-suspend') {
+            toast.warning(`Bulk suspend ${count} teachers - Not implemented`);
+        } else if (action === 'bulk-activate') {
+            toast.success(`Bulk activate ${count} teachers - Not implemented`);
+        } else if (action === 'bulk-remove') {
+            toast.error(`Bulk remove ${count} teachers - Not implemented`);
+        }
+
+        setSelectedTeachers([]);
+        setConfirmModal(null);
+    };
+
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="min-h-screen bg-slate-50">
             <ToastContainer />
 
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Teachers</h1>
-                <button
-                    onClick={() => navigate("/admin/dashboard/create/teacher")}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
-                >
-                    Add Teacher
-                </button>
-            </div>
+            {/* Page Header */}
+            <div className="bg-white border-b border-slate-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    {/* Breadcrumb */}
+                    <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-4">
+                        <Home className="w-4 h-4" />
+                        <span>/</span>
+                        <span>Dashboard</span>
+                        <span>/</span>
+                        <span>Teachers</span>
+                        <span>/</span>
+                        <span className="text-slate-900 font-medium">Teacher List</span>
+                    </nav>
 
-            {/* Search */}
-            <div className="bg-white p-4 rounded-lg border mb-6">
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        className="w-full pl-9 pr-3 py-2 border rounded-lg"
-                        placeholder="Search teacher..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                    {/* Title */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-slate-900">All Teachers</h1>
+                            <p className="mt-2 text-slate-600">
+                                Manage instructors, courses, and platform access.
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={handleRefresh}
+                                disabled={isLoading}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                                title="Refresh"
+                            >
+                                <RefreshCw className={`w-5 h-5 text-slate-600 ${isLoading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-lg border overflow-x-auto">
-                {loading ? (
-                    <p className="p-6 text-center">Loading...</p>
-                ) : filteredTeachers.length === 0 ? (
-                    <p className="p-6 text-center">No teachers found</p>
+            {/* Main Content */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {/* Top Controls */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6"
+                >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        {/* Search */}
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or email..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filters and Sort */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Status Filter */}
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+
+                            {/* Sort */}
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            >
+                                <option value="courses">Most Courses</option>
+                                <option value="rating">Highest Rated</option>
+                                <option value="students">Most Students</option>
+                                <option value="joined">Recently Joined</option>
+                            </select>
+
+                            {/* Mobile Filter Toggle */}
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="lg:hidden p-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+                            >
+                                <Filter className="w-5 h-5 text-slate-600" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Bulk Actions */}
+                    <AnimatePresence>
+                        {selectedTeachers.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex flex-wrap items-center justify-between gap-3"
+                            >
+                                <div className="flex items-center text-sm text-indigo-900">
+                                    <CheckSquare className="w-4 h-4 mr-2" />
+                                    <span className="font-medium">{selectedTeachers.length} teacher(s) selected</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleBulkAction('bulk-activate')}
+                                        className="px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                                    >
+                                        Bulk Activate
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkAction('bulk-suspend')}
+                                        className="px-3 py-1.5 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+                                    >
+                                        Bulk Suspend
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkAction('bulk-remove')}
+                                        className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                    >
+                                        Bulk Remove
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+
+                {/* Teacher List */}
+                {isLoading ? (
+                    <LoadingSkeleton />
+                ) : filteredAndSortedTeachers.length === 0 ? (
+                    <EmptyState searchQuery={searchQuery} />
                 ) : (
-                    <table className="w-full">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="p-3 text-left">Name</th>
-                                <th className="p-3 text-left">Email</th>
-                                <th className="p-3 text-left">Courses</th>
-                                <th className="p-3 text-left">Course Names</th>
-                                <th className="p-3 text-left">Joined</th>
-                                <th className="p-3 text-left">Status</th>
-                                <th className="p-3 text-left">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredTeachers.map((t) => (
-                                <tr key={t.id} className="border-t hover:bg-gray-50">
-                                    <td className="p-3 font-medium">{t.name}</td>
-                                    <td className="p-3">{t.email}</td>
-                                    <td className="p-3 font-semibold">{t.courseCount}</td>
-
-                                    {/* COURSE NAMES */}
-                                    <td className="p-3 text-sm text-gray-600">
-                                        {t.courses.length === 0
-                                            ? "—"
-                                            : t.courses.map((c, i) => (
-                                                <span
-                                                    key={i}
-                                                    className="inline-block bg-indigo-50 text-indigo-700 px-2 py-1 rounded mr-1 mb-1"
+                    <>
+                        {/* Desktop Table */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="hidden lg:block bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden"
+                        >
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left">
+                                                <button
+                                                    onClick={toggleSelectAll}
+                                                    className="p-1 hover:bg-slate-200 rounded transition-colors"
                                                 >
-                                                    {c.title}
-                                                </span>
-                                            ))}
-                                    </td>
-
-                                    <td className="p-3">{formatDate(t.joined)}</td>
-
-                                    <td className="p-3">
-                                        <span
-                                            className={`px-2 py-1 rounded text-xs ${t.status === "active"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-red-100 text-red-700"
-                                                }`}
-                                        >
-                                            {t.status}
-                                        </span>
-                                    </td>
-
-                                    {/* ACTIONS */}
-                                    <td className="p-3">
-                                        {t.status === "active" ? (
-                                            <button
-                                                onClick={() => suspendTeacher(t.id)}
-                                                className="flex items-center gap-1 text-red-600 hover:underline"
+                                                    {selectedTeachers.length === paginatedTeachers.length && paginatedTeachers.length > 0 ? (
+                                                        <CheckSquare className="w-5 h-5 text-indigo-600" />
+                                                    ) : (
+                                                        <Square className="w-5 h-5 text-slate-400" />
+                                                    )}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Teacher
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Email
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Courses
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Course Names
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Students
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Rating
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Joined
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {paginatedTeachers.map((teacher, index) => (
+                                            <motion.tr
+                                                key={teacher.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className="hover:bg-slate-50 transition-colors"
                                             >
-                                                <UserX className="w-4 h-4" />
-                                                Suspend
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => resumeTeacher(t.id)}
-                                                className="flex items-center gap-1 text-emerald-600 hover:underline"
-                                            >
-                                                <UserPlus className="w-4 h-4" />
-                                                Resume
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
+                                                <td className="px-6 py-4">
+                                                    <button
+                                                        onClick={() => toggleSelectTeacher(teacher.id)}
+                                                        className="p-1 hover:bg-slate-200 rounded transition-colors"
+                                                    >
+                                                        {selectedTeachers.includes(teacher.id) ? (
+                                                            <CheckSquare className="w-5 h-5 text-indigo-600" />
+                                                        ) : (
+                                                            <Square className="w-5 h-5 text-slate-400" />
+                                                        )}
+                                                    </button>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
+                                                            {teacher.avatar}
+                                                        </div>
+                                                        <div className="ml-4">
+                                                            <div className="text-sm font-medium text-slate-900">{teacher.name}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-slate-600">{teacher.email}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-slate-900 font-medium">{teacher.courses}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1 max-w-xs">
+                                                        {teacher.courseNames.length === 0 ? (
+                                                            <span className="text-sm text-slate-400">No courses</span>
+                                                        ) : (
+                                                            teacher.courseNames.map((course, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="inline-block bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs"
+                                                                >
+                                                                    {course.title}
+                                                                </span>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-slate-900">{teacher.students.toLocaleString()}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <Star className="w-4 h-4 text-amber-400 fill-amber-400 mr-1" />
+                                                        <span className="text-sm font-medium text-slate-900">{teacher.rating}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-slate-600">{formatDate(teacher.joined)}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${teacher.status === 'active'
+                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                        }`}>
+                                                        {teacher.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="relative">
+                                                        <button
+                                                            onClick={() => setShowActionMenu(showActionMenu === teacher.id ? null : teacher.id)}
+                                                            className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                                        >
+                                                            <MoreVertical className="w-5 h-5 text-slate-600" />
+                                                        </button>
+
+                                                        <AnimatePresence>
+                                                            {showActionMenu === teacher.id && (
+                                                                <ActionMenu
+                                                                    teacher={teacher}
+                                                                    onAction={handleAction}
+                                                                    onClose={() => setShowActionMenu(null)}
+                                                                />
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </motion.div>
+
+                        {/* Mobile Card View */}
+                        <div className="lg:hidden space-y-4">
+                            {paginatedTeachers.map((teacher, index) => (
+                                <TeacherCard
+                                    key={teacher.id}
+                                    teacher={teacher}
+                                    index={index}
+                                    isSelected={selectedTeachers.includes(teacher.id)}
+                                    onToggleSelect={toggleSelectTeacher}
+                                    onAction={handleAction}
+                                    formatDate={formatDate}
+                                />
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            rowsPerPage={rowsPerPage}
+                            totalItems={filteredAndSortedTeachers.length}
+                            onPageChange={setCurrentPage}
+                            onRowsPerPageChange={setRowsPerPage}
+                        />
+                    </>
                 )}
             </div>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                modal={confirmModal}
+                onConfirm={confirmModal?.bulk ? confirmBulkAction : confirmAction}
+                onCancel={() => setConfirmModal(null)}
+            />
         </div>
+    );
+};
+
+/* ================= ACTION MENU ================= */
+const ActionMenu = ({ teacher, onAction, onClose }) => (
+    <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+        className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+        onMouseLeave={onClose}
+    >
+        <button
+            onClick={() => onAction('view', teacher)}
+            className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center"
+        >
+            <Eye className="w-4 h-4 mr-2" />
+            View Profile
+        </button>
+        <button
+            onClick={() => onAction('courses', teacher)}
+            className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center"
+        >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Manage Courses
+        </button>
+        <div className="border-t border-slate-200 my-1"></div>
+        {teacher.status === 'active' ? (
+            <button
+                onClick={() => onAction('suspend', teacher)}
+                className="w-full px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 flex items-center"
+            >
+                <UserX className="w-4 h-4 mr-2" />
+                Suspend Account
+            </button>
+        ) : (
+            <button
+                onClick={() => onAction('activate', teacher)}
+                className="w-full px-4 py-2 text-left text-sm text-emerald-700 hover:bg-emerald-50 flex items-center"
+            >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Activate Account
+            </button>
+        )}
+        <button
+            onClick={() => onAction('remove', teacher)}
+            className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center"
+        >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Remove Teacher
+        </button>
+    </motion.div>
+);
+
+/* ================= MOBILE CARD ================= */
+const TeacherCard = ({ teacher, index, isSelected, onToggleSelect, onAction, formatDate }) => {
+    const [showMenu, setShowMenu] = useState(false);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 p-4"
+        >
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start space-x-3 flex-1">
+                    <button
+                        onClick={() => onToggleSelect(teacher.id)}
+                        className="p-1 hover:bg-slate-100 rounded transition-colors mt-1"
+                    >
+                        {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-indigo-600" />
+                        ) : (
+                            <Square className="w-5 h-5 text-slate-400" />
+                        )}
+                    </button>
+                    <div className="flex items-start space-x-3 flex-1">
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold flex-shrink-0">
+                            {teacher.avatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-slate-900 truncate">{teacher.name}</h3>
+                            <p className="text-sm text-slate-600 truncate">{teacher.email}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${teacher.status === 'active'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                        {teacher.status}
+                    </span>
+                    <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                    >
+                        <MoreVertical className="w-5 h-5 text-slate-600" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Course Names */}
+            {teacher.courseNames.length > 0 && (
+                <div className="mb-3">
+                    <p className="text-xs text-slate-600 mb-1">Courses:</p>
+                    <div className="flex flex-wrap gap-1">
+                        {teacher.courseNames.map((course, i) => (
+                            <span
+                                key={i}
+                                className="inline-block bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs"
+                            >
+                                {course.title}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 mb-3">
+                <div className="flex items-center space-x-2">
+                    <BookOpen className="w-4 h-4 text-slate-400" />
+                    <div>
+                        <p className="text-xs text-slate-600">Courses</p>
+                        <p className="font-medium text-slate-900">{teacher.courses}</p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <GraduationCap className="w-4 h-4 text-slate-400" />
+                    <div>
+                        <p className="text-xs text-slate-600">Students</p>
+                        <p className="font-medium text-slate-900">{teacher.students.toLocaleString()}</p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <div>
+                        <p className="text-xs text-slate-600">Rating</p>
+                        <p className="font-medium text-slate-900">{teacher.rating}</p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <div>
+                        <p className="text-xs text-slate-600">Joined</p>
+                        <p className="font-medium text-slate-900 text-xs">{formatDate(teacher.joined)}</p>
+                    </div>
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {showMenu && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-t border-slate-200 pt-3 space-y-2"
+                    >
+                        <button
+                            onClick={() => {
+                                onAction('view', teacher);
+                                setShowMenu(false);
+                            }}
+                            className="w-full px-3 py-2 text-sm bg-slate-50 hover:bg-slate-100 text-slate-700 rounded flex items-center justify-center"
+                        >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Profile
+                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                            {teacher.status === 'active' ? (
+                                <button
+                                    onClick={() => {
+                                        onAction('suspend', teacher);
+                                        setShowMenu(false);
+                                    }}
+                                    className="px-3 py-2 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 rounded flex items-center justify-center"
+                                >
+                                    <UserX className="w-4 h-4 mr-1" />
+                                    Suspend
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        onAction('activate', teacher);
+                                        setShowMenu(false);
+                                    }}
+                                    className="px-3 py-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded flex items-center justify-center"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-1" />
+                                    Activate
+                                </button>
+                            )}
+                            <button
+                                onClick={() => {
+                                    onAction('remove', teacher);
+                                    setShowMenu(false);
+                                }}
+                                className="px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded flex items-center justify-center"
+                            >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Remove
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
+/* ================= PAGINATION ================= */
+const Pagination = ({ currentPage, totalPages, rowsPerPage, totalItems, onPageChange, onRowsPerPageChange }) => {
+    const startItem = (currentPage - 1) * rowsPerPage + 1;
+    const endItem = Math.min(currentPage * rowsPerPage, totalItems);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 px-4 py-3 mt-6"
+        >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                    <span className="text-sm text-slate-700">Rows per page:</span>
+                    <select
+                        value={rowsPerPage}
+                        onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
+                        className="px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-slate-700">
+                        {startItem}-{endItem} of {totalItems}
+                    </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-slate-600" />
+                    </button>
+
+                    <div className="hidden sm:flex items-center space-x-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => onPageChange(pageNum)}
+                                    className={`px-3 py-1 rounded ${currentPage === pageNum
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-slate-700 hover:bg-slate-100'
+                                        }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <span className="sm:hidden text-sm text-slate-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <ChevronRight className="w-5 h-5 text-slate-600" />
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+/* ================= LOADING SKELETON ================= */
+const LoadingSkeleton = () => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-white rounded-lg shadow-sm border border-slate-200 p-6"
+    >
+        <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+                <div key={i} className="animate-pulse flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                        <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </motion.div>
+);
+
+/* ================= EMPTY STATE ================= */
+const EmptyState = ({ searchQuery }) => (
+    <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-lg shadow-sm border border-slate-200 p-12"
+    >
+        <div className="text-center">
+            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">
+                {searchQuery ? 'No teachers found' : 'No teachers yet'}
+            </h3>
+            <p className="text-slate-600">
+                {searchQuery
+                    ? 'Try adjusting your search or filters'
+                    : 'Teachers will appear here once they register'}
+            </p>
+        </div>
+    </motion.div>
+);
+
+/* ================= CONFIRMATION MODAL ================= */
+const ConfirmationModal = ({ modal, onConfirm, onCancel }) => {
+    if (!modal) return null;
+
+    const isBulk = modal.bulk;
+    const isDestructive = modal.action === 'remove' || modal.action === 'bulk-remove';
+
+    const titles = {
+        suspend: 'Suspend Account',
+        activate: 'Activate Account',
+        remove: 'Remove Teacher',
+        'bulk-suspend': 'Bulk Suspend Teachers',
+        'bulk-activate': 'Bulk Activate Teachers',
+        'bulk-remove': 'Bulk Remove Teachers'
+    };
+
+    const descriptions = {
+        suspend: `Are you sure you want to suspend ${modal.teacher?.name}? They will lose access to the platform.`,
+        activate: `Are you sure you want to activate ${modal.teacher?.name}? They will regain platform access.`,
+        remove: `Are you sure you want to remove ${modal.teacher?.name}? This action cannot be undone.`,
+        'bulk-suspend': `Are you sure you want to suspend ${modal.count} teachers? They will lose access to the platform.`,
+        'bulk-activate': `Are you sure you want to activate ${modal.count} teachers? They will regain platform access.`,
+        'bulk-remove': `Are you sure you want to remove ${modal.count} teachers? This action cannot be undone.`
+    };
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                onClick={onCancel}
+            >
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+                >
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full mb-4 ${isDestructive ? 'bg-red-100' :
+                            modal.action.includes('suspend') ? 'bg-amber-100' : 'bg-emerald-100'
+                        }`}>
+                        {isDestructive ? (
+                            <Trash2 className="w-6 h-6 text-red-600" />
+                        ) : modal.action.includes('suspend') ? (
+                            <UserX className="w-6 h-6 text-amber-600" />
+                        ) : (
+                            <UserPlus className="w-6 h-6 text-emerald-600" />
+                        )}
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                        {titles[modal.action]}
+                    </h3>
+
+                    <p className="text-slate-600 mb-6">
+                        {descriptions[modal.action]}
+                    </p>
+
+                    <div className="flex space-x-3">
+                        <button
+                            onClick={onCancel}
+                            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${isDestructive
+                                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                                    : modal.action.includes('suspend')
+                                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                }`}
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 };
 
