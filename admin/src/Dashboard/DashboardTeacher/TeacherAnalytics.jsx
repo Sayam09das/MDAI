@@ -26,11 +26,21 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const TeacherAnalytics = () => {
     const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-    const getAuthHeaders = () => ({
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-    });
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem("accessToken");
+
+        if (!token) {
+            toast.error("Session expired. Please login again.");
+            navigate("/login");
+            return {};
+        }
+
+        return {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+    };
     const navigate = useNavigate();
     const [selectedAction, setSelectedAction] = useState(null);
     const [actionTeacher, setActionTeacher] = useState(null);
