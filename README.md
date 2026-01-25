@@ -408,7 +408,7 @@ git push origin feature/amazing-feature
 ## License
 
 ```
-Copyright (c) 2025 Modern Digital Academy Institute
+Copyright (c) 2026 Modern Digital Academy Institute
 
 This software is proprietary and confidential. Unauthorized copying,
 transferring or reproduction of this software, via any medium, is
