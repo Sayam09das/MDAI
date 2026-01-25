@@ -674,7 +674,7 @@ const TeacherCard = ({ teacher, index, isSelected, onToggleSelect, onAction, for
                         )}
                     </button>
                     <div className="flex items-start space-x-3 flex-1">
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold shrink-0">
                             {teacher.avatar}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1092,7 +1092,8 @@ const ProfileModal = ({ teacher, onClose }) => {
                         </div>
                     </div>
                 </motion.div>
-            </AnimatePresence>
+            </motion.div>
+        </AnimatePresence>
     );
 };
 
