@@ -195,16 +195,7 @@ const TeacherAnalytics = () => {
     useEffect(() => {
         fetchAnalytics();
 
-        // 🔄 auto-refresh every 30s (REAL-TIME feel)
         const interval = setInterval(fetchAnalytics, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-
-    useEffect(() => {
-        fetchOnboardingAnalytics();
-
-        const interval = setInterval(fetchOnboardingAnalytics, 30000);
         return () => clearInterval(interval);
     }, []);
 
