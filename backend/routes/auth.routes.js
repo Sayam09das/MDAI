@@ -4,6 +4,7 @@ import {
   login,
   logout,
   getCurrentUser,
+  getAllStudents,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 
@@ -22,6 +23,8 @@ router.post("/logout", logout);
 
 // Get current logged-in user
 router.get("/me", protect, getCurrentUser);
+
+router.get("/students", protect,getAllStudents);
 
 
 export default router;

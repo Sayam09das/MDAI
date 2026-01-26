@@ -156,3 +156,21 @@ export const getCurrentUser = async (req, res) => {
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+
+
+/* ================= GET ALL STUDENTS ================= */
+export const getAllStudents = async (req, res) => {
+  try {
+    const students = await User.find()
+      .select("fullName email") // only needed fields
+      .sort({ createdAt: -1 });
+
+    res.json({
+      count: students.length,
+      students
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch students" });
+  }
+};
