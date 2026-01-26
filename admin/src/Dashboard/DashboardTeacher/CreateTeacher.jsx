@@ -23,9 +23,10 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CreateTeacher = () => {
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -54,28 +55,28 @@ const CreateTeacher = () => {
         if (!value.trim()) return 'Full name is required';
         if (value.trim().length < 3) return 'Name must be at least 3 characters';
         return '';
-      
+
       case 'email':
         if (!value.trim()) return 'Email is required';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return 'Invalid email format';
         return '';
-      
+
       case 'phone':
         if (!value.trim()) return 'Phone number is required';
         const phoneRegex = /^[0-9]{10,15}$/;
         if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Invalid phone number (10-15 digits)';
         return '';
-      
+
       case 'address':
         if (!value.trim()) return 'Address is required';
         if (value.trim().length < 10) return 'Address must be at least 10 characters';
         return '';
-      
+
       case 'gender':
         if (!value) return 'Gender is required';
         return '';
-      
+
       case 'password':
         if (!value) return 'Password is required';
         if (value.length < 8) return 'Password must be at least 8 characters';
@@ -83,12 +84,12 @@ const CreateTeacher = () => {
           return 'Password must contain uppercase, lowercase, and number';
         }
         return '';
-      
+
       case 'confirmPassword':
         if (!value) return 'Please confirm password';
         if (value !== formData.password) return 'Passwords do not match';
         return '';
-      
+
       default:
         return '';
     }
@@ -97,7 +98,7 @@ const CreateTeacher = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Validate on change if field was touched
     if (touched[name]) {
       setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
@@ -112,7 +113,7 @@ const CreateTeacher = () => {
 
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
-    
+
     if (!file) return;
 
     // Validate file size (max 5MB)
@@ -124,7 +125,7 @@ const CreateTeacher = () => {
     // Validate file type
     const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     const validDocTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    
+
     if (fileType === 'profileImage') {
       if (!validImageTypes.includes(file.type)) {
         toast.error('Profile image must be JPEG or PNG');
@@ -148,7 +149,7 @@ const CreateTeacher = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Validate all fields
     Object.keys(formData).forEach(key => {
       const error = validateField(key, formData[key]);
@@ -175,8 +176,7 @@ const CreateTeacher = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Mark all fields as touched
+
     const allTouched = {};
     Object.keys(formData).forEach(key => {
       allTouched[key] = true;
@@ -191,47 +191,49 @@ const CreateTeacher = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const payload = {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address,
+        gender: formData.gender,
 
-      // Prepare form data for API
-      const submitData = new FormData();
-      Object.keys(formData).forEach(key => {
-        if (key !== 'confirmPassword') {
-          submitData.append(key, formData[key]);
-        }
-      });
-      
-      Object.keys(files).forEach(key => {
-        if (files[key]) {
-          submitData.append(key, files[key]);
-        }
+        // TEMP URLs (same as Postman test)
+        class10Certificate: "https://cdn.example.com/class10.pdf",
+        class12Certificate: "https://cdn.example.com/class12.pdf",
+        collegeCertificate: "https://cdn.example.com/college.pdf",
+        phdOrOtherCertificate: files.phdOrOtherCertificate
+          ? "https://cdn.example.com/phd.pdf"
+          : null,
+
+        profileImage: "https://cdn.example.com/profile.jpg",
+        joinWhatsappGroup: true
+      };
+
+      const res = await fetch(`${BASE_URL}/api/teacher/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
 
-      console.log('Form submitted:', {
-        ...formData,
-        files: Object.keys(files).reduce((acc, key) => ({
-          ...acc,
-          [key]: files[key]?.name
-        }), {})
-      });
+      const data = await res.json();
 
-      toast.success('Teacher account created successfully!', {
+      if (!res.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      toast.success(data.message || "Teacher registered successfully 🎉", {
         position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true
+        autoClose: 3000
       });
 
-      // Reset form
-      setTimeout(() => {
-        resetForm();
-      }, 2000);
+      resetForm();
 
     } catch (error) {
-      toast.error('Failed to create teacher account. Please try again.');
+      toast.error(error.message || "Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
@@ -268,12 +270,11 @@ const CreateTeacher = () => {
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        
-        <div className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-          error ? 'border-red-300 bg-red-50' : 
-          file ? 'border-emerald-300 bg-emerald-50' : 
-          'border-slate-300 hover:border-indigo-400 bg-slate-50'
-        }`}>
+
+        <div className={`border-2 border-dashed rounded-lg p-4 transition-colors ${error ? 'border-red-300 bg-red-50' :
+            file ? 'border-emerald-300 bg-emerald-50' :
+              'border-slate-300 hover:border-indigo-400 bg-slate-50'
+          }`}>
           {file ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -321,7 +322,7 @@ const CreateTeacher = () => {
             </label>
           )}
         </div>
-        
+
         {error && (
           <motion.p
             initial={{ opacity: 0, y: -10 }}
@@ -354,9 +355,8 @@ const CreateTeacher = () => {
             value={formData[name]}
             onChange={handleInputChange}
             onBlur={handleBlur}
-            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-              error && isTouched ? 'border-red-500 bg-red-50' : 'border-slate-300'
-            }`}
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${error && isTouched ? 'border-red-500 bg-red-50' : 'border-slate-300'
+              }`}
             {...props}
           />
         </div>
@@ -411,7 +411,7 @@ const CreateTeacher = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div onSubmit={handleSubmit}>
           <div className="space-y-6">
-            
+
             {/* Personal Information */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -422,7 +422,7 @@ const CreateTeacher = () => {
                 <User className="w-5 h-5 mr-2 text-indigo-600" />
                 Personal Information
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
                   icon={User}
@@ -431,7 +431,7 @@ const CreateTeacher = () => {
                   placeholder="Enter full name"
                   required
                 />
-                
+
                 <InputField
                   icon={Mail}
                   label="Email Address"
@@ -440,7 +440,7 @@ const CreateTeacher = () => {
                   placeholder="teacher@example.com"
                   required
                 />
-                
+
                 <InputField
                   icon={Phone}
                   label="Phone Number"
@@ -449,7 +449,7 @@ const CreateTeacher = () => {
                   placeholder="1234567890"
                   required
                 />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Gender
@@ -460,9 +460,8 @@ const CreateTeacher = () => {
                     value={formData.gender}
                     onChange={handleInputChange}
                     onBlur={handleBlur}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                      errors.gender && touched.gender ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${errors.gender && touched.gender ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                      }`}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -495,9 +494,8 @@ const CreateTeacher = () => {
                       onBlur={handleBlur}
                       rows={3}
                       placeholder="Enter complete address"
-                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none ${
-                        errors.address && touched.address ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                      }`}
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none ${errors.address && touched.address ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                        }`}
                     />
                   </div>
                   {errors.address && touched.address && (
@@ -525,7 +523,7 @@ const CreateTeacher = () => {
                 <Lock className="w-5 h-5 mr-2 text-indigo-600" />
                 Account Security
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -541,9 +539,8 @@ const CreateTeacher = () => {
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       placeholder="Create strong password"
-                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                        errors.password && touched.password ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                      }`}
+                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${errors.password && touched.password ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                        }`}
                     />
                     <button
                       type="button"
@@ -579,9 +576,8 @@ const CreateTeacher = () => {
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       placeholder="Confirm password"
-                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                        errors.confirmPassword && touched.confirmPassword ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                      }`}
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${errors.confirmPassword && touched.confirmPassword ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                        }`}
                     />
                   </div>
                   {errors.confirmPassword && touched.confirmPassword && (
@@ -615,7 +611,7 @@ const CreateTeacher = () => {
                 <ImageIcon className="w-5 h-5 mr-2 text-indigo-600" />
                 Profile Image
               </h2>
-              
+
               <FileUploadBox
                 label="Upload Profile Picture"
                 fileType="profileImage"
@@ -635,26 +631,26 @@ const CreateTeacher = () => {
                 <FileText className="w-5 h-5 mr-2 text-indigo-600" />
                 Educational Certificates
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FileUploadBox
                   label="Class 10 Certificate"
                   fileType="class10Certificate"
                   required
                 />
-                
+
                 <FileUploadBox
                   label="Class 12 Certificate"
                   fileType="class12Certificate"
                   required
                 />
-                
+
                 <FileUploadBox
                   label="College/University Certificate"
                   fileType="collegeCertificate"
                   required
                 />
-                
+
                 <FileUploadBox
                   label="PhD or Other Certificates"
                   fileType="phdOrOtherCertificate"
