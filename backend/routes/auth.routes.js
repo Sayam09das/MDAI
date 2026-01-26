@@ -26,9 +26,12 @@ router.post("/logout", logout);
 // Get current logged-in user
 router.get("/me", protect, getCurrentUser);
 
-router.get("/students", protect,getAllStudents);
-router.patch("/student/:studentId/suspend", protect,suspendStudent);
-router.patch("/student/:studentId/resume", protect,resumeStudent);
+router.get("/students", protect, getAllStudents);
+
+router.patch("/student/:studentId/suspend", protect, suspendStudent);
+
+router.patch("/student/:studentId/resume", protect, resumeStudent);
+
 
 
 export default router;
