@@ -26,6 +26,62 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
+// InputField Component (moved outside to prevent re-creation on every render)
+const InputField = ({ 
+  icon: Icon, 
+  label, 
+  name, 
+  type = "text", 
+  required = false, 
+  value,
+  error,
+  isTouched,
+  onChange,
+  onBlur,
+  ...props 
+}) => {
+  const hasValue = value;
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-2">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${error && isTouched ? 'border-red-500 bg-red-50' :
+            hasValue && !error ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+            }`}
+          {...props}
+        />
+        {hasValue && !error && isTouched && (
+          <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" />
+        )}
+      </div>
+      <AnimatePresence>
+        {error && isTouched && (
+          <motion.p
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-1 text-sm text-red-600 flex items-center"
+          >
+            <AlertCircle className="w-4 h-4 mr-1" />
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const CreateTeacher = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -358,50 +414,7 @@ const CreateTeacher = () => {
     );
   };
 
-  const InputField = ({ icon: Icon, label, name, type = "text", required = false, ...props }) => {
-    const error = errors[name];
-    const isTouched = touched[name];
-    const hasValue = formData[name];
-
-    return (
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-        <div className="relative">
-          <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type={type}
-            name={name}
-            value={formData[name]}
-            onChange={handleInputChange}
-            onBlur={handleBlur}
-            className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${error && isTouched ? 'border-red-500 bg-red-50' :
-              hasValue && !error ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
-              }`}
-            {...props}
-          />
-          {hasValue && !error && isTouched && (
-            <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" />
-          )}
-        </div>
-        <AnimatePresence>
-          {error && isTouched && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mt-1 text-sm text-red-600 flex items-center"
-            >
-              <AlertCircle className="w-4 h-4 mr-1" />
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
+  // InputField moved outside component
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -458,6 +471,11 @@ const CreateTeacher = () => {
                 name="fullName"
                 placeholder="Enter full name"
                 required
+                value={formData.fullName}
+                error={errors.fullName}
+                isTouched={touched.fullName}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
               />
 
               <InputField
@@ -467,6 +485,11 @@ const CreateTeacher = () => {
                 type="email"
                 placeholder="teacher@example.com"
                 required
+                value={formData.email}
+                error={errors.email}
+                isTouched={touched.email}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
               />
 
               <InputField
@@ -476,6 +499,11 @@ const CreateTeacher = () => {
                 type="tel"
                 placeholder="1234567890"
                 required
+                value={formData.phone}
+                error={errors.phone}
+                isTouched={touched.phone}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
               />
 
               <div>
