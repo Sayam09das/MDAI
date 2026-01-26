@@ -100,18 +100,28 @@ const CreateTeacher = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
 
-    if (touched[name]) {
-      setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
+
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    setTouched(prev => ({ ...prev, [name]: true }));
-    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
+
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: validateField(name, value)
+    }));
   };
+
 
   /* ================= FILE HANDLER ================= */
   const handleFileChange = (e, fileType) => {
@@ -275,8 +285,8 @@ const CreateTeacher = () => {
         </label>
 
         <div className={`border-2 border-dashed rounded-lg p-4 transition-all ${error ? 'border-red-300 bg-red-50' :
-            file ? 'border-emerald-300 bg-emerald-50' :
-              'border-slate-300 hover:border-indigo-400 bg-slate-50'
+          file ? 'border-emerald-300 bg-emerald-50' :
+            'border-slate-300 hover:border-indigo-400 bg-slate-50'
           }`}>
           {file ? (
             <motion.div
@@ -368,7 +378,7 @@ const CreateTeacher = () => {
             onChange={handleInputChange}
             onBlur={handleBlur}
             className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${error && isTouched ? 'border-red-500 bg-red-50' :
-                hasValue && !error ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+              hasValue && !error ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
               }`}
             {...props}
           />
@@ -479,7 +489,7 @@ const CreateTeacher = () => {
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.gender && touched.gender ? 'border-red-500 bg-red-50' :
-                      formData.gender && !errors.gender ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                    formData.gender && !errors.gender ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
                     }`}
                 >
                   <option value="">Select gender</option>
@@ -517,7 +527,7 @@ const CreateTeacher = () => {
                     rows={3}
                     placeholder="Enter complete address"
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.address && touched.address ? 'border-red-500 bg-red-50' :
-                        formData.address && !errors.address ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                      formData.address && !errors.address ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
                       }`}
                   />
                 </div>
@@ -606,7 +616,7 @@ const CreateTeacher = () => {
                     onBlur={handleBlur}
                     placeholder="Confirm password"
                     className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.confirmPassword && touched.confirmPassword ? 'border-red-500 bg-red-50' :
-                        formData.confirmPassword && !errors.confirmPassword && touched.confirmPassword ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                      formData.confirmPassword && !errors.confirmPassword && touched.confirmPassword ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
                       }`}
                   />
                   {formData.confirmPassword && !errors.confirmPassword && touched.confirmPassword && (
