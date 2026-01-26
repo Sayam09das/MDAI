@@ -174,3 +174,46 @@ export const getAllStudents = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch students" });
   }
 };
+
+/* ================= SUSPEND STUDENT ================= */
+export const suspendStudent = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const student = await User.findByIdAndUpdate(
+      studentId,
+      { isSuspended: true },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json({ message: "Student suspended successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to suspend student" });
+  }
+};
+
+
+/* ================= RESUME STUDENT ================= */
+export const resumeStudent = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const student = await User.findByIdAndUpdate(
+      studentId,
+      { isSuspended: false },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json({ message: "Student activated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to activate student" });
+  }
+};

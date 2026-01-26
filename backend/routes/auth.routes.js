@@ -5,6 +5,8 @@ import {
   logout,
   getCurrentUser,
   getAllStudents,
+  suspendStudent,
+  resumeStudent,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 
@@ -25,6 +27,8 @@ router.post("/logout", logout);
 router.get("/me", protect, getCurrentUser);
 
 router.get("/students", protect,getAllStudents);
+router.patch("/student/:studentId/suspend", protect,suspendStudent);
+router.patch("/student/:studentId/resume", protect,resumeStudent);
 
 
 export default router;
