@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Mail,
@@ -7,14 +7,22 @@ import {
   MapPin,
   Lock,
   Upload,
+  X,
   Eye,
   EyeOff,
+  FileText,
+  Image,
   CheckCircle,
   AlertCircle,
-  Save
-} from "lucide-react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+  Home,
+  ChevronRight,
+  Save,
+  UserPlus,
+  Loader2,
+  Check
+} from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -23,13 +31,13 @@ const CreateTeacher = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-    gender: "",
-    password: "",
-    confirmPassword: ""
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    gender: '',
+    password: '',
+    confirmPassword: ''
   });
 
   const [files, setFiles] = useState({
@@ -46,99 +54,142 @@ const CreateTeacher = () => {
   /* ================= VALIDATION ================= */
   const validateField = (name, value) => {
     switch (name) {
-      case "fullName":
-        if (!value.trim()) return "Full name is required";
-        if (value.length < 3) return "Minimum 3 characters";
-        return "";
+      case 'fullName':
+        if (!value.trim()) return 'Full name is required';
+        if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        return '';
 
-      case "email":
-        if (!value) return "Email is required";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-          return "Invalid email";
-        return "";
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Invalid email format';
+        return '';
 
-      case "phone":
-        if (!value) return "Phone required";
-        return "";
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required';
+        const phoneRegex = /^[0-9]{10,15}$/;
+        if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Invalid phone number (10-15 digits)';
+        return '';
 
-      case "address":
-        if (!value) return "Address required";
-        return "";
+      case 'address':
+        if (!value.trim()) return 'Address is required';
+        if (value.trim().length < 10) return 'Address must be at least 10 characters';
+        return '';
 
-      case "gender":
-        if (!value) return "Gender required";
-        return "";
+      case 'gender':
+        if (!value) return 'Gender is required';
+        return '';
 
-      case "password":
-        if (!value) return "Password required";
-        if (value.length < 8) return "Min 8 characters";
-        return "";
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 8) return 'Password must be at least 8 characters';
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+          return 'Password must contain uppercase, lowercase, and number';
+        }
+        return '';
 
-      case "confirmPassword":
-        if (value !== formData.password)
-          return "Passwords do not match";
-        return "";
+      case 'confirmPassword':
+        if (!value) return 'Please confirm password';
+        if (value !== formData.password) return 'Passwords do not match';
+        return '';
 
       default:
-        return "";
+        return '';
     }
   };
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (touched[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: validateField(name, value)
-      }));
+      setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
     }
   };
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouched(prev => ({ ...prev, [name]: true }));
-    setErrors(prev => ({
-      ...prev,
-      [name]: validateField(name, value)
-    }));
+    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
   };
 
   /* ================= FILE HANDLER ================= */
-  const handleFileChange = (e, type) => {
+  const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
+
     if (!file) return;
 
+    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File must be under 5MB");
+      toast.error('File size must be less than 5MB');
       return;
     }
 
-    setFiles(prev => ({ ...prev, [type]: file }));
-    toast.success(`${file.name} selected`);
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const validDocTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+
+    if (fileType === 'profileImage') {
+      if (!validImageTypes.includes(file.type)) {
+        toast.error('Profile image must be JPEG or PNG');
+        return;
+      }
+    } else {
+      if (!validDocTypes.includes(file.type)) {
+        toast.error('Certificate must be PDF, JPEG, or PNG');
+        return;
+      }
+    }
+
+    setFiles(prev => ({ ...prev, [fileType]: file }));
+    toast.success(`${file.name} uploaded successfully`);
+  };
+
+  const removeFile = (fileType) => {
+    setFiles(prev => ({ ...prev, [fileType]: null }));
+    toast.info('File removed');
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validate all fields
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) newErrors[key] = error;
+    });
+
+    // Validate required files
+    if (!files.class10Certificate) {
+      newErrors.class10Certificate = 'Class 10 certificate is required';
+    }
+    if (!files.class12Certificate) {
+      newErrors.class12Certificate = 'Class 12 certificate is required';
+    }
+    if (!files.collegeCertificate) {
+      newErrors.collegeCertificate = 'College certificate is required';
+    }
+    if (!files.profileImage) {
+      newErrors.profileImage = 'Profile image is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newErrors = {};
+    // Mark all fields as touched
+    const allTouched = {};
     Object.keys(formData).forEach(key => {
-      const err = validateField(key, formData[key]);
-      if (err) newErrors[key] = err;
+      allTouched[key] = true;
     });
+    setTouched(allTouched);
 
-    ["class10Certificate", "class12Certificate", "collegeCertificate", "profileImage"]
-      .forEach(f => {
-        if (!files[f]) newErrors[f] = "Required";
-      });
-
-    setErrors(newErrors);
-    setTouched(Object.keys(formData).reduce((a, c) => ({ ...a, [c]: true }), {}));
-
-    if (Object.keys(newErrors).length > 0) {
-      toast.error("Fix all errors");
+    if (!validateForm()) {
+      toast.error('Please fix all errors before submitting');
       return;
     }
 
@@ -152,8 +203,6 @@ const CreateTeacher = () => {
         phone: formData.phone,
         address: formData.address,
         gender: formData.gender,
-
-        // SAME AS POSTMAN (TEMP URLs)
         class10Certificate: "https://cdn.example.com/class10.pdf",
         class12Certificate: "https://cdn.example.com/class12.pdf",
         collegeCertificate: "https://cdn.example.com/college.pdf",
@@ -164,19 +213,29 @@ const CreateTeacher = () => {
         joinWhatsappGroup: true
       };
 
-      const res = await fetch(`${BASE_URL}/api/teacher/register`, {
+      const response = await fetch(`${BASE_URL}/api/teacher/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      const data = await response.json();
 
-      toast.success(data.message || "Teacher registered 🎉");
-      resetForm();
-    } catch (err) {
-      toast.error(err.message || "Server error");
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create teacher');
+      }
+
+      toast.success(data.message || 'Teacher account created successfully! 🎉', {
+        position: "top-center",
+        autoClose: 3000
+      });
+
+      setTimeout(() => {
+        resetForm();
+      }, 2000);
+
+    } catch (error) {
+      toast.error(error.message || 'Failed to create teacher account');
     } finally {
       setIsSubmitting(false);
     }
@@ -184,13 +243,13 @@ const CreateTeacher = () => {
 
   const resetForm = () => {
     setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      address: "",
-      gender: "",
-      password: "",
-      confirmPassword: ""
+      fullName: '',
+      email: '',
+      phone: '',
+      address: '',
+      gender: '',
+      password: '',
+      confirmPassword: ''
     });
     setFiles({
       class10Certificate: null,
@@ -203,113 +262,479 @@ const CreateTeacher = () => {
     setTouched({});
   };
 
-  /* ================= UI ================= */
-  return (
-    <div className="max-w-3xl mx-auto p-6">
-      <ToastContainer />
-      <motion.form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-xl rounded-xl p-6 space-y-5"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h2 className="text-2xl font-bold text-center">
-          Create Teacher Account
-        </h2>
+  /* ================= COMPONENTS ================= */
+  const FileUploadBox = ({ label, fileType, required = false, accept = ".pdf,.jpg,.jpeg,.png" }) => {
+    const file = files[fileType];
+    const error = errors[fileType];
 
-        {/* INPUT */}
-        {[
-          { name: "fullName", icon: User, placeholder: "Full Name" },
-          { name: "email", icon: Mail, placeholder: "Email" },
-          { name: "phone", icon: Phone, placeholder: "Phone" },
-          { name: "address", icon: MapPin, placeholder: "Address" }
-        ].map(({ name, icon: Icon, placeholder }) => (
-          <div key={name}>
-            <div className="flex items-center border rounded-lg p-2">
-              <Icon size={18} className="mr-2 text-gray-500" />
+    return (
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+
+        <div className={`border-2 border-dashed rounded-lg p-4 transition-all ${error ? 'border-red-300 bg-red-50' :
+            file ? 'border-emerald-300 bg-emerald-50' :
+              'border-slate-300 hover:border-indigo-400 bg-slate-50'
+          }`}>
+          {file ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${fileType === 'profileImage' ? 'bg-indigo-100' : 'bg-emerald-100'
+                  }`}>
+                  {fileType === 'profileImage' ? (
+                    <Image className="w-5 h-5 text-indigo-600" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-emerald-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-900 truncate max-w-[200px]">
+                    {file.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeFile(fileType)}
+                className="p-1.5 hover:bg-red-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-red-500" />
+              </button>
+            </motion.div>
+          ) : (
+            <label className="cursor-pointer block">
               <input
-                name={name}
-                value={formData[name]}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder={placeholder}
-                className="w-full outline-none"
+                type="file"
+                accept={accept}
+                onChange={(e) => handleFileChange(e, fileType)}
+                className="hidden"
               />
-            </div>
-            {errors[name] && (
-              <p className="text-red-500 text-sm flex gap-1">
-                <AlertCircle size={14} /> {errors[name]}
-              </p>
-            )}
-          </div>
-        ))}
-
-        {/* GENDER */}
-        <select
-          name="gender"
-          value={formData.gender}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className="w-full border rounded-lg p-2"
-        >
-          <option value="">Select Gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-
-        {/* PASSWORD */}
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className="w-full border rounded-lg p-2"
-          />
-          <span
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-2.5 cursor-pointer"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </span>
+              <div className="text-center">
+                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="text-sm text-slate-600">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  PDF, JPG, or PNG (Max 5MB)
+                </p>
+              </div>
+            </label>
+          )}
         </div>
 
-        <input
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className="w-full border rounded-lg p-2"
-        />
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-1 text-sm text-red-600 flex items-center"
+            >
+              <AlertCircle className="w-4 h-4 mr-1" />
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
-        {/* FILES */}
-        {[
-          "class10Certificate",
-          "class12Certificate",
-          "collegeCertificate",
-          "phdOrOtherCertificate",
-          "profileImage"
-        ].map(f => (
-          <div key={f}>
-            <input type="file" onChange={e => handleFileChange(e, f)} />
-            {errors[f] && (
-              <p className="text-red-500 text-sm">{errors[f]}</p>
-            )}
+  const InputField = ({ icon: Icon, label, name, type = "text", required = false, ...props }) => {
+    const error = errors[name];
+    const isTouched = touched[name];
+    const hasValue = formData[name];
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <div className="relative">
+          <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type={type}
+            name={name}
+            value={formData[name]}
+            onChange={handleInputChange}
+            onBlur={handleBlur}
+            className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${error && isTouched ? 'border-red-500 bg-red-50' :
+                hasValue && !error ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+              }`}
+            {...props}
+          />
+          {hasValue && !error && isTouched && (
+            <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" />
+          )}
+        </div>
+        <AnimatePresence>
+          {error && isTouched && (
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-1 text-sm text-red-600 flex items-center"
+            >
+              <AlertCircle className="w-4 h-4 mr-1" />
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <ToastContainer />
+
+      {/* Page Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Breadcrumb */}
+          <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-4">
+            <Home className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" />
+            <span>Dashboard</span>
+            <ChevronRight className="w-4 h-4" />
+            <span>Teachers</span>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-slate-900 font-medium">Create Teacher</span>
+          </nav>
+
+          {/* Title */}
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <UserPlus className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Create New Teacher</h1>
+              <p className="mt-1 text-slate-600">
+                Add a new instructor to the platform
+              </p>
+            </div>
           </div>
-        ))}
+        </div>
+      </div>
 
-        <button
-          disabled={isSubmitting}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg flex justify-center gap-2"
-        >
-          <Save size={18} />
-          {isSubmitting ? "Submitting..." : "Create Teacher"}
-        </button>
-      </motion.form>
+      {/* Form */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+
+          {/* Personal Information */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 p-6"
+          >
+            <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <User className="w-5 h-5 mr-2 text-indigo-600" />
+              Personal Information
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                icon={User}
+                label="Full Name"
+                name="fullName"
+                placeholder="Enter full name"
+                required
+              />
+
+              <InputField
+                icon={Mail}
+                label="Email Address"
+                name="email"
+                type="email"
+                placeholder="teacher@example.com"
+                required
+              />
+
+              <InputField
+                icon={Phone}
+                label="Phone Number"
+                name="phone"
+                type="tel"
+                placeholder="1234567890"
+                required
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Gender
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.gender && touched.gender ? 'border-red-500 bg-red-50' :
+                      formData.gender && !errors.gender ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                    }`}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                <AnimatePresence>
+                  {errors.gender && touched.gender && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 flex items-center"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.gender}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Address
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    rows={3}
+                    placeholder="Enter complete address"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.address && touched.address ? 'border-red-500 bg-red-50' :
+                        formData.address && !errors.address ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                      }`}
+                  />
+                </div>
+                <AnimatePresence>
+                  {errors.address && touched.address && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 flex items-center"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.address}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Account Security */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 p-6"
+          >
+            <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <Lock className="w-5 h-5 mr-2 text-indigo-600" />
+              Account Security
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Password
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    placeholder="Create strong password"
+                    className={`w-full pl-10 pr-12 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.password && touched.password ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                      }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <AnimatePresence>
+                  {errors.password && touched.password && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 flex items-center"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.password}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Confirm Password
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    placeholder="Confirm password"
+                    className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.confirmPassword && touched.confirmPassword ? 'border-red-500 bg-red-50' :
+                        formData.confirmPassword && !errors.confirmPassword && touched.confirmPassword ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300'
+                      }`}
+                  />
+                  {formData.confirmPassword && !errors.confirmPassword && touched.confirmPassword && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                  )}
+                </div>
+                <AnimatePresence>
+                  {errors.confirmPassword && touched.confirmPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 flex items-center"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.confirmPassword}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+            >
+              <p className="text-sm text-blue-800">
+                <strong>Password requirements:</strong> At least 8 characters with uppercase, lowercase, and numbers
+              </p>
+            </motion.div>
+          </motion.div>
+
+          {/* Profile Image */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 p-6"
+          >
+            <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <Image className="w-5 h-5 mr-2 text-indigo-600" />
+              Profile Image
+            </h2>
+
+            <FileUploadBox
+              label="Upload Profile Picture"
+              fileType="profileImage"
+              required
+              accept=".jpg,.jpeg,.png"
+            />
+          </motion.div>
+
+          {/* Educational Certificates */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 p-6"
+          >
+            <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-indigo-600" />
+              Educational Certificates
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FileUploadBox
+                label="Class 10 Certificate"
+                fileType="class10Certificate"
+                required
+              />
+
+              <FileUploadBox
+                label="Class 12 Certificate"
+                fileType="class12Certificate"
+                required
+              />
+
+              <FileUploadBox
+                label="College/University Certificate"
+                fileType="collegeCertificate"
+                required
+              />
+
+              <FileUploadBox
+                label="PhD or Other Certificates"
+                fileType="phdOrOtherCertificate"
+              />
+            </div>
+          </motion.div>
+
+          {/* Submit Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-4 justify-end"
+          >
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={isSubmitting}
+              className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50"
+            >
+              Reset Form
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  Create Teacher Account
+                </>
+              )}
+            </button>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 };
