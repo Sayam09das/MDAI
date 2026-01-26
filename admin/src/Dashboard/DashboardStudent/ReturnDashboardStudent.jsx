@@ -1,10 +1,12 @@
 import React from 'react'
 import StudentListPreview from './StudentListPreview'
+import StudentAnalytics from './StudentAnalytics'
 
 const ReturnDashboardStudent = () => {
   return (
     <div>
-        <StudentListPreview />
+      <StudentAnalytics />
+      <StudentListPreview />
     </div>
   )
 }
