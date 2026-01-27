@@ -1,9 +1,12 @@
 import React from 'react'
+import StudentPaymentAccess from './StudentPaymentAccess.jsx'
 
-const ReturnStudentPaymentAccess.jsx = () => {
+const ReturnStudentPaymentAccess = () => {
   return (
-    <div><StudentPaymentAccess /></div>
+    <div>
+        <StudentPaymentAccess />
+    </div>
   )
 }
 
-export default ReturnStudentPaymentAccess.jsx
+export default ReturnStudentPaymentAccess
