@@ -255,15 +255,15 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                             <td className="px-6 py-4">
                                 <div className="group relative">
                                     <span className="text-sm font-semibold text-slate-900 cursor-pointer">
-                                        {student.courseCount}
+                                        {student.courseCount || 0}
                                     </span>
-                                    {student.courseNames.length > 0 && (
+                                    {student.courseNames && student.courseNames.length > 0 && (
                                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                                             <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs">
                                                 <div className="font-semibold mb-1">Enrolled Courses:</div>
                                                 <ul className="space-y-1">
-                                                    {student.courseNames.map((courseName, index) => (
-                                                        <li key={index} className="truncate">• {courseName}</li>
+                                                    {student.courseNames.map((courseName, idx) => (
+                                                        <li key={idx} className="truncate">• {courseName}</li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -319,50 +319,58 @@ const StudentListPreview = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                const token = localStorage.getItem('adminToken');
+        fetchStudents();
+    }, [navigate]);
 
-                if (!token) {
-                    console.error('No admin token found');
-                    navigate('/admin/login');
-                    return;
+    const fetchStudents = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('adminToken');
+
+            if (!token) {
+                console.error('No admin token found');
+                navigate('/admin/login');
+                return;
+            }
+
+            const res = await axios.get(
+                `${BASE_URL}/api/auth/students`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
+            );
 
-                const res = await axios.get(
-                    `${BASE_URL}/api/auth/students`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+            const formattedStudents = res.data.students.map((student) => {
+                // Split full name properly
+                const nameParts = student.fullName?.trim().split(' ') || ['Unknown', 'User'];
+                const firstName = nameParts[0] || 'Unknown';
+                const lastName = nameParts.slice(1).join(' ') || 'User';
 
-                const formattedStudents = res.data.students.map((student) => ({
+                return {
                     id: student._id,
-                    firstName: student.fullName.split(' ')[0],
-                    lastName: student.fullName.split(' ').slice(1).join(' '),
+                    firstName,
+                    lastName,
                     email: student.email,
                     status: student.isSuspended ? 'suspended' : 'active',
                     joinedDate: new Date(student.createdAt).toLocaleDateString(),
                     courseCount: student.courseCount || 0,
                     courseNames: student.courseNames || [],
-                }));
+                };
+            });
 
-                setAllStudents(formattedStudents);
-            } catch (error) {
-                console.error('Failed to fetch students', error);
-                if (error.response?.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    navigate('/admin/login');
-                }
-            } finally {
-                setIsLoading(false);
+            setAllStudents(formattedStudents);
+        } catch (error) {
+            console.error('Failed to fetch students', error);
+            if (error.response?.status === 401) {
+                localStorage.removeItem('adminToken');
+                navigate('/admin/login');
             }
-        };
-
-        fetchStudents();
-    }, [navigate]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleSuspendStudent = async (studentId) => {
         try {
@@ -378,7 +386,7 @@ const StudentListPreview = () => {
                 }
             );
 
-            // update UI instantly
+            // Update UI instantly
             setAllStudents((prev) =>
                 prev.map((student) =>
                     student.id === studentId
@@ -388,6 +396,7 @@ const StudentListPreview = () => {
             );
         } catch (error) {
             console.error('Failed to suspend student', error);
+            alert('Failed to suspend student. Please try again.');
         }
     };
 
@@ -405,7 +414,7 @@ const StudentListPreview = () => {
                 }
             );
 
-            // update UI instantly
+            // Update UI instantly
             setAllStudents((prev) =>
                 prev.map((student) =>
                     student.id === studentId
@@ -415,6 +424,7 @@ const StudentListPreview = () => {
             );
         } catch (error) {
             console.error('Failed to resume student', error);
+            alert('Failed to resume student. Please try again.');
         }
     };
 
@@ -441,24 +451,66 @@ const StudentListPreview = () => {
     const handleAction = (student, action) => {
         if (action === 'view') {
             console.log('View student:', student);
-        } else if (action === 'delete' || action === 'suspend' || action === 'activate') {
+            // Navigate to student profile page or open modal
+        } else if (action === 'delete') {
             setConfirmModal({
                 isOpen: true,
                 action,
                 student,
                 isBulk: false
             });
+        } else if (action === 'suspend') {
+            handleSuspendStudent(student.id);
+        } else if (action === 'activate') {
+            handleResumeStudent(student.id);
         }
     };
 
     const handleConfirm = async () => {
         setIsProcessing(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('Action confirmed:', confirmModal.action, confirmModal.student);
-        setIsProcessing(false);
-        setConfirmModal({ isOpen: false, action: null, student: null });
-        if (confirmModal.isBulk) {
-            setSelectedStudents([]);
+        
+        try {
+            const { action, student, isBulk } = confirmModal;
+            
+            if (action === 'delete') {
+                if (isBulk) {
+                    // Handle bulk delete
+                    console.log('Bulk delete:', selectedStudents);
+                    // Add your bulk delete API call here
+                } else {
+                    // Handle single delete
+                    console.log('Delete student:', student);
+                    // Add your delete API call here
+                }
+            } else if (action === 'suspend') {
+                if (isBulk) {
+                    // Handle bulk suspend
+                    for (const studentId of selectedStudents) {
+                        await handleSuspendStudent(studentId);
+                    }
+                } else {
+                    await handleSuspendStudent(student.id);
+                }
+            } else if (action === 'activate') {
+                if (isBulk) {
+                    // Handle bulk activate
+                    for (const studentId of selectedStudents) {
+                        await handleResumeStudent(studentId);
+                    }
+                } else {
+                    await handleResumeStudent(student.id);
+                }
+            }
+            
+            if (isBulk) {
+                setSelectedStudents([]);
+            }
+        } catch (error) {
+            console.error('Action failed:', error);
+            alert('Action failed. Please try again.');
+        } finally {
+            setIsProcessing(false);
+            setConfirmModal({ isOpen: false, action: null, student: null });
         }
     };
 
@@ -566,7 +618,10 @@ const StudentListPreview = () => {
                                 <option value="newest">Newest</option>
                                 <option value="oldest">Oldest</option>
                             </select>
-                            <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <button 
+                                onClick={fetchStudents}
+                                className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                            >
                                 <RefreshCw className="w-4 h-4" />
                             </button>
                         </div>
