@@ -215,8 +215,7 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Student Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses Count</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses Names</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Joined</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
@@ -258,24 +257,22 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                                     <span className="text-sm font-semibold text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors">
                                         {student.courseCount || 0}
                                     </span>
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
-                                        <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs border border-slate-700">
-                                            <div className="font-semibold mb-1 text-indigo-300">Enrolled Courses:</div>
-                                            {Array.isArray(student.courseNames) && student.courseNames.length > 0 ? (
+                                    {Array.isArray(student.courseNames) && student.courseNames.length > 0 && (
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                                            <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg min-w-[200px] max-w-xs border border-slate-700">
+                                                <div className="font-semibold mb-1 text-indigo-300">Enrolled Courses:</div>
                                                 <ul className="space-y-1 max-h-32 overflow-y-auto">
                                                     {student.courseNames.map((courseName, idx) => (
-                                                        <li key={idx} className="truncate flex items-center">
-                                                            <span className="text-indigo-400 mr-1">•</span>
+                                                        <li key={idx} className="flex items-start">
+                                                            <span className="text-indigo-400 mr-1.5 flex-shrink-0">•</span>
                                                             <span className="text-slate-100">{courseName}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            ) : (
-                                                <div className="text-slate-400 italic">No courses enrolled</div>
-                                            )}
+                                            </div>
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
                                         </div>
-                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
-                                    </div>
+                                    )}
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.joinedDate}</td>
@@ -326,7 +323,7 @@ const StudentListPreview = () => {
 
     useEffect(() => {
         fetchStudents();
-    }, [navigate]);
+    }, []);
 
     const fetchStudents = async () => {
         setIsLoading(true);
@@ -348,11 +345,19 @@ const StudentListPreview = () => {
                 }
             );
 
+            console.log('API Response:', res.data); // Debug log
+
             const formattedStudents = res.data.students.map((student) => {
                 // Split full name properly
                 const nameParts = student.fullName?.trim().split(' ') || ['Unknown', 'User'];
                 const firstName = nameParts[0] || 'Unknown';
                 const lastName = nameParts.slice(1).join(' ') || 'User';
+
+                console.log('Student course data:', {
+                    id: student._id,
+                    courseCount: student.courseCount,
+                    courseNames: student.courseNames
+                }); // Debug log
 
                 return {
                     id: student._id,
@@ -362,10 +367,11 @@ const StudentListPreview = () => {
                     status: student.isSuspended ? 'suspended' : 'active',
                     joinedDate: new Date(student.createdAt).toLocaleDateString(),
                     courseCount: student.courseCount || 0,
-                    courseNames: student.courseNames || [],
+                    courseNames: Array.isArray(student.courseNames) ? student.courseNames : [],
                 };
             });
 
+            console.log('Formatted Students:', formattedStudents); // Debug log
             setAllStudents(formattedStudents);
         } catch (error) {
             console.error('Failed to fetch students', error);
