@@ -19,23 +19,48 @@ import {
     CheckSquare,
     Square
 } from 'lucide-react';
+import axios from 'axios';
 
-// Mock data generator
-const generateStudents = (count) => {
-    const firstNames = ['Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'James', 'Maria', 'Robert', 'Jennifer', 'Christopher', 'Amanda', 'Daniel', 'Jessica', 'Matthew', 'Ashley', 'Joshua', 'Stephanie', 'Andrew', 'Melissa', 'Ryan'];
-    const lastNames = ['Johnson', 'Chen', 'Rodriguez', 'Kim', 'Anderson', 'Wilson', 'Garcia', 'Taylor', 'Brown', 'Lee', 'White', 'Martinez', 'Davis', 'Miller', 'Moore', 'Jackson', 'Martin', 'Thompson', 'Young', 'Allen'];
-    const statuses = ['active', 'active', 'active', 'active', 'suspended'];
 
-    return Array.from({ length: count }, (_, i) => ({
-        id: i + 1,
-        firstName: firstNames[i % firstNames.length],
-        lastName: lastNames[i % lastNames.length],
-        email: `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}@example.com`,
-        enrolledCourses: Math.floor(Math.random() * 8) + 1,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        joinedDate: new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    }));
-};
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+const [students, setStudents] = useState([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+    const fetchStudents = async () => {
+        try {
+            const token = localStorage.getItem('token');
+
+            const res = await axios.get(
+                `${BASE_URL}/api/auth/students`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const formattedStudents = res.data.students.map((student) => ({
+                id: student._id,
+                firstName: student.fullName.split(' ')[0],
+                lastName: student.fullName.split(' ').slice(1).join(' '),
+                email: student.email,
+                status: student.isSuspended ? 'suspended' : 'active',
+                joinedDate: new Date(student.createdAt).toLocaleDateString(),
+            }));
+
+            setStudents(formattedStudents);
+        } catch (error) {
+            console.error('Failed to fetch students', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchStudents();
+}, []);
+
 
 // Confirm Modal Component
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText, isDanger = false, isProcessing = false }) => {
@@ -91,8 +116,8 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText,
                             onClick={onConfirm}
                             disabled={isProcessing}
                             className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 ${isDanger
-                                    ? 'bg-red-600 hover:bg-red-700'
-                                    : 'bg-indigo-600 hover:bg-indigo-700'
+                                ? 'bg-red-600 hover:bg-red-700'
+                                : 'bg-indigo-600 hover:bg-indigo-700'
                                 }`}
                         >
                             {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -550,8 +575,8 @@ const StudentListPreview = () => {
                                                 key={i}
                                                 onClick={() => setCurrentPage(page)}
                                                 className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === page
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'border border-slate-200 hover:bg-slate-100'
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'border border-slate-200 hover:bg-slate-100'
                                                     }`}
                                             >
                                                 {page}
