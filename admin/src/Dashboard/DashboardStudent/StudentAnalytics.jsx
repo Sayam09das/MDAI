@@ -131,10 +131,11 @@ const StudentAnalytics = () => {
                                     <metric.icon className="w-6 h-6" />
                                 </div>
                                 <span
-                                    className={`text-sm font-medium px-2 py-1 rounded-full ${metric.trend === 'up'
+                                    className={`text-sm font-medium px-2 py-1 rounded-full ${
+                                        metric.trend === 'up'
                                             ? 'bg-emerald-50 text-emerald-600'
                                             : 'bg-red-50 text-red-600'
-                                        }`}
+                                    }`}
                                 >
                                     {metric.change}
                                 </span>
@@ -248,11 +249,12 @@ const StudentAnalytics = () => {
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${item.value}%` }}
                                                 transition={{ delay: 0.6 + index * 0.1, duration: 0.6 }}
-                                                className={`h-full rounded-full ${item.color === 'emerald' ? 'bg-emerald-500' :
-                                                        item.color === 'blue' ? 'bg-blue-500' :
-                                                            item.color === 'amber' ? 'bg-amber-500' :
-                                                                'bg-red-500'
-                                                    }`}
+                                                className={`h-full rounded-full ${
+                                                    item.color === 'emerald' ? 'bg-emerald-500' :
+                                                    item.color === 'blue' ? 'bg-blue-500' :
+                                                    item.color === 'amber' ? 'bg-amber-500' :
+                                                    'bg-red-500'
+                                                }`}
                                             />
                                         </div>
                                     </div>
