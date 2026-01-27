@@ -175,7 +175,7 @@ const StatusBadge = ({ status }) => {
 };
 
 // Student Table Component
-const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll, onAction, isLoading }) => {
+const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll, onAction, onSuspend, onResume, isLoading }) => {
     if (isLoading) {
         return (
             <div className="space-y-3 p-6">
@@ -253,14 +253,31 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.email}</td>
                             <td className="px-6 py-4">
-                                <span className="text-sm font-semibold text-slate-900">{student.enrolledCourses}</span>
+                                <span className="text-sm font-semibold text-slate-900">{student.courseCount}</span>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.joinedDate}</td>
                             <td className="px-6 py-4">
                                 <StatusBadge status={student.status} />
                             </td>
                             <td className="px-6 py-4 text-right">
-                                <ActionDropdown student={student} onAction={onAction} />
+                                <div className="flex items-center justify-end space-x-2">
+                                    {student.status === 'active' ? (
+                                        <button
+                                            onClick={() => onSuspend(student.id)}
+                                            className="px-3 py-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors"
+                                        >
+                                            Suspend
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => onResume(student.id)}
+                                            className="px-3 py-1 text-xs bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 transition-colors"
+                                        >
+                                            Resume
+                                        </button>
+                                    )}
+                                    <ActionDropdown student={student} onAction={onAction} />
+                                </div>
                             </td>
                         </motion.tr>
                     ))}
@@ -311,6 +328,7 @@ const StudentListPreview = () => {
                     email: student.email,
                     status: student.isSuspended ? 'suspended' : 'active',
                     joinedDate: new Date(student.createdAt).toLocaleDateString(),
+                    courseCount: student.courseCount || 0,
                 }));
 
                 setAllStudents(formattedStudents);
@@ -328,6 +346,60 @@ const StudentListPreview = () => {
         fetchStudents();
     }, [navigate]);
 
+    const handleSuspendStudent = async (studentId) => {
+        try {
+            const token = localStorage.getItem('adminToken');
+
+            await axios.patch(
+                `${BASE_URL}/api/auth/student/${studentId}/suspend`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // update UI instantly
+            setAllStudents((prev) =>
+                prev.map((student) =>
+                    student.id === studentId
+                        ? { ...student, status: 'suspended' }
+                        : student
+                )
+            );
+        } catch (error) {
+            console.error('Failed to suspend student', error);
+        }
+    };
+
+    const handleResumeStudent = async (studentId) => {
+        try {
+            const token = localStorage.getItem('adminToken');
+
+            await axios.patch(
+                `${BASE_URL}/api/auth/student/${studentId}/resume`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // update UI instantly
+            setAllStudents((prev) =>
+                prev.map((student) =>
+                    student.id === studentId
+                        ? { ...student, status: 'active' }
+                        : student
+                )
+            );
+        } catch (error) {
+            console.error('Failed to resume student', error);
+        }
+    };
+
     // Filter and sort logic
     const filteredStudents = allStudents
         .filter(student => {
@@ -337,8 +409,8 @@ const StudentListPreview = () => {
             return matchesSearch && matchesStatus;
         })
         .sort((a, b) => {
-            if (sortBy === 'newest') return b.id - a.id;
-            if (sortBy === 'oldest') return a.id - b.id;
+            if (sortBy === 'newest') return new Date(b.joinedDate) - new Date(a.joinedDate);
+            if (sortBy === 'oldest') return new Date(a.joinedDate) - new Date(b.joinedDate);
             return 0;
         });
 
@@ -535,6 +607,8 @@ const StudentListPreview = () => {
                         onSelectStudent={handleSelectStudent}
                         onSelectAll={handleSelectAll}
                         onAction={handleAction}
+                        onSuspend={handleSuspendStudent}
+                        onResume={handleResumeStudent}
                         isLoading={isLoading}
                     />
 

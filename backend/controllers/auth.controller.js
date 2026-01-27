@@ -162,9 +162,33 @@ export const getCurrentUser = async (req, res) => {
 /* ================= GET ALL STUDENTS ================= */
 export const getAllStudents = async (req, res) => {
   try {
-    const students = await User.find()
-      .select("fullName email") // only needed fields
-      .sort({ createdAt: -1 });
+    const students = await User.aggregate([
+      {
+        $lookup: {
+          from: 'enrollments',
+          localField: '_id',
+          foreignField: 'student',
+          as: 'enrollments'
+        }
+      },
+      {
+        $addFields: {
+          courseCount: { $size: '$enrollments' }
+        }
+      },
+      {
+        $project: {
+          fullName: 1,
+          email: 1,
+          isSuspended: 1,
+          createdAt: 1,
+          courseCount: 1
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
 
     res.json({
       count: students.length,
