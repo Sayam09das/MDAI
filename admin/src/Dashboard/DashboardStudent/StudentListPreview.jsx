@@ -20,46 +20,10 @@ import {
     Square
 } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-const [students, setStudents] = useState([]);
-const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-    const fetchStudents = async () => {
-        try {
-            const token = localStorage.getItem('token');
-
-            const res = await axios.get(
-                `${BASE_URL}/api/auth/students`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            const formattedStudents = res.data.students.map((student) => ({
-                id: student._id,
-                firstName: student.fullName.split(' ')[0],
-                lastName: student.fullName.split(' ').slice(1).join(' '),
-                email: student.email,
-                status: student.isSuspended ? 'suspended' : 'active',
-                joinedDate: new Date(student.createdAt).toLocaleDateString(),
-            }));
-
-            setStudents(formattedStudents);
-        } catch (error) {
-            console.error('Failed to fetch students', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchStudents();
-}, []);
 
 
 // Confirm Modal Component
@@ -308,7 +272,8 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
 
 // Main Student List Component
 const StudentListPreview = () => {
-    const [allStudents] = useState(generateStudents(50));
+    const navigate = useNavigate();
+    const [allStudents, setAllStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
@@ -317,7 +282,51 @@ const StudentListPreview = () => {
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null, student: null });
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const token = localStorage.getItem('adminToken');
+
+                if (!token) {
+                    console.error('No admin token found');
+                    navigate('/admin/login');
+                    return;
+                }
+
+                const res = await axios.get(
+                    `${BASE_URL}/api/auth/students`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const formattedStudents = res.data.students.map((student) => ({
+                    id: student._id,
+                    firstName: student.fullName.split(' ')[0],
+                    lastName: student.fullName.split(' ').slice(1).join(' '),
+                    email: student.email,
+                    status: student.isSuspended ? 'suspended' : 'active',
+                    joinedDate: new Date(student.createdAt).toLocaleDateString(),
+                }));
+
+                setAllStudents(formattedStudents);
+            } catch (error) {
+                console.error('Failed to fetch students', error);
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    navigate('/admin/login');
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchStudents();
+    }, [navigate]);
 
     // Filter and sort logic
     const filteredStudents = allStudents
