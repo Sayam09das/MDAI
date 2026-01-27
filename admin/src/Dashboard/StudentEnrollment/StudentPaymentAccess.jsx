@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-export default function AdminEnrollments() {
+export default function StudentPaymentAccess() {
     const [enrollments, setEnrollments] = useState([]);
     const [error, setError] = useState("");
     const token = localStorage.getItem("adminToken");

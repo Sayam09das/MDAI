@@ -10,7 +10,6 @@ import ContactRoutes from "./routes/ContactRoutes"
 import TeacherRoutes from "./routes/TeacherRoutes"
 import StudentRoutes from "./routes/StudentRoutes"
 import PaymentRoutes from "./routes/PaymentRoutes"
-import AdminRoutes from "./routes/AdminRoutes"
 
 const App = () => {
   return (
@@ -24,7 +23,6 @@ const App = () => {
       <TeacherRoutes />
       <StudentRoutes />
       <PaymentRoutes />
-      <AdminRoutes />
     </>
   )
 }

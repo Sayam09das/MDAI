@@ -356,10 +356,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard/resources",
         },
         {
-            id: "analytics",
-            label: "Analytics",
+            id: "Student Payment Access",
+            label: "Student Payment Access",
             icon: BarChart3,
-            route: "/admin/dashboard/analytics",
+            route: "/admin/dashboard/Students/PaymentAccess",
         },
     ];
 
