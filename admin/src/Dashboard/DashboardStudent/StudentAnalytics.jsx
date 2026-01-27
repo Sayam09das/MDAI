@@ -16,7 +16,7 @@ const StudentAnalytics = () => {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const res = await axios.get(`${BASE_URL}/api/admin/students`);
+                const res = await axios.get(`${BASE_URL}/api/auth/students`);
                 setStudents(res.data.students.slice(0, 6)); // 👈 max 6 students
                 setTotalStudents(res.data.totalStudents);
             } catch (error) {
