@@ -356,10 +356,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard/resources",
         },
         {
-            id: "analytics",
-            label: "Analytics",
+            id: "Student Course Access",
+            label: "Student Course/Payment Access",
             icon: BarChart3,
-            route: "/admin/dashboard/analytics",
+            route: "/admin/dashboard/students/paymentaccess",
         },
     ];
 
@@ -514,7 +514,7 @@ const DashboardLayout = () => {
         "/admin/dashboard/teachers": "Teachers",
         "/admin/dashboard/students": "Students",
         "/admin/dashboard/resources": "Resources",
-        "/admin/dashboard/analytics": "Analytics",
+        "/admin/dashboard/students/paymentaccess": "Student Course/Payment Access",
         "/admin/profile": "Profile",
         "/admin/settings": "Settings",
     };
