@@ -215,7 +215,8 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Student Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses Count</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Courses Names</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Joined</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
