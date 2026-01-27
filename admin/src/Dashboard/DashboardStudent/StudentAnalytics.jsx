@@ -16,11 +16,21 @@ const StudentAnalytics = () => {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const res = await axios.get(`${BASE_URL}/api/auth/students`);
-                setStudents(res.data.students.slice(0, 6)); // 👈 max 6 students
-                setTotalStudents(res.data.totalStudents);
+                const token = localStorage.getItem('token');
+
+                const res = await axios.get(
+                    `${BASE_URL}/api/auth/students`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setStudents(res.data.students.slice(0, 6));
+                setTotalStudents(res.data.count);
             } catch (error) {
-                console.error('Failed to fetch students', error);
+                console.error('Failed to fetch students', error.response?.data || error);
             } finally {
                 setLoading(false);
             }
@@ -28,6 +38,7 @@ const StudentAnalytics = () => {
 
         fetchStudents();
     }, [BASE_URL]);
+
 
     const metrics = [
         {
