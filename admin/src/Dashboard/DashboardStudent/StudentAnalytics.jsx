@@ -125,7 +125,7 @@ const StudentAnalytics = () => {
                                 Recent Activities
                             </h2>
                             <button
-                                onClick={() => navigate('/admin/dashboard/teacherlist')}
+                                onClick={() => navigate('/admin/dashboard/studentlist')}
                                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors group"
                             >
                                 View All Students
