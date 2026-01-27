@@ -8,8 +8,7 @@ import TeacherAnalytics from "../Dashboard/DashboardTeacher/TeacherAnalytics";
 import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 import CreateTeacher from "../Dashboard/DashboardTeacher/CreateTeacher";
 import StudentListPreview from "../Dashboard/DashboardStudent/StudentListPreview";
-import ReturnStudentPaymentAccess from "../Dashboard/StudentEnrollment/ReturnStudentPaymentAccess.jsx";
-
+import ReturnSPayment from "../Dashboard/StudentEnrollment/ReturnSPayment";
 const DashboardRoutes = () => {
     return (
         <Routes>
@@ -22,7 +21,7 @@ const DashboardRoutes = () => {
                     <Route path="dashboard/teacherlist" element={<TeacherList />} />
                     <Route path="dashboard/create/teacher" element={<CreateTeacher />} />
                     <Route path="dashboard/studentlist" element={<StudentListPreview />} />
-                    <Route path="dashboard/students/paymentaccess" element={<ReturnStudentPaymentAccess />} />
+                    <Route path="dashboard/students/paymentaccess" element={<ReturnSPayment />} />
                     <Route path="dashboard/settings" element={<div>Settings Page</div>} />
                 </Route>
             </Route>
