@@ -8,6 +8,7 @@ import TeacherAnalytics from "../Dashboard/DashboardTeacher/TeacherAnalytics";
 import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 import CreateTeacher from "../Dashboard/DashboardTeacher/CreateTeacher";
 import StudentListPreview from "../Dashboard/DashboardStudent/StudentListPreview";
+import ReturnStudentPaymentAccess from "../Dashboard/StudentEnrollment/ReturnStudentPaymentAccess.jsx";
 
 const DashboardRoutes = () => {
     return (

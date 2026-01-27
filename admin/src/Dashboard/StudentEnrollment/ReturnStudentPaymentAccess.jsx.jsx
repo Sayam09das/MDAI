@@ -2,7 +2,7 @@ import React from 'react'
 
 const ReturnStudentPaymentAccess.jsx = () => {
   return (
-    <div>ReturnStudentPaymentAccess.jsx</div>
+    <div><StudentPaymentAccess /></div>
   )
 }
 
