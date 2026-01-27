@@ -254,23 +254,28 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.email}</td>
                             <td className="px-6 py-4">
-                                <div className="group relative">
-                                    <span className="text-sm font-semibold text-slate-900 cursor-pointer">
+                                <div className="group relative inline-block">
+                                    <span className="text-sm font-semibold text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors">
                                         {student.courseCount || 0}
                                     </span>
-                                    {student.courseNames && student.courseNames.length > 0 && (
-                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-                                            <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs">
-                                                <div className="font-semibold mb-1">Enrolled Courses:</div>
-                                                <ul className="space-y-1">
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                                        <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs border border-slate-700">
+                                            <div className="font-semibold mb-1 text-indigo-300">Enrolled Courses:</div>
+                                            {Array.isArray(student.courseNames) && student.courseNames.length > 0 ? (
+                                                <ul className="space-y-1 max-h-32 overflow-y-auto">
                                                     {student.courseNames.map((courseName, idx) => (
-                                                        <li key={idx} className="truncate">• {courseName}</li>
+                                                        <li key={idx} className="truncate flex items-center">
+                                                            <span className="text-indigo-400 mr-1">•</span>
+                                                            <span className="text-slate-100">{courseName}</span>
+                                                        </li>
                                                     ))}
                                                 </ul>
-                                            </div>
-                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                                            ) : (
+                                                <div className="text-slate-400 italic">No courses enrolled</div>
+                                            )}
                                         </div>
-                                    )}
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                                    </div>
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.joinedDate}</td>

@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
+import Enrollment from "../models/enrollmentModel.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/generateToken.js";
@@ -162,55 +163,42 @@ export const getCurrentUser = async (req, res) => {
 /* ================= GET ALL STUDENTS ================= */
 export const getAllStudents = async (req, res) => {
   try {
-    const students = await User.aggregate([
-      {
-        $lookup: {
-          from: 'enrollments',
-          localField: '_id',
-          foreignField: 'student',
-          as: 'enrollments'
-        }
-      },
-      {
-        $lookup: {
-          from: 'courses',
-          localField: 'enrollments.course',
-          foreignField: '_id',
-          as: 'courses'
-        }
-      },
-      {
-        $addFields: {
-          courseCount: { $size: '$enrollments' },
-          courseNames: {
-            $map: {
-              input: '$courses',
-              as: 'course',
-              in: '$$course.title'
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          fullName: 1,
-          email: 1,
-          isSuspended: 1,
-          createdAt: 1,
-          courseCount: 1,
-          courseNames: 1
-        }
-      },
-      {
-        $sort: { createdAt: -1 }
-      }
-    ]);
+    // First get students with basic info
+    const students = await User.find()
+      .select("fullName email isSuspended createdAt")
+      .sort({ createdAt: -1 });
+
+    // Then get enrollments with course details for each student
+    const studentsWithCourses = await Promise.all(
+      students.map(async (student) => {
+        const enrollments = await Enrollment.find({ student: student._id })
+          .populate('course', 'title')
+          .select('course');
+
+        const courseNames = enrollments
+          .filter(enrollment => enrollment.course)
+          .map(enrollment => enrollment.course.title);
+
+        return {
+          _id: student._id,
+          fullName: student.fullName,
+          email: student.email,
+          isSuspended: student.isSuspended,
+          createdAt: student.createdAt,
+          courseCount: courseNames.length,
+          courseNames: courseNames
+        };
+      })
+    );
+
+    console.log('Students with course data:', JSON.stringify(studentsWithCourses.slice(0, 2), null, 2));
 
     res.json({
-      count: students.length,
-      students
+      count: studentsWithCourses.length,
+      students: studentsWithCourses
     });
   } catch (error) {
+    console.error('Error fetching students:', error);
     res.status(500).json({ message: "Failed to fetch students" });
   }
 };
