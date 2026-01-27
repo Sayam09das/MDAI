@@ -1,11 +1,12 @@
-import React from 'react'
+import React from 'react';
+import StudentPaymentAccess from './StudentPaymentAccess';
 
 const ReturnSPayment = () => {
   return (
     <div>
-        <StudentPaymentAccess />
+      <StudentPaymentAccess />
     </div>
-  )
-}
+  );
+};
 
-export default ReturnSPayment
+export default ReturnSPayment;
