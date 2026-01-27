@@ -172,8 +172,23 @@ export const getAllStudents = async (req, res) => {
         }
       },
       {
+        $lookup: {
+          from: 'courses',
+          localField: 'enrollments.course',
+          foreignField: '_id',
+          as: 'courses'
+        }
+      },
+      {
         $addFields: {
-          courseCount: { $size: '$enrollments' }
+          courseCount: { $size: '$enrollments' },
+          courseNames: {
+            $map: {
+              input: '$courses',
+              as: 'course',
+              in: '$$course.title'
+            }
+          }
         }
       },
       {
@@ -182,7 +197,8 @@ export const getAllStudents = async (req, res) => {
           email: 1,
           isSuspended: 1,
           createdAt: 1,
-          courseCount: 1
+          courseCount: 1,
+          courseNames: 1
         }
       },
       {

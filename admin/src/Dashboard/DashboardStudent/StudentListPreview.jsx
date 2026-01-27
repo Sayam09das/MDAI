@@ -253,7 +253,24 @@ const StudentTable = ({ students, selectedStudents, onSelectStudent, onSelectAll
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.email}</td>
                             <td className="px-6 py-4">
-                                <span className="text-sm font-semibold text-slate-900">{student.courseCount}</span>
+                                <div className="group relative">
+                                    <span className="text-sm font-semibold text-slate-900 cursor-pointer">
+                                        {student.courseCount}
+                                    </span>
+                                    {student.courseNames.length > 0 && (
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                            <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs">
+                                                <div className="font-semibold mb-1">Enrolled Courses:</div>
+                                                <ul className="space-y-1">
+                                                    {student.courseNames.map((courseName, index) => (
+                                                        <li key={index} className="truncate">• {courseName}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                                        </div>
+                                    )}
+                                </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{student.joinedDate}</td>
                             <td className="px-6 py-4">
@@ -329,6 +346,7 @@ const StudentListPreview = () => {
                     status: student.isSuspended ? 'suspended' : 'active',
                     joinedDate: new Date(student.createdAt).toLocaleDateString(),
                     courseCount: student.courseCount || 0,
+                    courseNames: student.courseNames || [],
                 }));
 
                 setAllStudents(formattedStudents);
