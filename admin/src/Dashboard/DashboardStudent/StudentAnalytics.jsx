@@ -50,7 +50,8 @@ const StudentAnalytics = () => {
         { student: 'James Chen', action: 'Enrolled in "React Fundamentals"', time: '3 hours ago' },
         { student: 'Sarah Johnson', action: 'Achieved 95% on final exam', time: '5 hours ago' },
         { student: 'Michael Brown', action: 'Started "Python Basics"', time: '6 hours ago' },
-        { student: 'Lisa Davis', action: 'Completed 3 courses this week', time: '8 hours ago' }
+        { student: 'Lisa Davis', action: 'Completed 3 courses this week', time: '8 hours ago' },
+        { student: 'David Martinez', action: 'Enrolled in "Data Science Bootcamp"', time: '10 hours ago' }
     ];
 
     const getColorClasses = (color) => {
