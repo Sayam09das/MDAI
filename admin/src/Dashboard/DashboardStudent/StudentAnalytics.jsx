@@ -16,7 +16,13 @@ const StudentAnalytics = () => {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('adminToken');
+
+                if (!token) {
+                    console.error('No admin token found');
+                    navigate('/admin/login');
+                    return;
+                }
 
                 const res = await axios.get(
                     `${BASE_URL}/api/auth/students`,
@@ -31,13 +37,18 @@ const StudentAnalytics = () => {
                 setTotalStudents(res.data.count);
             } catch (error) {
                 console.error('Failed to fetch students', error.response?.data || error);
+                if (error.response?.status === 401) {
+                    // Token invalid, redirect to login
+                    localStorage.removeItem('adminToken');
+                    navigate('/admin/login');
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         fetchStudents();
-    }, [BASE_URL]);
+    }, [BASE_URL, navigate]);
 
 
     const metrics = [
