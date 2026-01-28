@@ -20,7 +20,7 @@ const router = express.Router();
 // Register teacher (public)
 router.post("/register", registerTeacher);
 
-router.patch("/update/:teacherId", teacherOnly, updateTeacherProfile);
+router.patch("/update/:teacherId", protect, teacherOnly, updateTeacherProfile);
 
 
 // 🔥 Admin / Dashboard stats
