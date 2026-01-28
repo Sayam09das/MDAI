@@ -8,6 +8,7 @@ import {
     teacherOnboardingAnalytics,
     courseCreationAnalytics,
     feedbackAnalytics,
+    updateTeacherProfile,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -18,6 +19,8 @@ const router = express.Router();
 
 // Register teacher (public)
 router.post("/register", registerTeacher);
+
+router.patch("/teacher/:teacherId", teacherOnly, updateTeacherProfile);
 
 
 // 🔥 Admin / Dashboard stats

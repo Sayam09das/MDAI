@@ -42,6 +42,60 @@ export const registerTeacher = async (req, res) => {
   }
 };
 
+/* ================= UPDATE TEACHER PROFILE ================= */
+export const updateTeacherProfile = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    // ✅ Validation schema (all optional for edit)
+    const schema = z.object({
+      fullName: z.string().min(3).optional(),
+      email: z.string().email().optional(),
+      phone: z.string().min(10).optional(),
+      address: z.string().min(5).optional(),
+      gender: z.enum(["male", "female", "other"]).optional(),
+      class10Certificate: z.string().optional(),
+      class12Certificate: z.string().optional(),
+      collegeCertificate: z.string().optional(),
+      phdOrOtherCertificate: z.string().optional(),
+      profileImage: z.string().optional(),
+      joinWhatsappGroup: z.boolean().optional(),
+    });
+
+    const data = schema.parse(req.body);
+
+    // ❌ Prevent email duplication
+    if (data.email) {
+      const emailExists = await Teacher.findOne({
+        email: data.email,
+        _id: { $ne: teacherId },
+      });
+
+      if (emailExists) {
+        return res.status(409).json({ message: "Email already in use" });
+      }
+    }
+
+    const updatedTeacher = await Teacher.findByIdAndUpdate(
+      teacherId,
+      { $set: data },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedTeacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Teacher profile updated successfully",
+      teacher: updatedTeacher,
+    });
+  } catch (error) {
+    console.error("Update Teacher Error:", error);
+    res.status(500).json({ message: "Failed to update teacher profile" });
+  }
+};
 
 export const getTeacherStats = async (req, res) => {
   try {
