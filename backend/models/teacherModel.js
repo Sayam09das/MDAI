@@ -70,17 +70,17 @@ const teacherSchema = new mongoose.Schema(
     /* ================= CERTIFICATES ================= */
     class10Certificate: {
       public_id: String,
-      url: { type: String, required: true },
+      url: { type: String },
     },
 
     class12Certificate: {
       public_id: String,
-      url: { type: String, required: true },
+      url: { type: String },
     },
 
     collegeCertificate: {
       public_id: String,
-      url: { type: String, required: true },
+      url: { type: String },
     },
 
     phdOrOtherCertificate: {
