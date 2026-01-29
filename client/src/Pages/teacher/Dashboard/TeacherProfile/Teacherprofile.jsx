@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    User, 
-    Mail, 
-    Phone, 
-    MapPin, 
-    Briefcase, 
+import {
+    User,
+    Mail,
+    Phone,
+    MapPin,
     Award,
-    Edit3,
-    Upload,
-    X,
-    Check,
-    Plus,
-    Eye,
-    Loader2,
     BookOpen,
-    GraduationCap,
+    Edit2,
+    Save,
+    X,
+    Upload,
     FileText,
-    Camera
+    CheckCircle,
+    Calendar,
+    Briefcase,
+    GraduationCap,
+    Star,
+    Camera,
+    ChevronRight,
+    Download,
+    Eye,
+    Trash2
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -42,49 +46,6 @@ const isPlaceholderHost = (url) => {
     }
 };
 
-/* ================= ANIMATION VARIANTS ================= */
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1,
-            delayChildren: 0.2
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: "spring",
-            stiffness: 100,
-            damping: 15
-        }
-    }
-};
-
-const cardVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        transition: {
-            type: "spring",
-            stiffness: 100,
-            damping: 15
-        }
-    },
-    hover: {
-        scale: 1.02,
-        transition: { duration: 0.2 }
-    }
-};
-
 const Teacherprofile = () => {
     const navigate = useNavigate();
 
@@ -93,6 +54,7 @@ const Teacherprofile = () => {
     const [skillInput, setSkillInput] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [files, setFiles] = useState({});
+    const [previewUrls, setPreviewUrls] = useState({});
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -160,7 +122,16 @@ const Teacherprofile = () => {
     };
 
     const handleFileChange = (name, file) => {
-        setFiles((prev) => ({ ...prev, [name]: file }));
+        if (file) {
+            setFiles((prev) => ({ ...prev, [name]: file }));
+
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrls((prev) => ({ ...prev, [name]: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const addSkill = () => {
@@ -208,8 +179,11 @@ const Teacherprofile = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            alert("Profile updated ✅");
+            alert("Profile updated successfully! ✅");
             setIsEditing(false);
+
+            // Refresh the page to show updated data
+            window.location.reload();
         } catch (err) {
             alert(err.message || "Update failed ❌");
         } finally {
@@ -219,15 +193,11 @@ const Teacherprofile = () => {
 
     if (!currentUser) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center gap-4"
-                >
-                    <Loader2 className="w-12 h-12 text-white animate-spin" />
-                    <p className="text-white text-lg font-medium">Loading profile...</p>
-                </motion.div>
+            <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-medium">Loading profile...</p>
+                </div>
             </div>
         );
     }
@@ -235,188 +205,130 @@ const Teacherprofile = () => {
     /* ================= VIEW MODE ================= */
     if (!isEditing) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-4 md:p-6 lg:p-8">
+            <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
                 <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
-                    className="max-w-7xl mx-auto"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-5xl mx-auto"
                 >
-                    {/* Main Container */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="bg-white rounded-3xl shadow-2xl overflow-hidden"
-                    >
-                        {/* Header Section */}
-                        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6 md:p-10 lg:p-12">
-                            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                                {/* Profile Info */}
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 flex-1">
-                                    {/* Profile Image */}
-                                    <motion.div
-                                        whileHover={{ scale: 1.05 }}
-                                        className="relative"
-                                    >
-                                        {formData.profileImage && !isPlaceholderHost(formData.profileImage) ? (
-                                            <img
-                                                src={formData.profileImage}
-                                                alt="Profile"
-                                                className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-white/30 object-cover shadow-xl"
-                                            />
-                                        ) : (
-                                            <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-white/30 bg-white/20 flex items-center justify-center shadow-xl backdrop-blur-sm">
-                                                <span className="text-5xl md:text-6xl font-bold text-white">
-                                                    {formData.fullName.charAt(0).toUpperCase()}
-                                                </span>
-                                            </div>
-                                        )}
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            transition={{ delay: 0.5 }}
-                                            className="absolute bottom-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg"
-                                        >
-                                            Active
-                                        </motion.div>
-                                    </motion.div>
+                    {/* Header Card */}
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+                        {/* Cover Background */}
+                        <div className="h-32 sm:h-48 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative">
+                            <div className="absolute inset-0 bg-black/10"></div>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setIsEditing(true)}
+                                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-indigo-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-lg hover:bg-white transition-colors"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                                Edit Profile
+                            </motion.button>
+                        </div>
 
-                                    {/* Name & Details */}
-                                    <div className="flex-1 min-w-0">
-                                        <motion.h1
-                                            variants={itemVariants}
-                                            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 break-words"
-                                        >
-                                            {formData.fullName}
-                                        </motion.h1>
-                                        <motion.p
-                                            variants={itemVariants}
-                                            className="text-white/90 text-base md:text-lg mb-3 md:mb-4"
-                                        >
-                                            Professional Educator
-                                        </motion.p>
-                                        <motion.div
-                                            variants={itemVariants}
-                                            className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl text-white font-medium"
-                                        >
-                                            <Briefcase className="w-5 h-5" />
-                                            <span>{formData.experience} years experience</span>
-                                        </motion.div>
+                        {/* Profile Content */}
+                        <div className="px-6 pb-6">
+                            {/* Profile Image */}
+                            <div className="relative -mt-16 sm:-mt-20 mb-4">
+                                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-400">
+                                    {formData.profileImage && !isPlaceholderHost(formData.profileImage) ? (
+                                        <img
+                                            src={formData.profileImage}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-white text-4xl sm:text-5xl font-bold">
+                                            {formData.fullName.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Name and Info */}
+                            <div className="space-y-4">
+                                <div>
+                                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+                                        {formData.fullName}
+                                    </h1>
+                                    <div className="flex items-center gap-2 text-indigo-600 font-medium">
+                                        <GraduationCap className="w-5 h-5" />
+                                        <span>Educator</span>
                                     </div>
                                 </div>
 
-                                {/* Edit Button */}
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => setIsEditing(true)}
-                                    className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto justify-center"
-                                >
-                                    <Edit3 className="w-5 h-5" />
-                                    Edit Profile
-                                </motion.button>
+                                {/* Contact Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                                    <InfoItem icon={Mail} label="Email" value={formData.email} />
+                                    <InfoItem icon={Phone} label="Phone" value={formData.phone} />
+                                    <InfoItem icon={MapPin} label="Address" value={formData.address} />
+                                    <InfoItem icon={Briefcase} label="Experience" value={`${formData.experience} years`} />
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Content Section */}
-                        <div className="p-6 md:p-10 lg:p-12">
-                            {/* Info Cards Grid */}
-                            <motion.div
-                                variants={containerVariants}
-                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12"
-                            >
-                                <InfoCard
-                                    icon={<Mail className="w-6 h-6" />}
-                                    label="Email"
-                                    value={formData.email}
-                                />
-                                <InfoCard
-                                    icon={<Phone className="w-6 h-6" />}
-                                    label="Phone"
-                                    value={formData.phone}
-                                />
-                                <InfoCard
-                                    icon={<MapPin className="w-6 h-6" />}
-                                    label="Address"
-                                    value={formData.address}
-                                />
-                            </motion.div>
+                    {/* About Section */}
+                    {formData.about && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="bg-white rounded-2xl shadow-lg p-6 mb-6"
+                        >
+                            <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <User className="w-6 h-6 text-indigo-600" />
+                                About Me
+                            </h2>
+                            <p className="text-slate-700 leading-relaxed">{formData.about}</p>
+                        </motion.div>
+                    )}
 
-                            {/* About Section */}
-                            {formData.about && (
-                                <motion.div variants={itemVariants} className="mb-8 md:mb-12">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-3">
-                                        <User className="w-7 h-7 text-indigo-600" />
-                                        About
-                                    </h2>
-                                    <motion.div
-                                        variants={cardVariants}
-                                        whileHover="hover"
-                                        className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm"
+                    {/* Skills Section */}
+                    {formData.skills.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="bg-white rounded-2xl shadow-lg p-6 mb-6"
+                        >
+                            <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Star className="w-6 h-6 text-indigo-600" />
+                                Skills & Expertise
+                            </h2>
+                            <div className="flex flex-wrap gap-3">
+                                {formData.skills.map((skill, idx) => (
+                                    <motion.span
+                                        key={idx}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full font-medium shadow-md"
                                     >
-                                        <p className="text-gray-700 text-base md:text-lg leading-relaxed">
-                                            {formData.about}
-                                        </p>
-                                    </motion.div>
-                                </motion.div>
-                            )}
+                                        {skill}
+                                    </motion.span>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
 
-                            {/* Skills Section */}
-                            {formData.skills && formData.skills.length > 0 && (
-                                <motion.div variants={itemVariants} className="mb-8 md:mb-12">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-3">
-                                        <BookOpen className="w-7 h-7 text-indigo-600" />
-                                        Skills & Expertise
-                                    </h2>
-                                    <motion.div
-                                        variants={containerVariants}
-                                        className="flex flex-wrap gap-2 md:gap-3"
-                                    >
-                                        {formData.skills.map((skill, idx) => (
-                                            <motion.span
-                                                key={idx}
-                                                variants={itemVariants}
-                                                whileHover={{ scale: 1.05 }}
-                                                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-full font-medium text-sm md:text-base shadow-md"
-                                            >
-                                                {skill}
-                                            </motion.span>
-                                        ))}
-                                    </motion.div>
-                                </motion.div>
-                            )}
-
-                            {/* Certificates Section */}
-                            <motion.div variants={itemVariants}>
-                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-3">
-                                    <Award className="w-7 h-7 text-indigo-600" />
-                                    Certifications & Qualifications
-                                </h2>
-                                <motion.div
-                                    variants={containerVariants}
-                                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
-                                >
-                                    <CertificateCard
-                                        title="Class 10 Certificate"
-                                        src={formData.class10Certificate}
-                                        icon={<GraduationCap className="w-6 h-6" />}
-                                    />
-                                    <CertificateCard
-                                        title="Class 12 Certificate"
-                                        src={formData.class12Certificate}
-                                        icon={<GraduationCap className="w-6 h-6" />}
-                                    />
-                                    <CertificateCard
-                                        title="College Degree"
-                                        src={formData.collegeCertificate}
-                                        icon={<FileText className="w-6 h-6" />}
-                                    />
-                                    <CertificateCard
-                                        title="Advanced Certification"
-                                        src={formData.phdOrOtherCertificate}
-                                        icon={<Award className="w-6 h-6" />}
-                                    />
-                                </motion.div>
-                            </motion.div>
+                    {/* Certificates Section */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-white rounded-2xl shadow-lg p-6"
+                    >
+                        <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <Award className="w-6 h-6 text-indigo-600" />
+                            Certificates & Credentials
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <CertificateCard title="Class 10th" src={formData.class10Certificate} icon={BookOpen} />
+                            <CertificateCard title="Class 12th" src={formData.class12Certificate} icon={BookOpen} />
+                            <CertificateCard title="College Degree" src={formData.collegeCertificate} icon={GraduationCap} />
+                            <CertificateCard title="PhD / Other" src={formData.phdOrOtherCertificate} icon={Award} />
                         </div>
                     </motion.div>
                 </motion.div>
@@ -426,418 +338,412 @@ const Teacherprofile = () => {
 
     /* ================= EDIT MODE ================= */
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-4 md:p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-5xl mx-auto"
+                className="max-w-4xl mx-auto"
             >
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-3xl shadow-2xl overflow-hidden"
-                >
-                    {/* Edit Header */}
-                    <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6 md:p-10 lg:p-12">
-                        <motion.h1
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2"
-                        >
+                <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                            <Edit2 className="w-8 h-8 text-indigo-600" />
                             Edit Profile
-                        </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="text-white/90 text-base md:text-lg"
+                        </h2>
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                         >
-                            Update your professional information
-                        </motion.p>
+                            <X className="w-6 h-6 text-slate-600" />
+                        </button>
                     </div>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="p-6 md:p-10 lg:p-12">
-                        {/* Profile Image Section */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-8 md:mb-10"
-                        >
-                            <label className="block text-sm font-semibold text-gray-700 mb-4">
-                                Profile Image
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Profile Image Upload */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-3">
+                                Profile Picture
                             </label>
-                            <div className="flex flex-col sm:flex-row items-center gap-6">
-                                {formData.profileImage && !isPlaceholderHost(formData.profileImage) ? (
-                                    <motion.img
-                                        whileHover={{ scale: 1.05 }}
-                                        src={formData.profileImage}
-                                        alt="Profile preview"
-                                        className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-gray-200"
-                                    />
-                                ) : (
-                                    <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
-                                        <Camera className="w-10 h-10 md:w-12 md:h-12 text-gray-400" />
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                                <div className="relative group">
+                                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-400 shadow-lg">
+                                        {(previewUrls.profileImage || formData.profileImage) ? (
+                                            <img
+                                                src={previewUrls.profileImage || formData.profileImage}
+                                                alt="Profile Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-white text-4xl font-bold">
+                                                {formData.fullName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                <label className="flex-1 w-full sm:w-auto">
+                                    <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Camera className="w-8 h-8 text-white" />
+                                    </div>
+                                </div>
+                                <div className="flex-1">
                                     <input
                                         type="file"
+                                        id="profileImage"
                                         accept="image/*"
-                                        className="hidden"
                                         onChange={(e) => handleFileChange("profileImage", e.target.files[0])}
+                                        className="hidden"
                                     />
-                                    <motion.span
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold cursor-pointer shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
+                                    <label
+                                        htmlFor="profileImage"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer font-medium"
                                     >
-                                        <Upload className="w-5 h-5" />
-                                        Choose Image
-                                    </motion.span>
-                                </label>
+                                        <Upload className="w-4 h-4" />
+                                        Upload Photo
+                                    </label>
+                                    <p className="text-sm text-slate-500 mt-2">
+                                        JPG, PNG or GIF. Max size 5MB.
+                                    </p>
+                                </div>
                             </div>
-                        </motion.div>
+                        </div>
 
-                        {/* Basic Info Grid */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
-                        >
-                            <FormInput
+                        {/* Basic Info */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <InputField
                                 label="Full Name"
                                 name="fullName"
                                 value={formData.fullName}
                                 onChange={handleChange}
-                                placeholder="Enter your full name"
+                                icon={User}
+                                required
                             />
-                            <FormInput
-                                label="Email Address"
+                            <InputField
+                                label="Email"
                                 name="email"
                                 type="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder="your.email@example.com"
+                                icon={Mail}
                                 disabled
                             />
-                            <FormInput
-                                label="Phone Number"
+                            <InputField
+                                label="Phone"
                                 name="phone"
                                 type="tel"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                placeholder="+1 (555) 000-0000"
+                                icon={Phone}
                             />
-                            <FormInput
-                                label="Experience (Years)"
+                            <InputField
+                                label="Experience (years)"
                                 name="experience"
                                 type="number"
                                 value={formData.experience}
                                 onChange={handleChange}
-                                placeholder="0"
+                                icon={Briefcase}
                                 min="0"
                             />
-                        </motion.div>
+                        </div>
 
                         {/* Address */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="mb-8"
-                        >
-                            <FormInput
-                                label="Address"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                placeholder="Enter your address"
-                            />
-                        </motion.div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Address
+                            </label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                                <input
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                    placeholder="Enter your address"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Gender */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-3">
+                                Gender
+                            </label>
+                            <div className="flex gap-4">
+                                {['male', 'female', 'other'].map((gender) => (
+                                    <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="gender"
+                                            value={gender}
+                                            checked={formData.gender === gender}
+                                            onChange={handleChange}
+                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-slate-700 capitalize">{gender}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* About */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="mb-8"
-                        >
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                About
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                About Me
                             </label>
                             <textarea
                                 name="about"
                                 value={formData.about}
                                 onChange={handleChange}
-                                rows={5}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700 resize-none"
+                                rows="5"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
                                 placeholder="Tell us about yourself, your teaching philosophy, and experience..."
                             />
-                        </motion.div>
+                        </div>
 
-                        {/* Skills Section */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="mb-8"
-                        >
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        {/* Skills */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-3">
                                 Skills & Expertise
                             </label>
-                            <div className="flex gap-2 mb-4">
+                            <div className="flex gap-2 mb-3">
                                 <input
                                     type="text"
                                     value={skillInput}
                                     onChange={(e) => setSkillInput(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700"
-                                    placeholder="Add a skill (press Enter)"
+                                    placeholder="Add a skill..."
+                                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 />
-                                <motion.button
+                                <button
                                     type="button"
                                     onClick={addSkill}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow whitespace-nowrap"
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                                 >
-                                    <Plus className="w-5 h-5" />
                                     Add
-                                </motion.button>
+                                </button>
                             </div>
-                            <AnimatePresence mode="popLayout">
-                                {formData.skills.length > 0 && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="flex flex-wrap gap-2"
-                                    >
-                                        {formData.skills.map((skill, idx) => (
-                                            <motion.span
-                                                key={skill}
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.8 }}
-                                                whileHover={{ scale: 1.05 }}
-                                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 border border-gray-200"
+                            <div className="flex flex-wrap gap-2">
+                                <AnimatePresence>
+                                    {formData.skills.map((skill, idx) => (
+                                        <motion.span
+                                            key={skill}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8 }}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full font-medium"
+                                        >
+                                            {skill}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeSkill(skill)}
+                                                className="hover:bg-indigo-200 rounded-full p-0.5 transition-colors"
                                             >
-                                                {skill}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeSkill(skill)}
-                                                    className="text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </motion.span>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </motion.span>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                            {formData.skills.length >= 10 && (
+                                <p className="text-sm text-amber-600 mt-2">Maximum 10 skills allowed</p>
+                            )}
+                        </div>
 
-                        {/* Certificates Section */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            className="mb-10"
-                        >
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">
-                                Certificates & Qualifications
+                        {/* Certificates Upload */}
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Award className="w-6 h-6 text-indigo-600" />
+                                Certificates & Credentials
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <CertificateEdit
+                            <div className="space-y-6">
+                                <CertificateUpload
                                     name="class10Certificate"
-                                    title="Class 10 Certificate"
-                                    src={formData.class10Certificate}
+                                    title="Class 10th Certificate"
+                                    currentUrl={formData.class10Certificate}
+                                    previewUrl={previewUrls.class10Certificate}
                                     onFileChange={handleFileChange}
                                 />
-                                <CertificateEdit
+                                <CertificateUpload
                                     name="class12Certificate"
-                                    title="Class 12 Certificate"
-                                    src={formData.class12Certificate}
+                                    title="Class 12th Certificate"
+                                    currentUrl={formData.class12Certificate}
+                                    previewUrl={previewUrls.class12Certificate}
                                     onFileChange={handleFileChange}
                                 />
-                                <CertificateEdit
+                                <CertificateUpload
                                     name="collegeCertificate"
-                                    title="College Degree"
-                                    src={formData.collegeCertificate}
+                                    title="College Degree Certificate"
+                                    currentUrl={formData.collegeCertificate}
+                                    previewUrl={previewUrls.collegeCertificate}
                                     onFileChange={handleFileChange}
                                 />
-                                <CertificateEdit
+                                <CertificateUpload
                                     name="phdOrOtherCertificate"
-                                    title="Advanced Certification"
-                                    src={formData.phdOrOtherCertificate}
+                                    title="PhD / Other Certificate"
+                                    currentUrl={formData.phdOrOtherCertificate}
+                                    previewUrl={previewUrls.phdOrOtherCertificate}
                                     onFileChange={handleFileChange}
                                 />
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* Action Buttons */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                            className="flex flex-col-reverse sm:flex-row gap-4 pt-8 border-t border-gray-200"
-                        >
-                            <motion.button
-                                type="button"
-                                onClick={() => setIsEditing(false)}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="flex-1 sm:flex-none bg-white text-gray-700 border-2 border-gray-300 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                            >
-                                Cancel
-                            </motion.button>
-                            <motion.button
+                        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-200">
+                            <button
                                 type="submit"
                                 disabled={loading}
-                                whileHover={!loading ? { scale: 1.02 } : {}}
-                                whileTap={!loading ? { scale: 0.98 } : {}}
-                                className="flex-1 sm:flex-none bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         Saving...
                                     </>
                                 ) : (
                                     <>
-                                        <Check className="w-5 h-5" />
+                                        <Save className="w-5 h-5" />
                                         Save Changes
                                     </>
                                 )}
-                            </motion.button>
-                        </motion.div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsEditing(false)}
+                                className="flex-1 sm:flex-none px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-semibold"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </form>
-                </motion.div>
+                </div>
             </motion.div>
         </div>
     );
 };
 
-/* ================= COMPONENTS ================= */
+/* ================= UI COMPONENTS ================= */
 
-const InfoCard = ({ icon, label, value }) => (
-    <motion.div
-        variants={cardVariants}
-        whileHover="hover"
-        className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm"
-    >
-        <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white p-3 rounded-xl flex-shrink-0">
-                {icon}
-            </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    {label}
-                </p>
-                <p className="text-sm md:text-base font-medium text-gray-900 break-words">
-                    {value}
-                </p>
-            </div>
+const InfoItem = ({ icon: Icon, label, value }) => (
+    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Icon className="w-5 h-5 text-indigo-600" />
         </div>
-    </motion.div>
-);
-
-const CertificateCard = ({ title, src, icon }) => {
-    const hasValidSrc = src && !isPlaceholderHost(src);
-
-    return (
-        <motion.div
-            variants={cardVariants}
-            whileHover="hover"
-            className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm"
-        >
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white p-3 rounded-xl inline-flex mb-4">
-                {icon}
-            </div>
-            <h4 className="font-semibold text-gray-900 mb-3 text-sm md:text-base">{title}</h4>
-            {hasValidSrc ? (
-                <div className="space-y-3">
-                    <img
-                        src={src}
-                        alt={title}
-                        className="w-full h-32 md:h-40 object-cover rounded-xl border border-gray-200"
-                    />
-                    <motion.a
-                        href={src}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        whileHover={{ scale: 1.02 }}
-                        className="flex items-center justify-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-700 transition-colors"
-                    >
-                        <Eye className="w-4 h-4" />
-                        View Certificate
-                    </motion.a>
-                </div>
-            ) : (
-                <p className="text-sm text-gray-500 italic">No certificate uploaded</p>
-            )}
-        </motion.div>
-    );
-};
-
-const CertificateEdit = ({ name, title, src, onFileChange }) => {
-    const hasValidSrc = src && !isPlaceholderHost(src);
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl border border-gray-200"
-        >
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-                {title}
-            </label>
-            {hasValidSrc && (
-                <motion.img
-                    whileHover={{ scale: 1.02 }}
-                    src={src}
-                    alt={title}
-                    className="w-full h-32 object-cover rounded-xl border border-gray-200 mb-3"
-                />
-            )}
-            <label>
-                <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => onFileChange(name, e.target.files[0])}
-                />
-                <motion.span
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-2 bg-white text-indigo-600 border-2 border-indigo-500 px-4 py-2.5 rounded-xl font-semibold cursor-pointer hover:bg-indigo-50 transition-colors text-sm w-full"
-                >
-                    <Upload className="w-4 h-4" />
-                    {hasValidSrc ? 'Replace' : 'Upload'}
-                </motion.span>
-            </label>
-        </motion.div>
-    );
-};
-
-const FormInput = ({ label, name, type = "text", value, onChange, placeholder, disabled = false, min }) => (
-    <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-            {label}
-        </label>
-        <input
-            type={type}
-            name={name}
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            disabled={disabled}
-            min={min}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700 disabled:bg-gray-100 disabled:cursor-not-allowed"
-        />
+        <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
+            <p className="text-sm font-semibold text-slate-900 truncate">{value || "Not provided"}</p>
+        </div>
     </div>
 );
+
+const CertificateCard = ({ title, src, icon: Icon }) => {
+    const hasValidCert = src && !isPlaceholderHost(src);
+
+    return (
+        <div className="border-2 border-slate-200 rounded-xl p-4 hover:border-indigo-300 transition-colors">
+            <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900">{title}</h3>
+            </div>
+            {hasValidCert ? (
+                <div className="space-y-3">
+                    <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden">
+                        <img
+                            src={src}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <a
+                            href={src}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        >
+                            <Eye className="w-4 h-4" />
+                            View
+                        </a>
+                        <a
+                            href={src}
+                            download
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
+                        >
+                            <Download className="w-4 h-4" />
+                            Download
+                        </a>
+                    </div>
+                </div>
+            ) : (
+                <div className="aspect-video bg-slate-50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300">
+                    <div className="text-center">
+                        <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-sm text-slate-500">No certificate uploaded</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const InputField = ({ label, icon: Icon, ...props }) => (
+    <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
+            {label}
+        </label>
+        <div className="relative">
+            {Icon && <Icon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />}
+            <input
+                {...props}
+                className={`w-full ${Icon ? 'pl-12' : 'pl-4'} pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500`}
+            />
+        </div>
+    </div>
+);
+
+const CertificateUpload = ({ name, title, currentUrl, previewUrl, onFileChange }) => {
+    const hasFile = previewUrl || (currentUrl && !isPlaceholderHost(currentUrl));
+    const displayUrl = previewUrl || currentUrl;
+
+    return (
+        <div className="border-2 border-slate-200 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-slate-900">{title}</h4>
+                {hasFile && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                        Uploaded
+                    </span>
+                )}
+            </div>
+
+            {hasFile && (
+                <div className="mb-3 aspect-video bg-slate-100 rounded-lg overflow-hidden">
+                    <img
+                        src={displayUrl}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+            )}
+
+            <input
+                type="file"
+                id={name}
+                accept="image/*,application/pdf"
+                onChange={(e) => onFileChange(name, e.target.files[0])}
+                className="hidden"
+            />
+            <label
+                htmlFor={name}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer text-slate-600 hover:text-indigo-600 font-medium"
+            >
+                <Upload className="w-5 h-5" />
+                {hasFile ? 'Change Certificate' : 'Upload Certificate'}
+            </label>
+            <p className="text-xs text-slate-500 mt-2">
+                Accepted: JPG, PNG, PDF. Max 5MB
+            </p>
+        </div>
+    );
+};
 
 export default Teacherprofile;
