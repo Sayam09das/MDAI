@@ -6,10 +6,9 @@ const getToken = () => localStorage.getItem("token");
 
 /* ================= HELPERS ================= */
 
-// normalize backend value → string URL
 const extractUrl = (val) => {
     if (!val) return "";
-    if (typeof val === "string") return val; // legacy support
+    if (typeof val === "string") return val;
     if (typeof val === "object" && val.url) return val.url;
     return "";
 };
@@ -39,14 +38,14 @@ const Teacherprofile = () => {
         address: "",
         gender: "male",
 
+        profileImage: "",
+
         class10Certificate: "",
         class12Certificate: "",
         collegeCertificate: "",
         phdOrOtherCertificate: "",
 
-        profileImage: "",
         joinWhatsappGroup: false,
-
         about: "",
         skills: [],
         experience: 0,
@@ -75,14 +74,14 @@ const Teacherprofile = () => {
                     address: data.user.address || "",
                     gender: data.user.gender || "male",
 
+                    profileImage: extractUrl(data.user.profileImage),
+
                     class10Certificate: extractUrl(data.user.class10Certificate),
                     class12Certificate: extractUrl(data.user.class12Certificate),
                     collegeCertificate: extractUrl(data.user.collegeCertificate),
                     phdOrOtherCertificate: extractUrl(data.user.phdOrOtherCertificate),
 
-                    profileImage: extractUrl(data.user.profileImage),
                     joinWhatsappGroup: data.user.joinWhatsappGroup || false,
-
                     about: data.user.about || "",
                     skills: data.user.skills || [],
                     experience: data.user.experience || 0,
@@ -100,35 +99,26 @@ const Teacherprofile = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
+        setFormData((p) => ({ ...p, [name]: type === "checkbox" ? checked : value }));
+    };
+
+    const handleFileChange = (name, file) => {
+        setFiles((prev) => ({ ...prev, [name]: file }));
     };
 
     const addSkill = () => {
         if (
             skillInput.trim() &&
-            formData.skills.length < 10 &&
-            !formData.skills.includes(skillInput.trim())
+            !formData.skills.includes(skillInput.trim()) &&
+            formData.skills.length < 10
         ) {
-            setFormData((prev) => ({
-                ...prev,
-                skills: [...prev.skills, skillInput.trim()],
-            }));
+            setFormData((p) => ({ ...p, skills: [...p.skills, skillInput.trim()] }));
             setSkillInput("");
         }
     };
 
     const removeSkill = (skill) => {
-        setFormData((prev) => ({
-            ...prev,
-            skills: prev.skills.filter((s) => s !== skill),
-        }));
-    };
-
-    const handleFileChange = (name, file) => {
-        setFiles((prev) => ({ ...prev, [name]: file }));
+        setFormData((p) => ({ ...p, skills: p.skills.filter((s) => s !== skill) }));
     };
 
     /* ================= SUBMIT ================= */
@@ -154,14 +144,12 @@ const Teacherprofile = () => {
 
             const res = await fetch(`${BACKEND_URL}/api/teacher/update/me`, {
                 method: "PATCH",
-                headers: {
-                    Authorization: `Bearer ${getToken()}`,
-                },
+                headers: { Authorization: `Bearer ${getToken()}` },
                 body,
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || "Update failed");
+            if (!res.ok) throw new Error(data.message);
 
             alert("Profile updated ✅");
             setIsEditing(false);
@@ -172,7 +160,7 @@ const Teacherprofile = () => {
         }
     };
 
-    if (!currentUser) return <p>Loading profile...</p>;
+    if (!currentUser) return <p>Loading...</p>;
 
     /* ================= VIEW MODE ================= */
     if (!isEditing) {
@@ -180,31 +168,33 @@ const Teacherprofile = () => {
             <div style={{ maxWidth: 800, margin: "40px auto" }}>
                 <h2>Teacher Profile</h2>
 
+                {/* 🔥 PROFILE IMAGE */}
+                <div style={{ marginBottom: 20 }}>
+                    {formData.profileImage && !isPlaceholderHost(formData.profileImage) ? (
+                        <img
+                            src={formData.profileImage}
+                            alt="Profile"
+                            width="120"
+                            style={{ borderRadius: "50%" }}
+                        />
+                    ) : (
+                        <p>No profile image</p>
+                    )}
+                </div>
+
                 <p><b>Name:</b> {formData.fullName}</p>
                 <p><b>Email:</b> {formData.email}</p>
                 <p><b>Phone:</b> {formData.phone}</p>
                 <p><b>Address:</b> {formData.address}</p>
-                <p><b>Gender:</b> {formData.gender}</p>
                 <p><b>Experience:</b> {formData.experience} years</p>
 
                 <p><b>About:</b> {formData.about || "—"}</p>
 
-                <p><b>Skills:</b></p>
-                <div>
-                    {formData.skills.length
-                        ? formData.skills.map((s, i) => (
-                            <span key={i} style={{ marginRight: 8 }}>{s}</span>
-                        ))
-                        : "—"}
-                </div>
-
                 <h3>Certificates</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
-                    <CertificateCard title="Class 10" src={formData.class10Certificate} />
-                    <CertificateCard title="Class 12" src={formData.class12Certificate} />
-                    <CertificateCard title="College" src={formData.collegeCertificate} />
-                    <CertificateCard title="PhD / Other" src={formData.phdOrOtherCertificate} />
-                </div>
+                <CertificateCard title="Class 10" src={formData.class10Certificate} />
+                <CertificateCard title="Class 12" src={formData.class12Certificate} />
+                <CertificateCard title="College" src={formData.collegeCertificate} />
+                <CertificateCard title="PhD / Other" src={formData.phdOrOtherCertificate} />
 
                 <br />
                 <button onClick={() => setIsEditing(true)}>✏️ Edit Profile</button>
@@ -218,24 +208,19 @@ const Teacherprofile = () => {
             <h2>Edit Profile</h2>
 
             <form onSubmit={handleSubmit}>
+                {/* 🔥 PROFILE IMAGE EDIT */}
+                <label>Profile Image</label><br />
+                {formData.profileImage && <img src={formData.profileImage} width="100" />}
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange("profileImage", e.target.files[0])}
+                />
+
+                <br /><br />
+
                 <input name="fullName" value={formData.fullName} onChange={handleChange} />
-                <input name="email" value={formData.email} onChange={handleChange} />
-                <input name="phone" value={formData.phone} onChange={handleChange} />
-                <input name="address" value={formData.address} onChange={handleChange} />
-
-                <textarea name="about" value={formData.about} maxLength={500} onChange={handleChange} />
-                <input type="number" name="experience" value={formData.experience} onChange={handleChange} />
-
-                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} placeholder="Add skill" />
-                <button type="button" onClick={addSkill}>Add</button>
-
-                <div>
-                    {formData.skills.map((s, i) => (
-                        <span key={i} onClick={() => removeSkill(s)} style={{ margin: 5, cursor: "pointer" }}>
-                            {s} ✕
-                        </span>
-                    ))}
-                </div>
+                <textarea name="about" value={formData.about} onChange={handleChange} />
 
                 <h3>Certificates</h3>
                 <CertificateEdit name="class10Certificate" title="Class 10" src={formData.class10Certificate} onFileChange={handleFileChange} />
@@ -257,30 +242,17 @@ const Teacherprofile = () => {
 
 const CertificateCard = ({ title, src }) => (
     <div>
-        <p><b>{title}</b></p>
-        {src && !isPlaceholderHost(src) ? (
-            <img src={src} alt={title} style={{ width: "100%", borderRadius: 8 }} />
-        ) : (
-            <p>—</p>
-        )}
+        <b>{title}</b><br />
+        {src && !isPlaceholderHost(src) ? <img src={src} width="150" /> : "—"}
     </div>
 );
 
 const CertificateEdit = ({ name, title, src, onFileChange }) => (
-    <div style={{ marginBottom: 15 }}>
+    <div>
         <label>{title}</label><br />
-        {src && !isPlaceholderHost(src) ? (
-            <img src={src} alt={title} width="150" />
-        ) : (
-            <p>No file uploaded</p>
-        )}
-        <input
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={(e) => {
-                const f = e.target.files && e.target.files[0];
-                if (f) onFileChange(name, f);
-            }}
+        {src && <img src={src} width="120" />}
+        <input type="file" accept="image/*,application/pdf"
+            onChange={(e) => onFileChange(name, e.target.files[0])}
         />
     </div>
 );
