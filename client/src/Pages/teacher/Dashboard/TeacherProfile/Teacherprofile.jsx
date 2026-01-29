@@ -10,7 +10,7 @@ const Teacherprofile = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [skillInput, setSkillInput] = useState("");
-    const [isEditing, setIsEditing] = useState(false); // 🔥 KEY STATE
+    const [isEditing, setIsEditing] = useState(false);
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -125,7 +125,7 @@ const Teacherprofile = () => {
             if (!res.ok) throw new Error(data.message);
 
             alert("Profile updated ✅");
-            setIsEditing(false); // 🔥 BACK TO VIEW MODE
+            setIsEditing(false);
         } catch (err) {
             alert(err.message || "Update failed ❌");
         } finally {
@@ -161,10 +161,25 @@ const Teacherprofile = () => {
                         : "—"}
                 </div>
 
+                {/* ===== CERTIFICATES (IMAGES) ===== */}
+                <h3>Certificates</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 15 }}>
+                    {formData.class10Certificate && (
+                        <img src={formData.class10Certificate} alt="Class 10" style={{ width: "100%" }} />
+                    )}
+                    {formData.class12Certificate && (
+                        <img src={formData.class12Certificate} alt="Class 12" style={{ width: "100%" }} />
+                    )}
+                    {formData.collegeCertificate && (
+                        <img src={formData.collegeCertificate} alt="College" style={{ width: "100%" }} />
+                    )}
+                    {formData.phdOrOtherCertificate && (
+                        <img src={formData.phdOrOtherCertificate} alt="PhD / Other" style={{ width: "100%" }} />
+                    )}
+                </div>
+
                 <br />
-                <button onClick={() => setIsEditing(true)}>
-                    ✏️ Edit Profile
-                </button>
+                <button onClick={() => setIsEditing(true)}>✏️ Edit Profile</button>
             </div>
         );
     }
@@ -194,7 +209,7 @@ const Teacherprofile = () => {
                     onChange={handleChange}
                 />
 
-                {/* SKILLS */}
+                {/* ===== SKILLS ===== */}
                 <input
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
@@ -204,11 +219,30 @@ const Teacherprofile = () => {
 
                 <div>
                     {formData.skills.map((s, i) => (
-                        <span key={i} onClick={() => removeSkill(s)} style={{ cursor: "pointer", margin: 5 }}>
+                        <span key={i} onClick={() => removeSkill(s)} style={{ margin: 5, cursor: "pointer" }}>
                             {s} ✕
                         </span>
                     ))}
                 </div>
+
+                {/* ===== CERTIFICATES (UI ONLY) ===== */}
+                <h3>Certificates</h3>
+
+                <label>Class 10</label><br />
+                {formData.class10Certificate && <img src={formData.class10Certificate} width="150" />}
+                <input type="file" accept="image/*" />
+
+                <label>Class 12</label><br />
+                {formData.class12Certificate && <img src={formData.class12Certificate} width="150" />}
+                <input type="file" accept="image/*" />
+
+                <label>College</label><br />
+                {formData.collegeCertificate && <img src={formData.collegeCertificate} width="150" />}
+                <input type="file" accept="image/*" />
+
+                <label>PhD / Other</label><br />
+                {formData.phdOrOtherCertificate && <img src={formData.phdOrOtherCertificate} width="150" />}
+                <input type="file" accept="image/*" />
 
                 <br />
                 <button type="submit" disabled={loading}>
