@@ -12,13 +12,20 @@ export const registerTeacher = async (req, res) => {
       phone: z.string().min(10),
       address: z.string().min(5),
       gender: z.enum(["male", "female", "other"]),
+
       class10Certificate: z.string(),
       class12Certificate: z.string(),
       collegeCertificate: z.string(),
       phdOrOtherCertificate: z.string().optional(),
+
       profileImage: z.string().optional(),
       joinWhatsappGroup: z.boolean().optional(),
+
+      about: z.string().max(500).optional(),
+      skills: z.array(z.string()).max(10).optional(),
+      experience: z.number().min(0).optional(),
     });
+
 
     const data = schema.parse(req.body);
 
@@ -60,6 +67,9 @@ export const updateTeacherProfile = async (req, res) => {
       phdOrOtherCertificate: z.string().optional(),
       profileImage: z.string().optional(),
       joinWhatsappGroup: z.boolean().optional(),
+      about: z.string().max(500).optional(),
+      skills: z.array(z.string()).max(10).optional(),
+      experience: z.number().min(0).optional(),
     });
 
     const data = schema.parse(req.body);

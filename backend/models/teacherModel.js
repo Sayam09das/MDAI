@@ -50,6 +50,23 @@ const teacherSchema = new mongoose.Schema(
       default: false,
     },
 
+    about: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
+    },
+
+    skills: {
+      type: [String],
+      validate: [arr => arr.length <= 10, "Max 10 skills allowed"]
+    },
+
+    experience: {
+      type: Number, // in years
+      default: 0,
+    },
+
     /* ================= CERTIFICATES ================= */
     class10Certificate: {
       type: String, // file URL / Cloudinary URL
