@@ -1,50 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
 
 const Teacherprofile = () => {
+    const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            const token = localStorage.getItem("token");
+    const [currentUser, setCurrentUser] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [skillInput, setSkillInput] = useState("");
 
-            if (!token) {
-                navigate("/login");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error("Unauthorized");
-                }
-
-                setCurrentUser(data.user);
-            } catch (error) {
-                // Token expired / invalid
-                localStorage.removeItem("token");
-                localStorage.removeItem("role");
-                navigate("/login");
-            }
-        };
-
-        fetchCurrentUser();
-    }, [navigate]);
-
-    
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
-        password: "",
         phone: "",
         address: "",
         gender: "male",
@@ -62,16 +31,67 @@ const Teacherprofile = () => {
         experience: 0,
     });
 
-    const [skillInput, setSkillInput] = useState("");
-    const [loading, setLoading] = useState(false);
+    // ================= FETCH CURRENT TEACHER =================
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            const token = getToken();
+
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) throw new Error("Unauthorized");
+
+                setCurrentUser(data.user);
+
+                // ✅ PREFILL FORM FROM REGISTER DATA
+                setFormData({
+                    fullName: data.user.fullName || "",
+                    email: data.user.email || "",
+                    phone: data.user.phone || "",
+                    address: data.user.address || "",
+                    gender: data.user.gender || "male",
+
+                    class10Certificate: data.user.class10Certificate || "",
+                    class12Certificate: data.user.class12Certificate || "",
+                    collegeCertificate: data.user.collegeCertificate || "",
+                    phdOrOtherCertificate: data.user.phdOrOtherCertificate || "",
+
+                    profileImage: data.user.profileImage || "",
+                    joinWhatsappGroup: data.user.joinWhatsappGroup || false,
+
+                    about: data.user.about || "",
+                    skills: data.user.skills || [],
+                    experience: data.user.experience || 0,
+                });
+            } catch (err) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                navigate("/login");
+            }
+        };
+
+        fetchCurrentUser();
+    }, [navigate]);
 
     // ================= HANDLERS =================
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData({
-            ...formData,
+        setFormData((prev) => ({
+            ...prev,
             [name]: type === "checkbox" ? checked : value,
-        });
+        }));
     };
 
     const addSkill = () => {
@@ -80,27 +100,28 @@ const Teacherprofile = () => {
             formData.skills.length < 10 &&
             !formData.skills.includes(skillInput.trim())
         ) {
-            setFormData({
-                ...formData,
-                skills: [...formData.skills, skillInput.trim()],
-            });
+            setFormData((prev) => ({
+                ...prev,
+                skills: [...prev.skills, skillInput.trim()],
+            }));
             setSkillInput("");
         }
     };
 
     const removeSkill = (skill) => {
-        setFormData({
-            ...formData,
-            skills: formData.skills.filter((s) => s !== skill),
-        });
+        setFormData((prev) => ({
+            ...prev,
+            skills: prev.skills.filter((s) => s !== skill),
+        }));
     };
 
+    // ================= UPDATE PROFILE =================
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/teacher/update/ME`, {
+            const res = await fetch(`${BACKEND_URL}/api/teacher/update/me`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -121,49 +142,77 @@ const Teacherprofile = () => {
     };
 
     // ================= UI =================
+    if (!currentUser) return <p>Loading profile...</p>;
+
     return (
-        <div style={{ maxWidth: 700, margin: "40px auto" }}>
+        <div style={{ maxWidth: 720, margin: "40px auto" }}>
             <h2>Teacher Profile</h2>
 
             <form onSubmit={handleSubmit}>
-                <input name="fullName" placeholder="Full Name" onChange={handleChange} />
-                <input name="email" placeholder="Email" onChange={handleChange} />
-                <input name="password" type="password" placeholder="Password" onChange={handleChange} />
-                <input name="phone" placeholder="Phone" onChange={handleChange} />
-                <input name="address" placeholder="Address" onChange={handleChange} />
+                <input name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" />
+                <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
+                <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" />
+                <input name="address" value={formData.address} onChange={handleChange} placeholder="Address" />
 
-                <select name="gender" onChange={handleChange}>
+                <select name="gender" value={formData.gender} onChange={handleChange}>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
 
-                <input name="class10Certificate" placeholder="Class 10 Certificate URL" onChange={handleChange} />
-                <input name="class12Certificate" placeholder="Class 12 Certificate URL" onChange={handleChange} />
-                <input name="collegeCertificate" placeholder="College Certificate URL" onChange={handleChange} />
-                <input name="phdOrOtherCertificate" placeholder="PhD / Other Certificate URL" onChange={handleChange} />
+                <input
+                    name="class10Certificate"
+                    value={formData.class10Certificate}
+                    onChange={handleChange}
+                    placeholder="Class 10 Certificate URL"
+                />
+                <input
+                    name="class12Certificate"
+                    value={formData.class12Certificate}
+                    onChange={handleChange}
+                    placeholder="Class 12 Certificate URL"
+                />
+                <input
+                    name="collegeCertificate"
+                    value={formData.collegeCertificate}
+                    onChange={handleChange}
+                    placeholder="College Certificate URL"
+                />
+                <input
+                    name="phdOrOtherCertificate"
+                    value={formData.phdOrOtherCertificate}
+                    onChange={handleChange}
+                    placeholder="PhD / Other Certificate URL"
+                />
 
-                <input name="profileImage" placeholder="Profile Image URL" onChange={handleChange} />
+                <input
+                    name="profileImage"
+                    value={formData.profileImage}
+                    onChange={handleChange}
+                    placeholder="Profile Image URL"
+                />
 
                 <textarea
                     name="about"
-                    placeholder="About (max 500 characters)"
-                    maxLength={500}
+                    value={formData.about}
                     onChange={handleChange}
+                    maxLength={500}
+                    placeholder="About (max 500 characters)"
                 />
 
                 <input
                     type="number"
                     name="experience"
-                    placeholder="Experience (years)"
+                    value={formData.experience}
                     min={0}
                     onChange={handleChange}
+                    placeholder="Experience (years)"
                 />
 
                 {/* ================= SKILLS ================= */}
                 <div>
                     <input
-                        placeholder="Type skill and press Add"
+                        placeholder="Type skill and click Add"
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
                     />
@@ -175,6 +224,7 @@ const Teacherprofile = () => {
                         {formData.skills.map((skill, i) => (
                             <span
                                 key={i}
+                                onClick={() => removeSkill(skill)}
                                 style={{
                                     padding: "5px 10px",
                                     margin: 5,
@@ -183,7 +233,6 @@ const Teacherprofile = () => {
                                     borderRadius: 20,
                                     cursor: "pointer",
                                 }}
-                                onClick={() => removeSkill(skill)}
                             >
                                 {skill} ✕
                             </span>
@@ -195,6 +244,7 @@ const Teacherprofile = () => {
                     <input
                         type="checkbox"
                         name="joinWhatsappGroup"
+                        checked={formData.joinWhatsappGroup}
                         onChange={handleChange}
                     />
                     Join WhatsApp Group
