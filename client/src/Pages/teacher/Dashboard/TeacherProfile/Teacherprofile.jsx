@@ -244,11 +244,25 @@ const Teacherprofile = () => {
 
 /* ================= SMALL UI COMPONENTS ================= */
 
+const isPlaceholderHost = (url) => {
+    try {
+        const u = new URL(url);
+        return u.hostname.includes("example.com");
+    } catch {
+        return true; // treat invalid urls as placeholders
+    }
+};
+
 const CertificateCard = ({ title, src }) => (
     <div>
         <p><b>{title}</b></p>
-        {src ? (
-            <img src={src} alt={title} style={{ width: "100%", borderRadius: 8 }} />
+        {src && !isPlaceholderHost(src) ? (
+            <img
+                src={src}
+                alt={title}
+                style={{ width: "100%", borderRadius: 8 }}
+                onError={(e) => (e.target.style.display = "none")}
+            />
         ) : (
             <p>—</p>
         )}
@@ -258,7 +272,17 @@ const CertificateCard = ({ title, src }) => (
 const CertificateEdit = ({ title, src }) => (
     <div style={{ marginBottom: 15 }}>
         <label>{title}</label><br />
-        {src && <img src={src} alt={title} width="150" style={{ display: "block" }} />}
+        {src && !isPlaceholderHost(src) ? (
+            <img
+                src={src}
+                alt={title}
+                width="150"
+                style={{ display: "block" }}
+                onError={(e) => (e.target.style.display = "none")}
+            />
+        ) : (
+            <p style={{ margin: 0 }}>No file uploaded</p>
+        )}
         <input type="file" accept="image/*" />
     </div>
 );

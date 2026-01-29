@@ -42,38 +42,64 @@ const Motivation = () => {
 
     /* ================= DAILY MOTIVATION ================= */
     useEffect(() => {
-        const today = new Date().toISOString().split("T")[0]; // safer date
-        const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
+        let mounted = true;
 
-        if (saved && saved.date === today) {
-            setQuote(saved.quote);
-            return;
-        }
+        const fetchQuote = async () => {
+            const today = new Date().toISOString().split("T")[0]; // safer date
+            const saved = JSON.parse(localStorage.getItem("dailyMotivation"));
 
-        // cache-busting
-        const url = `https://corsproxy.io/?https://zenquotes.io/api/random?${Date.now()}`;
+            if (saved && saved.date === today) {
+                if (mounted) setQuote(saved.quote);
+                return;
+            }
 
-        fetch(url)
-            .then((res) => res.json())
-            .then((data) => {
-                const newQuote = {
-                    text: data[0].q,
-                    author: data[0].a,
-                };
+            // Try primary source (direct). Avoid unreliable public proxies.
+            try {
+                const res = await fetch(`https://zenquotes.io/api/random`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const newQuote = { text: data[0].q, author: data[0].a };
+                    localStorage.setItem(
+                        "dailyMotivation",
+                        JSON.stringify({ date: today, quote: newQuote })
+                    );
+                    if (mounted) setQuote(newQuote);
+                    return;
+                }
+            } catch (err) {
+                // fall through to secondary source
+            }
 
-                localStorage.setItem(
-                    "dailyMotivation",
-                    JSON.stringify({ date: today, quote: newQuote })
-                );
+            // Secondary source: quotable (CORS-friendly)
+            try {
+                const res2 = await fetch("https://api.quotable.io/random");
+                if (res2.ok) {
+                    const d = await res2.json();
+                    const newQuote = { text: d.content, author: d.author };
+                    localStorage.setItem(
+                        "dailyMotivation",
+                        JSON.stringify({ date: today, quote: newQuote })
+                    );
+                    if (mounted) setQuote(newQuote);
+                    return;
+                }
+            } catch (err) {
+                // fall through to local fallback
+            }
 
-                setQuote(newQuote);
-            })
-            .catch(() => {
-                setQuote({
-                    text: "Consistency beats motivation when motivation fades.",
-                    author: "Daily Wisdom",
-                });
-            });
+            // Local fallback
+            const fallback = {
+                text: "Consistency beats motivation when motivation fades.",
+                author: "Daily Wisdom",
+            };
+            if (mounted) setQuote(fallback);
+        };
+
+        fetchQuote();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     if (!quote || !currentUser) return null;
