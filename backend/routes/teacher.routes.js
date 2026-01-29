@@ -12,16 +12,38 @@ import {
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
+import upload  from "../middlewares/multer.js";
 
 const router = express.Router();
 
 /* ================= TEACHER ROUTES ================= */
 
-// Register teacher (public)
-router.post("/register", registerTeacher);
+router.post(
+    "/register",
+    upload.fields([
+        { name: "profileImage", maxCount: 1 },
+        { name: "class10Certificate", maxCount: 1 },
+        { name: "class12Certificate", maxCount: 1 },
+        { name: "collegeCertificate", maxCount: 1 },
+        { name: "phdOrOtherCertificate", maxCount: 1 },
+    ]),
+    registerTeacher
+);
 
-router.patch("/update/:teacherId", protect, teacherOnly, updateTeacherProfile);
-
+// Update teacher profile
+router.patch(
+    "/update/:teacherId",
+    protect,
+    teacherOnly,
+    upload.fields([
+        { name: "profileImage", maxCount: 1 },
+        { name: "class10Certificate", maxCount: 1 },
+        { name: "class12Certificate", maxCount: 1 },
+        { name: "collegeCertificate", maxCount: 1 },
+        { name: "phdOrOtherCertificate", maxCount: 1 },
+    ]),
+    updateTeacherProfile
+);
 
 // 🔥 Admin / Dashboard stats
 router.get("/stats", protect, getTeacherStats);
