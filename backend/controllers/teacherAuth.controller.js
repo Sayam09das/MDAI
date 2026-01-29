@@ -182,7 +182,7 @@ export const updateTeacherProfile = async (req, res) => {
       phdOrOtherCertificate,
       profileImage,
       ...safeBody
-    } = req.body;
+    } = req.body || {};
     // Normalize incoming values when request is multipart/form-data
     if (safeBody.skills && typeof safeBody.skills === "string") {
       try {
