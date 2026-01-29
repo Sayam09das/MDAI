@@ -142,16 +142,34 @@ export const getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "Account not found" });
     }
 
+    // Build user object based on role
+    const userObj = {
+      id: account._id,
+      fullName: account.fullName,
+      email: account.email,
+      phone: account.phone,
+      address: account.address,
+      isVerified: account.isVerified,
+    };
+
+    // Add teacher-specific fields if role is teacher
+    if (role === "teacher") {
+      userObj.gender = account.gender || "male";
+      userObj.class10Certificate = account.class10Certificate || "";
+      userObj.class12Certificate = account.class12Certificate || "";
+      userObj.collegeCertificate = account.collegeCertificate || "";
+      userObj.phdOrOtherCertificate = account.phdOrOtherCertificate || null;
+      userObj.profileImage = account.profileImage || "";
+      userObj.joinWhatsappGroup = account.joinWhatsappGroup || false;
+      userObj.about = account.about || "";
+      userObj.skills = account.skills || [];
+      userObj.experience = account.experience || 0;
+      userObj.isSuspended = account.isSuspended || false;
+    }
+
     res.json({
       role,
-      user: {
-        id: account._id,
-        fullName: account.fullName,
-        email: account.email,
-        phone: account.phone,
-        address: account.address,
-        isVerified: account.isVerified,
-      },
+      user: userObj,
     });
   } catch (error) {
     res.status(401).json({ message: "Invalid or expired token" });
