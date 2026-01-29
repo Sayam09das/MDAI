@@ -109,7 +109,31 @@ export const updateTeacherProfile = async (req, res) => {
       return res.status(404).json({ message: "Teacher not found" });
     }
 
-    // upload & replace files if provided
+    // ===== Upload helper =====
+    const uploadToCloudinary = async (file, folder, oldPublicId) => {
+      if (!file) return null;
+
+      if (oldPublicId) {
+        await cloudinary.uploader.destroy(oldPublicId, {
+          resource_type: "auto",
+        });
+      }
+
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+        {
+          folder,
+          resource_type: "auto",
+        }
+      );
+
+      return {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    };
+
+    // ===== Handle uploads (ONLY way to touch certificates) =====
     if (req.files?.profileImage) {
       teacher.profileImage = await uploadToCloudinary(
         req.files.profileImage[0],
@@ -150,8 +174,17 @@ export const updateTeacherProfile = async (req, res) => {
       );
     }
 
-    // update normal fields
-    Object.assign(teacher, req.body);
+    // ===== SAFE BODY UPDATE (NO CERTIFICATE FIELDS) =====
+    const {
+      class10Certificate,
+      class12Certificate,
+      collegeCertificate,
+      phdOrOtherCertificate,
+      profileImage,
+      ...safeBody
+    } = req.body;
+
+    Object.assign(teacher, safeBody);
     await teacher.save();
 
     res.json({
