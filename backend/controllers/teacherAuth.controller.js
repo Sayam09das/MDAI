@@ -2,6 +2,36 @@ import Teacher from "../models/teacherModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
 
+/* ======================================================
+   CLOUDINARY HELPER
+====================================================== */
+const uploadToCloudinary = async (file, folder, oldPublicId = null) => {
+  if (!file) return null;
+
+  // delete old file if exists
+  if (oldPublicId) {
+    await cloudinary.uploader.destroy(oldPublicId, {
+      resource_type: "auto", // 🔥 supports image + pdf
+    });
+  }
+
+  const result = await cloudinary.uploader.upload(
+    `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+    {
+      folder,
+      resource_type: "auto", // 🔥 IMPORTANT
+    }
+  );
+
+  return {
+    public_id: result.public_id,
+    url: result.secure_url,
+  };
+};
+
+/* ======================================================
+   REGISTER TEACHER
+====================================================== */
 export const registerTeacher = async (req, res) => {
   try {
     const schema = z.object({
@@ -24,30 +54,33 @@ export const registerTeacher = async (req, res) => {
       return res.status(409).json({ message: "Teacher already registered" });
     }
 
-    // 🔥 upload helper
-    const uploadToCloudinary = async (file, folder) => {
-      if (!file) return null;
-
-      const result = await cloudinary.uploader.upload(
-        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-        { folder }
-      );
-
-      return {
-        public_id: result.public_id,
-        url: result.secure_url,
-      };
-    };
-
     const teacher = await Teacher.create({
       ...data,
 
-      profileImage: await uploadToCloudinary(req.files?.profileImage?.[0], "teachers/profile"),
+      profileImage: await uploadToCloudinary(
+        req.files?.profileImage?.[0],
+        "teachers/profile"
+      ),
 
-      class10Certificate: await uploadToCloudinary(req.files?.class10Certificate?.[0], "teachers/certificates"),
-      class12Certificate: await uploadToCloudinary(req.files?.class12Certificate?.[0], "teachers/certificates"),
-      collegeCertificate: await uploadToCloudinary(req.files?.collegeCertificate?.[0], "teachers/certificates"),
-      phdOrOtherCertificate: await uploadToCloudinary(req.files?.phdOrOtherCertificate?.[0], "teachers/certificates"),
+      class10Certificate: await uploadToCloudinary(
+        req.files?.class10Certificate?.[0],
+        "teachers/certificates"
+      ),
+
+      class12Certificate: await uploadToCloudinary(
+        req.files?.class12Certificate?.[0],
+        "teachers/certificates"
+      ),
+
+      collegeCertificate: await uploadToCloudinary(
+        req.files?.collegeCertificate?.[0],
+        "teachers/certificates"
+      ),
+
+      phdOrOtherCertificate: await uploadToCloudinary(
+        req.files?.phdOrOtherCertificate?.[0],
+        "teachers/certificates"
+      ),
 
       isVerified: true,
       isSuspended: false,
@@ -58,37 +91,25 @@ export const registerTeacher = async (req, res) => {
       teacher,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Register Teacher Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
+/* ======================================================
+   UPDATE TEACHER PROFILE
+====================================================== */
 export const updateTeacherProfile = async (req, res) => {
   try {
     let { teacherId } = req.params;
     if (teacherId === "me") teacherId = req.user.id;
 
     const teacher = await Teacher.findById(teacherId);
-    if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
 
-    const uploadToCloudinary = async (file, folder, oldPublicId) => {
-      if (!file) return null;
-
-      if (oldPublicId) {
-        await cloudinary.uploader.destroy(oldPublicId);
-      }
-
-      const result = await cloudinary.uploader.upload(
-        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-        { folder }
-      );
-
-      return {
-        public_id: result.public_id,
-        url: result.secure_url,
-      };
-    };
-
+    // upload & replace files if provided
     if (req.files?.profileImage) {
       teacher.profileImage = await uploadToCloudinary(
         req.files.profileImage[0],
@@ -129,11 +150,13 @@ export const updateTeacherProfile = async (req, res) => {
       );
     }
 
+    // update normal fields
     Object.assign(teacher, req.body);
     await teacher.save();
 
     res.json({
       success: true,
+      message: "Teacher profile updated successfully",
       teacher,
     });
   } catch (error) {
