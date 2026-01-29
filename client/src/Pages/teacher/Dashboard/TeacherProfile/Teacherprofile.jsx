@@ -106,7 +106,6 @@ const Teacherprofile = () => {
         }));
     };
 
-    // ================= SAVE UPDATE =================
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -138,7 +137,7 @@ const Teacherprofile = () => {
     // ================= VIEW MODE =================
     if (!isEditing) {
         return (
-            <div style={{ maxWidth: 720, margin: "40px auto" }}>
+            <div style={{ maxWidth: 800, margin: "40px auto" }}>
                 <h2>Teacher Profile</h2>
 
                 <p><b>Name:</b> {formData.fullName}</p>
@@ -161,21 +160,19 @@ const Teacherprofile = () => {
                         : "—"}
                 </div>
 
-                {/* ===== CERTIFICATES (IMAGES) ===== */}
+                {/* ===== CERTIFICATES (ALL IMAGES) ===== */}
                 <h3>Certificates</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 15 }}>
-                    {formData.class10Certificate && (
-                        <img src={formData.class10Certificate} alt="Class 10" style={{ width: "100%" }} />
-                    )}
-                    {formData.class12Certificate && (
-                        <img src={formData.class12Certificate} alt="Class 12" style={{ width: "100%" }} />
-                    )}
-                    {formData.collegeCertificate && (
-                        <img src={formData.collegeCertificate} alt="College" style={{ width: "100%" }} />
-                    )}
-                    {formData.phdOrOtherCertificate && (
-                        <img src={formData.phdOrOtherCertificate} alt="PhD / Other" style={{ width: "100%" }} />
-                    )}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: 20,
+                    }}
+                >
+                    <CertificateCard title="Class 10" src={formData.class10Certificate} />
+                    <CertificateCard title="Class 12" src={formData.class12Certificate} />
+                    <CertificateCard title="College" src={formData.collegeCertificate} />
+                    <CertificateCard title="PhD / Other" src={formData.phdOrOtherCertificate} />
                 </div>
 
                 <br />
@@ -186,7 +183,7 @@ const Teacherprofile = () => {
 
     // ================= EDIT MODE =================
     return (
-        <div style={{ maxWidth: 720, margin: "40px auto" }}>
+        <div style={{ maxWidth: 800, margin: "40px auto" }}>
             <h2>Edit Profile</h2>
 
             <form onSubmit={handleSubmit}>
@@ -225,24 +222,13 @@ const Teacherprofile = () => {
                     ))}
                 </div>
 
-                {/* ===== CERTIFICATES (UI ONLY) ===== */}
+                {/* ===== CERTIFICATES EDIT (ALL) ===== */}
                 <h3>Certificates</h3>
 
-                <label>Class 10</label><br />
-                {formData.class10Certificate && <img src={formData.class10Certificate} width="150" />}
-                <input type="file" accept="image/*" />
-
-                <label>Class 12</label><br />
-                {formData.class12Certificate && <img src={formData.class12Certificate} width="150" />}
-                <input type="file" accept="image/*" />
-
-                <label>College</label><br />
-                {formData.collegeCertificate && <img src={formData.collegeCertificate} width="150" />}
-                <input type="file" accept="image/*" />
-
-                <label>PhD / Other</label><br />
-                {formData.phdOrOtherCertificate && <img src={formData.phdOrOtherCertificate} width="150" />}
-                <input type="file" accept="image/*" />
+                <CertificateEdit title="Class 10" src={formData.class10Certificate} />
+                <CertificateEdit title="Class 12" src={formData.class12Certificate} />
+                <CertificateEdit title="College" src={formData.collegeCertificate} />
+                <CertificateEdit title="PhD / Other" src={formData.phdOrOtherCertificate} />
 
                 <br />
                 <button type="submit" disabled={loading}>
@@ -255,5 +241,26 @@ const Teacherprofile = () => {
         </div>
     );
 };
+
+/* ================= SMALL UI COMPONENTS ================= */
+
+const CertificateCard = ({ title, src }) => (
+    <div>
+        <p><b>{title}</b></p>
+        {src ? (
+            <img src={src} alt={title} style={{ width: "100%", borderRadius: 8 }} />
+        ) : (
+            <p>—</p>
+        )}
+    </div>
+);
+
+const CertificateEdit = ({ title, src }) => (
+    <div style={{ marginBottom: 15 }}>
+        <label>{title}</label><br />
+        {src && <img src={src} alt={title} width="150" style={{ display: "block" }} />}
+        <input type="file" accept="image/*" />
+    </div>
+);
 
 export default Teacherprofile;
