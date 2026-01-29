@@ -11,6 +11,17 @@ import {
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
+// Accepts either a string URL or an object returned from Cloudinary
+const getProfileImageUrl = (img) => {
+    if (!img) return null;
+    if (typeof img === "string") return img;
+    if (typeof img === "object") {
+        if (img.url) return img.url;
+        if (img.secure_url) return img.secure_url;
+    }
+    return null;
+};
+
 
 const TeacherNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
@@ -161,18 +172,27 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                 }}
                                 className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
                             >
-                                <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center">
-                                    <span className="text-white text-sm font-semibold">
-                                        {currentUser?.fullName
-                                            ? currentUser.fullName.charAt(0).toUpperCase()
-                                            : "T"}
-                                    </span>
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center">
+                                    {getProfileImageUrl(currentUser?.profileImage) ? (
+                                        <img
+                                            src={getProfileImageUrl(currentUser.profileImage)}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-white text-sm font-semibold">
+                                            {currentUser?.fullName
+                                                ? currentUser.fullName.charAt(0).toUpperCase()
+                                                : "T"}
+                                        </span>
+                                    )}
                                 </div>
+
                                 <ChevronDown
-                                    className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""
-                                        }`}
+                                    className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""}`}
                                 />
                             </button>
+
 
                             {isProfileOpen && (
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg">
