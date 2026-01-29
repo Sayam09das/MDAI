@@ -4,6 +4,25 @@ import { useNavigate } from "react-router-dom";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
 
+/* ================= HELPERS ================= */
+
+// normalize backend value → string URL
+const extractUrl = (val) => {
+    if (!val) return "";
+    if (typeof val === "string") return val; // legacy support
+    if (typeof val === "object" && val.url) return val.url;
+    return "";
+};
+
+const isPlaceholderHost = (url) => {
+    try {
+        const u = new URL(url);
+        return u.hostname.includes("example.com");
+    } catch {
+        return true;
+    }
+};
+
 const Teacherprofile = () => {
     const navigate = useNavigate();
 
@@ -33,7 +52,7 @@ const Teacherprofile = () => {
         experience: 0,
     });
 
-    // ================= FETCH PROFILE =================
+    /* ================= FETCH PROFILE ================= */
     useEffect(() => {
         const fetchCurrentUser = async () => {
             const token = getToken();
@@ -56,12 +75,12 @@ const Teacherprofile = () => {
                     address: data.user.address || "",
                     gender: data.user.gender || "male",
 
-                    class10Certificate: data.user.class10Certificate || "",
-                    class12Certificate: data.user.class12Certificate || "",
-                    collegeCertificate: data.user.collegeCertificate || "",
-                    phdOrOtherCertificate: data.user.phdOrOtherCertificate || "",
+                    class10Certificate: extractUrl(data.user.class10Certificate),
+                    class12Certificate: extractUrl(data.user.class12Certificate),
+                    collegeCertificate: extractUrl(data.user.collegeCertificate),
+                    phdOrOtherCertificate: extractUrl(data.user.phdOrOtherCertificate),
 
-                    profileImage: data.user.profileImage || "",
+                    profileImage: extractUrl(data.user.profileImage),
                     joinWhatsappGroup: data.user.joinWhatsappGroup || false,
 
                     about: data.user.about || "",
@@ -77,7 +96,8 @@ const Teacherprofile = () => {
         fetchCurrentUser();
     }, [navigate]);
 
-    // ================= HANDLERS =================
+    /* ================= HANDLERS ================= */
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prev) => ({
@@ -111,6 +131,8 @@ const Teacherprofile = () => {
         setFiles((prev) => ({ ...prev, [name]: file }));
     };
 
+    /* ================= SUBMIT ================= */
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -118,16 +140,14 @@ const Teacherprofile = () => {
         try {
             const body = new FormData();
 
-            // Append form fields (skills as JSON)
             Object.keys(formData).forEach((key) => {
                 if (key === "skills") {
                     body.append(key, JSON.stringify(formData.skills));
                 } else {
-                    body.append(key, formData[key] == null ? "" : String(formData[key]));
+                    body.append(key, formData[key] ?? "");
                 }
             });
 
-            // Append selected files
             Object.keys(files).forEach((key) => {
                 body.append(key, files[key]);
             });
@@ -154,7 +174,7 @@ const Teacherprofile = () => {
 
     if (!currentUser) return <p>Loading profile...</p>;
 
-    // ================= VIEW MODE =================
+    /* ================= VIEW MODE ================= */
     if (!isEditing) {
         return (
             <div style={{ maxWidth: 800, margin: "40px auto" }}>
@@ -173,22 +193,13 @@ const Teacherprofile = () => {
                 <div>
                     {formData.skills.length
                         ? formData.skills.map((s, i) => (
-                            <span key={i} style={{ marginRight: 8 }}>
-                                {s}
-                            </span>
+                            <span key={i} style={{ marginRight: 8 }}>{s}</span>
                         ))
                         : "—"}
                 </div>
 
-                {/* ===== CERTIFICATES (ALL IMAGES) ===== */}
                 <h3>Certificates</h3>
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                        gap: 20,
-                    }}
-                >
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
                     <CertificateCard title="Class 10" src={formData.class10Certificate} />
                     <CertificateCard title="Class 12" src={formData.class12Certificate} />
                     <CertificateCard title="College" src={formData.collegeCertificate} />
@@ -201,7 +212,7 @@ const Teacherprofile = () => {
         );
     }
 
-    // ================= EDIT MODE =================
+    /* ================= EDIT MODE ================= */
     return (
         <div style={{ maxWidth: 800, margin: "40px auto" }}>
             <h2>Edit Profile</h2>
@@ -212,26 +223,10 @@ const Teacherprofile = () => {
                 <input name="phone" value={formData.phone} onChange={handleChange} />
                 <input name="address" value={formData.address} onChange={handleChange} />
 
-                <textarea
-                    name="about"
-                    value={formData.about}
-                    maxLength={500}
-                    onChange={handleChange}
-                />
+                <textarea name="about" value={formData.about} maxLength={500} onChange={handleChange} />
+                <input type="number" name="experience" value={formData.experience} onChange={handleChange} />
 
-                <input
-                    type="number"
-                    name="experience"
-                    value={formData.experience}
-                    onChange={handleChange}
-                />
-
-                {/* ===== SKILLS ===== */}
-                <input
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    placeholder="Add skill"
-                />
+                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} placeholder="Add skill" />
                 <button type="button" onClick={addSkill}>Add</button>
 
                 <div>
@@ -242,9 +237,7 @@ const Teacherprofile = () => {
                     ))}
                 </div>
 
-                {/* ===== CERTIFICATES EDIT (ALL) ===== */}
                 <h3>Certificates</h3>
-
                 <CertificateEdit name="class10Certificate" title="Class 10" src={formData.class10Certificate} onFileChange={handleFileChange} />
                 <CertificateEdit name="class12Certificate" title="Class 12" src={formData.class12Certificate} onFileChange={handleFileChange} />
                 <CertificateEdit name="collegeCertificate" title="College" src={formData.collegeCertificate} onFileChange={handleFileChange} />
@@ -254,35 +247,19 @@ const Teacherprofile = () => {
                 <button type="submit" disabled={loading}>
                     {loading ? "Saving..." : "Save Changes"}
                 </button>
-                <button type="button" onClick={() => setIsEditing(false)}>
-                    Cancel
-                </button>
+                <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
             </form>
         </div>
     );
 };
 
-/* ================= SMALL UI COMPONENTS ================= */
-
-const isPlaceholderHost = (url) => {
-    try {
-        const u = new URL(url);
-        return u.hostname.includes("example.com");
-    } catch {
-        return true; // treat invalid urls as placeholders
-    }
-};
+/* ================= UI COMPONENTS ================= */
 
 const CertificateCard = ({ title, src }) => (
     <div>
         <p><b>{title}</b></p>
         {src && !isPlaceholderHost(src) ? (
-            <img
-                src={src}
-                alt={title}
-                style={{ width: "100%", borderRadius: 8 }}
-                onError={(e) => (e.target.style.display = "none")}
-            />
+            <img src={src} alt={title} style={{ width: "100%", borderRadius: 8 }} />
         ) : (
             <p>—</p>
         )}
@@ -293,22 +270,16 @@ const CertificateEdit = ({ name, title, src, onFileChange }) => (
     <div style={{ marginBottom: 15 }}>
         <label>{title}</label><br />
         {src && !isPlaceholderHost(src) ? (
-            <img
-                src={src}
-                alt={title}
-                width="150"
-                style={{ display: "block" }}
-                onError={(e) => (e.target.style.display = "none")}
-            />
+            <img src={src} alt={title} width="150" />
         ) : (
-            <p style={{ margin: 0 }}>No file uploaded</p>
+            <p>No file uploaded</p>
         )}
         <input
             type="file"
             accept="image/*,application/pdf"
             onChange={(e) => {
                 const f = e.target.files && e.target.files[0];
-                if (f && onFileChange) onFileChange(name, f);
+                if (f) onFileChange(name, f);
             }}
         />
     </div>
