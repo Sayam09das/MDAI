@@ -10,6 +10,7 @@ const Teacherprofile = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [skillInput, setSkillInput] = useState("");
+    const [isEditing, setIsEditing] = useState(false); // 🔥 KEY STATE
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -31,31 +32,22 @@ const Teacherprofile = () => {
         experience: 0,
     });
 
-    // ================= FETCH CURRENT TEACHER =================
+    // ================= FETCH PROFILE =================
     useEffect(() => {
         const fetchCurrentUser = async () => {
             const token = getToken();
-
-            if (!token) {
-                navigate("/login");
-                return;
-            }
+            if (!token) return navigate("/login");
 
             try {
                 const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${token}` },
                 });
 
                 const data = await res.json();
-
-                if (!res.ok) throw new Error("Unauthorized");
+                if (!res.ok) throw new Error();
 
                 setCurrentUser(data.user);
 
-                // ✅ PREFILL FORM FROM REGISTER DATA
                 setFormData({
                     fullName: data.user.fullName || "",
                     email: data.user.email || "",
@@ -75,9 +67,8 @@ const Teacherprofile = () => {
                     skills: data.user.skills || [],
                     experience: data.user.experience || 0,
                 });
-            } catch (err) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("role");
+            } catch {
+                localStorage.clear();
                 navigate("/login");
             }
         };
@@ -115,7 +106,7 @@ const Teacherprofile = () => {
         }));
     };
 
-    // ================= UPDATE PROFILE =================
+    // ================= SAVE UPDATE =================
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -133,7 +124,8 @@ const Teacherprofile = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            alert("Profile updated successfully ✅");
+            alert("Profile updated ✅");
+            setIsEditing(false); // 🔥 BACK TO VIEW MODE
         } catch (err) {
             alert(err.message || "Update failed ❌");
         } finally {
@@ -141,118 +133,89 @@ const Teacherprofile = () => {
         }
     };
 
-    // ================= UI =================
     if (!currentUser) return <p>Loading profile...</p>;
 
+    // ================= VIEW MODE =================
+    if (!isEditing) {
+        return (
+            <div style={{ maxWidth: 720, margin: "40px auto" }}>
+                <h2>Teacher Profile</h2>
+
+                <p><b>Name:</b> {formData.fullName}</p>
+                <p><b>Email:</b> {formData.email}</p>
+                <p><b>Phone:</b> {formData.phone}</p>
+                <p><b>Address:</b> {formData.address}</p>
+                <p><b>Gender:</b> {formData.gender}</p>
+                <p><b>Experience:</b> {formData.experience} years</p>
+
+                <p><b>About:</b> {formData.about || "—"}</p>
+
+                <p><b>Skills:</b></p>
+                <div>
+                    {formData.skills.length
+                        ? formData.skills.map((s, i) => (
+                            <span key={i} style={{ marginRight: 8 }}>
+                                {s}
+                            </span>
+                        ))
+                        : "—"}
+                </div>
+
+                <br />
+                <button onClick={() => setIsEditing(true)}>
+                    ✏️ Edit Profile
+                </button>
+            </div>
+        );
+    }
+
+    // ================= EDIT MODE =================
     return (
         <div style={{ maxWidth: 720, margin: "40px auto" }}>
-            <h2>Teacher Profile</h2>
+            <h2>Edit Profile</h2>
 
             <form onSubmit={handleSubmit}>
-                <input name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" />
-                <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
-                <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" />
-                <input name="address" value={formData.address} onChange={handleChange} placeholder="Address" />
-
-                <select name="gender" value={formData.gender} onChange={handleChange}>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                </select>
-
-                <input
-                    name="class10Certificate"
-                    value={formData.class10Certificate}
-                    onChange={handleChange}
-                    placeholder="Class 10 Certificate URL"
-                />
-                <input
-                    name="class12Certificate"
-                    value={formData.class12Certificate}
-                    onChange={handleChange}
-                    placeholder="Class 12 Certificate URL"
-                />
-                <input
-                    name="collegeCertificate"
-                    value={formData.collegeCertificate}
-                    onChange={handleChange}
-                    placeholder="College Certificate URL"
-                />
-                <input
-                    name="phdOrOtherCertificate"
-                    value={formData.phdOrOtherCertificate}
-                    onChange={handleChange}
-                    placeholder="PhD / Other Certificate URL"
-                />
-
-                <input
-                    name="profileImage"
-                    value={formData.profileImage}
-                    onChange={handleChange}
-                    placeholder="Profile Image URL"
-                />
+                <input name="fullName" value={formData.fullName} onChange={handleChange} />
+                <input name="email" value={formData.email} onChange={handleChange} />
+                <input name="phone" value={formData.phone} onChange={handleChange} />
+                <input name="address" value={formData.address} onChange={handleChange} />
 
                 <textarea
                     name="about"
                     value={formData.about}
-                    onChange={handleChange}
                     maxLength={500}
-                    placeholder="About (max 500 characters)"
+                    onChange={handleChange}
                 />
 
                 <input
                     type="number"
                     name="experience"
                     value={formData.experience}
-                    min={0}
                     onChange={handleChange}
-                    placeholder="Experience (years)"
                 />
 
-                {/* ================= SKILLS ================= */}
+                {/* SKILLS */}
+                <input
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    placeholder="Add skill"
+                />
+                <button type="button" onClick={addSkill}>Add</button>
+
                 <div>
-                    <input
-                        placeholder="Type skill and click Add"
-                        value={skillInput}
-                        onChange={(e) => setSkillInput(e.target.value)}
-                    />
-                    <button type="button" onClick={addSkill}>
-                        Add Skill
-                    </button>
-
-                    <div style={{ marginTop: 10 }}>
-                        {formData.skills.map((skill, i) => (
-                            <span
-                                key={i}
-                                onClick={() => removeSkill(skill)}
-                                style={{
-                                    padding: "5px 10px",
-                                    margin: 5,
-                                    display: "inline-block",
-                                    background: "#e5e7eb",
-                                    borderRadius: 20,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                {skill} ✕
-                            </span>
-                        ))}
-                    </div>
+                    {formData.skills.map((s, i) => (
+                        <span key={i} onClick={() => removeSkill(s)} style={{ cursor: "pointer", margin: 5 }}>
+                            {s} ✕
+                        </span>
+                    ))}
                 </div>
-
-                <label>
-                    <input
-                        type="checkbox"
-                        name="joinWhatsappGroup"
-                        checked={formData.joinWhatsappGroup}
-                        onChange={handleChange}
-                    />
-                    Join WhatsApp Group
-                </label>
 
                 <br />
                 <button type="submit" disabled={loading}>
-                    {loading ? "Saving..." : "Save Profile"}
+                    {loading ? "Saving..." : "Save Changes"}
+                </button>
+                <button type="button" onClick={() => setIsEditing(false)}>
+                    Cancel
                 </button>
             </form>
         </div>
