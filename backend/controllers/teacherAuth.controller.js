@@ -183,6 +183,28 @@ export const updateTeacherProfile = async (req, res) => {
       profileImage,
       ...safeBody
     } = req.body;
+    // Normalize incoming values when request is multipart/form-data
+    if (safeBody.skills && typeof safeBody.skills === "string") {
+      try {
+        safeBody.skills = JSON.parse(safeBody.skills);
+      } catch (err) {
+        // fallback: comma separated
+        safeBody.skills = safeBody.skills.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+
+    if (safeBody.experience !== undefined) {
+      const num = Number(safeBody.experience);
+      safeBody.experience = Number.isFinite(num) ? num : teacher.experience;
+    }
+
+    if (safeBody.joinWhatsappGroup !== undefined) {
+      if (typeof safeBody.joinWhatsappGroup === "string") {
+        safeBody.joinWhatsappGroup = safeBody.joinWhatsappGroup === "true";
+      } else {
+        safeBody.joinWhatsappGroup = Boolean(safeBody.joinWhatsappGroup);
+      }
+    }
 
     Object.assign(teacher, safeBody);
     await teacher.save();

@@ -11,6 +11,7 @@ const Teacherprofile = () => {
     const [loading, setLoading] = useState(false);
     const [skillInput, setSkillInput] = useState("");
     const [isEditing, setIsEditing] = useState(false);
+    const [files, setFiles] = useState({});
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -106,22 +107,41 @@ const Teacherprofile = () => {
         }));
     };
 
+    const handleFileChange = (name, file) => {
+        setFiles((prev) => ({ ...prev, [name]: file }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
+            const body = new FormData();
+
+            // Append form fields (skills as JSON)
+            Object.keys(formData).forEach((key) => {
+                if (key === "skills") {
+                    body.append(key, JSON.stringify(formData.skills));
+                } else {
+                    body.append(key, formData[key] == null ? "" : String(formData[key]));
+                }
+            });
+
+            // Append selected files
+            Object.keys(files).forEach((key) => {
+                body.append(key, files[key]);
+            });
+
             const res = await fetch(`${BACKEND_URL}/api/teacher/update/me`, {
                 method: "PATCH",
                 headers: {
-                    "Content-Type": "application/json",
                     Authorization: `Bearer ${getToken()}`,
                 },
-                body: JSON.stringify(formData),
+                body,
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            if (!res.ok) throw new Error(data.message || "Update failed");
 
             alert("Profile updated ✅");
             setIsEditing(false);
@@ -225,10 +245,10 @@ const Teacherprofile = () => {
                 {/* ===== CERTIFICATES EDIT (ALL) ===== */}
                 <h3>Certificates</h3>
 
-                <CertificateEdit title="Class 10" src={formData.class10Certificate} />
-                <CertificateEdit title="Class 12" src={formData.class12Certificate} />
-                <CertificateEdit title="College" src={formData.collegeCertificate} />
-                <CertificateEdit title="PhD / Other" src={formData.phdOrOtherCertificate} />
+                <CertificateEdit name="class10Certificate" title="Class 10" src={formData.class10Certificate} onFileChange={handleFileChange} />
+                <CertificateEdit name="class12Certificate" title="Class 12" src={formData.class12Certificate} onFileChange={handleFileChange} />
+                <CertificateEdit name="collegeCertificate" title="College" src={formData.collegeCertificate} onFileChange={handleFileChange} />
+                <CertificateEdit name="phdOrOtherCertificate" title="PhD / Other" src={formData.phdOrOtherCertificate} onFileChange={handleFileChange} />
 
                 <br />
                 <button type="submit" disabled={loading}>
@@ -269,7 +289,7 @@ const CertificateCard = ({ title, src }) => (
     </div>
 );
 
-const CertificateEdit = ({ title, src }) => (
+const CertificateEdit = ({ name, title, src, onFileChange }) => (
     <div style={{ marginBottom: 15 }}>
         <label>{title}</label><br />
         {src && !isPlaceholderHost(src) ? (
@@ -283,7 +303,14 @@ const CertificateEdit = ({ title, src }) => (
         ) : (
             <p style={{ margin: 0 }}>No file uploaded</p>
         )}
-        <input type="file" accept="image/*" />
+        <input
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                if (f && onFileChange) onFileChange(name, f);
+            }}
+        />
     </div>
 );
 
