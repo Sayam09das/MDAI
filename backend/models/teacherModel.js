@@ -69,30 +69,31 @@ const teacherSchema = new mongoose.Schema(
 
     /* ================= CERTIFICATES ================= */
     class10Certificate: {
-      type: String, // file URL / Cloudinary URL
-      required: true,
+      public_id: String,
+      url: String,
     },
 
     class12Certificate: {
-      type: String,
-      required: true,
+      public_id: String,
+      url: String,
     },
 
     collegeCertificate: {
-      type: String,
-      required: true,
+      public_id: String,
+      url: String,
     },
 
     phdOrOtherCertificate: {
-      type: String, // optional
+      public_id: String,
+      url: String,
       default: null,
     },
 
-    /* ================= PROFILE ================= */
     profileImage: {
-      type: String, // image URL
-      default: "",
+      public_id: String,
+      url: String,
     },
+
     isSuspended: { type: Boolean, default: false },
 
   },

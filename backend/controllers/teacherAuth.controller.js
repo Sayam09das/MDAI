@@ -1,8 +1,7 @@
 import Teacher from "../models/teacherModel.js";
-import Course from "../models/Course.js";
+import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
 
-/* ================= TEACHER REGISTER ================= */
 export const registerTeacher = async (req, res) => {
   try {
     const schema = z.object({
@@ -12,20 +11,11 @@ export const registerTeacher = async (req, res) => {
       phone: z.string().min(10),
       address: z.string().min(5),
       gender: z.enum(["male", "female", "other"]),
-
-      class10Certificate: z.string(),
-      class12Certificate: z.string(),
-      collegeCertificate: z.string(),
-      phdOrOtherCertificate: z.string().optional(),
-
-      profileImage: z.string().optional(),
-      joinWhatsappGroup: z.boolean().optional(),
-
       about: z.string().max(500).optional(),
       skills: z.array(z.string()).max(10).optional(),
       experience: z.number().min(0).optional(),
+      joinWhatsappGroup: z.boolean().optional(),
     });
-
 
     const data = schema.parse(req.body);
 
@@ -34,83 +24,124 @@ export const registerTeacher = async (req, res) => {
       return res.status(409).json({ message: "Teacher already registered" });
     }
 
-    await Teacher.create({
+    // 🔥 upload helper
+    const uploadToCloudinary = async (file, folder) => {
+      if (!file) return null;
+
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+        { folder }
+      );
+
+      return {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    };
+
+    const teacher = await Teacher.create({
       ...data,
+
+      profileImage: await uploadToCloudinary(req.files?.profileImage?.[0], "teachers/profile"),
+
+      class10Certificate: await uploadToCloudinary(req.files?.class10Certificate?.[0], "teachers/certificates"),
+      class12Certificate: await uploadToCloudinary(req.files?.class12Certificate?.[0], "teachers/certificates"),
+      collegeCertificate: await uploadToCloudinary(req.files?.collegeCertificate?.[0], "teachers/certificates"),
+      phdOrOtherCertificate: await uploadToCloudinary(req.files?.phdOrOtherCertificate?.[0], "teachers/certificates"),
+
       isVerified: true,
-      isSuspended: false, // ✅ active by default
+      isSuspended: false,
     });
 
     res.status(201).json({
       success: true,
-      message: "Teacher registered successfully",
+      teacher,
     });
   } catch (error) {
-    res.status(500).json({ message: "Teacher registration failed" });
+    console.error(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-/* ================= UPDATE TEACHER PROFILE ================= */
 export const updateTeacherProfile = async (req, res) => {
   try {
     let { teacherId } = req.params;
+    if (teacherId === "me") teacherId = req.user.id;
 
-    // ✅ Handle "me" parameter - convert to authenticated user's ID
-    if (teacherId === "me") {
-      teacherId = req.user.id;
-    }
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher) return res.status(404).json({ message: "Teacher not found" });
 
-    // ✅ Validation schema (all optional for edit)
-    const schema = z.object({
-      fullName: z.string().min(3).optional(),
-      email: z.string().email().optional(),
-      phone: z.string().min(10).optional(),
-      address: z.string().min(5).optional(),
-      gender: z.enum(["male", "female", "other"]).optional(),
-      class10Certificate: z.string().optional(),
-      class12Certificate: z.string().optional(),
-      collegeCertificate: z.string().optional(),
-      phdOrOtherCertificate: z.string().optional(),
-      profileImage: z.string().optional(),
-      joinWhatsappGroup: z.boolean().optional(),
-      about: z.string().max(500).optional(),
-      skills: z.array(z.string()).max(10).optional(),
-      experience: z.number().min(0).optional(),
-    });
+    const uploadToCloudinary = async (file, folder, oldPublicId) => {
+      if (!file) return null;
 
-    const data = schema.parse(req.body);
-
-    // ❌ Prevent email duplication
-    if (data.email) {
-      const emailExists = await Teacher.findOne({
-        email: data.email,
-        _id: { $ne: teacherId },
-      });
-
-      if (emailExists) {
-        return res.status(409).json({ message: "Email already in use" });
+      if (oldPublicId) {
+        await cloudinary.uploader.destroy(oldPublicId);
       }
+
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+        { folder }
+      );
+
+      return {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    };
+
+    if (req.files?.profileImage) {
+      teacher.profileImage = await uploadToCloudinary(
+        req.files.profileImage[0],
+        "teachers/profile",
+        teacher.profileImage?.public_id
+      );
     }
 
-    const updatedTeacher = await Teacher.findByIdAndUpdate(
-      teacherId,
-      { $set: data },
-      { new: true, runValidators: true }
-    ).select("-password");
-
-    if (!updatedTeacher) {
-      return res.status(404).json({ message: "Teacher not found" });
+    if (req.files?.class10Certificate) {
+      teacher.class10Certificate = await uploadToCloudinary(
+        req.files.class10Certificate[0],
+        "teachers/certificates",
+        teacher.class10Certificate?.public_id
+      );
     }
 
-    res.status(200).json({
+    if (req.files?.class12Certificate) {
+      teacher.class12Certificate = await uploadToCloudinary(
+        req.files.class12Certificate[0],
+        "teachers/certificates",
+        teacher.class12Certificate?.public_id
+      );
+    }
+
+    if (req.files?.collegeCertificate) {
+      teacher.collegeCertificate = await uploadToCloudinary(
+        req.files.collegeCertificate[0],
+        "teachers/certificates",
+        teacher.collegeCertificate?.public_id
+      );
+    }
+
+    if (req.files?.phdOrOtherCertificate) {
+      teacher.phdOrOtherCertificate = await uploadToCloudinary(
+        req.files.phdOrOtherCertificate[0],
+        "teachers/certificates",
+        teacher.phdOrOtherCertificate?.public_id
+      );
+    }
+
+    Object.assign(teacher, req.body);
+    await teacher.save();
+
+    res.json({
       success: true,
-      message: "Teacher profile updated successfully",
-      teacher: updatedTeacher,
+      teacher,
     });
   } catch (error) {
     console.error("Update Teacher Error:", error);
-    res.status(500).json({ message: "Failed to update teacher profile" });
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 export const getTeacherStats = async (req, res) => {
   try {
