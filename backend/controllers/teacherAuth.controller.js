@@ -52,7 +52,12 @@ export const registerTeacher = async (req, res) => {
 /* ================= UPDATE TEACHER PROFILE ================= */
 export const updateTeacherProfile = async (req, res) => {
   try {
-    const { teacherId } = req.params;
+    let { teacherId } = req.params;
+
+    // ✅ Handle "me" parameter - convert to authenticated user's ID
+    if (teacherId === "me") {
+      teacherId = req.user.id;
+    }
 
     // ✅ Validation schema (all optional for edit)
     const schema = z.object({
