@@ -69,59 +69,30 @@ const teacherSchema = new mongoose.Schema(
 
     /* ================= CERTIFICATES ================= */
     class10Certificate: {
-      public_id: {
-        type: String,
-        required: true,
-      },
-      url: {
-        type: String,
-        required: true,
-      },
+      public_id: String,
+      url: { type: String, required: true },
     },
 
-
     class12Certificate: {
-      public_id: {
-        type: String,
-        required: true,
-      },
-      url: {
-        type: String,
-        required: true,
-      },
+      public_id: String,
+      url: { type: String, required: true },
     },
 
     collegeCertificate: {
-      public_id: {
-        type: String,
-        required: true,
-      },
-      url: {
-        type: String,
-        required: true,
-      },
+      public_id: String,
+      url: { type: String, required: true },
     },
-
 
     phdOrOtherCertificate: {
-      public_id: {
-        type: String,
-      },
-      url: {
-        type: String,
-      },
+      public_id: String,
+      url: String,
     },
 
-
-    /* ================= PROFILE ================= */
     profileImage: {
-      public_id: {
-        type: String,
-      },
-      url: {
-        type: String,
-      },
+      public_id: String,
+      url: String,
     },
+
 
     isSuspended: { type: Boolean, default: false },
 
