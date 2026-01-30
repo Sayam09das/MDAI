@@ -149,30 +149,31 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
     }
 };
 
-
 export const updatePaymentStatusByAdmin = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
         const { status } = req.body; // PAID or LATER
 
+        // 1️⃣ Validate status
         if (!["PAID", "LATER"].includes(status)) {
             return res.status(400).json({ message: "Invalid payment status" });
         }
 
+        // 2️⃣ Find enrollment
         const enrollment = await Enrollment.findById(enrollmentId);
 
         if (!enrollment) {
             return res.status(404).json({ message: "Enrollment not found" });
         }
 
-        // ✅ Block only if receipt already exists (final rule)
+        // 3️⃣ Block only if receipt already exists
         if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.public_id) {
             return res.status(400).json({
                 message: "Payment already approved and receipt generated",
             });
         }
 
-        // Update payment info
+        // 4️⃣ Update payment info
         enrollment.paymentStatus = status;
         enrollment.verifiedBy = req.user.id;
         enrollment.verifiedAt = new Date();
@@ -192,29 +193,30 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
             await enrollment.save();
 
-            // 🔥 Re-fetch with populated data (IMPORTANT)
+            // 5️⃣ Re-fetch with populated data (CRITICAL)
             const populatedEnrollment = await Enrollment.findById(enrollment._id)
                 .populate("student", "fullName email")
                 .populate("course", "title");
 
-            // Generate PDF (returns local file path)
+            // 6️⃣ Generate PDF (returns local file path)
             const pdfPath = await generateReceiptPdf(populatedEnrollment);
 
-            // Upload PDF to Cloudinary
+            // 7️⃣ Upload PDF to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
                 resource_type: "image", // PDFs handled as images
             });
 
-            // ✅ Store ONLY public_id (signed URL will be generated later)
+            // 8️⃣ Save public_id (SIGNED URL WILL USE THIS)
             enrollment.receipt.public_id = uploadResult.public_id;
 
-            // Cleanup local file
+            // 9️⃣ Cleanup local file
             fs.unlinkSync(pdfPath);
         } else {
             enrollment.receipt = undefined;
         }
 
+        // 🔟 Final save
         await enrollment.save();
 
         res.json({
