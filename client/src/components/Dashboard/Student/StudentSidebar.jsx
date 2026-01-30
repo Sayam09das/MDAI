@@ -36,7 +36,7 @@ const extraMenu = [
 ];
 
 const otherMenu = [
-  { icon: User, label: "Profile", path: "/student/profile" },
+  { icon: User, label: "Profile", path: "/student-dashboard/profile" },
   { icon: Settings, label: "Settings", path: "/student/settings" },
 ];
 
