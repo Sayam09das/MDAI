@@ -199,14 +199,13 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             // Generate PDF
             const pdfPath = await generateReceiptPdf(populatedEnrollment);
 
-            // Upload to Cloudinary (viewable PDF)
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
-                resource_type: "image", // ✅ allows browser preview
+                resource_type: "image",
+                access_mode: "public",
                 flags: "attachment:false",
             });
 
-            // Save URL
             enrollment.receipt.url = uploadResult.secure_url;
 
             // Cleanup local file
