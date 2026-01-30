@@ -378,3 +378,22 @@ export const resumeStudent = async (req, res) => {
     res.status(500).json({ message: "Failed to activate student" });
   }
 };
+
+
+
+export const getMyEnrollments = async (req, res) => {
+  try {
+    const enrollments = await Enrollment.find({
+      student: req.user.id,
+    })
+      .populate("course", "title thumbnail")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      enrollments,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

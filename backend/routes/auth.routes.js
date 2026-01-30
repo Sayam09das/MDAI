@@ -8,6 +8,7 @@ import {
   suspendStudent,
   resumeStudent,
   updateUserProfile,
+  getMyEnrollments,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -36,6 +37,9 @@ router.get("/students", protect, getAllStudents);
 router.patch("/student/:studentId/suspend", protect, suspendStudent);
 
 router.patch("/student/:studentId/resume", protect, resumeStudent);
+
+router.get("/enrollments", protect, getMyEnrollments);
+
 
 
 
