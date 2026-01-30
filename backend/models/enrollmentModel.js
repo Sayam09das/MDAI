@@ -28,8 +28,11 @@ const enrollmentSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Admin",
             },
-            url: String,
+            public_id: {
+                type: String, // ✅ REQUIRED FOR CLOUDINARY SIGNED URL
+            },
         },
+
 
         verifiedAt: {
             type: Date,
