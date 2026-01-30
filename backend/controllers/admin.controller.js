@@ -148,7 +148,6 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 export const updatePaymentStatusByAdmin = async (req, res) => {
   try {
     const { enrollmentId } = req.params;
@@ -180,6 +179,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         .toString()
         .slice(-4)}`;
 
+      // 1️⃣ Save receipt metadata
       enrollment.receipt = {
         receiptNumber,
         issuedAt: new Date(),
@@ -188,24 +188,30 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
       await enrollment.save();
 
-      // 🔥 Re-fetch populated data
+      // 2️⃣ Re-fetch populated data (IMPORTANT)
       const populatedEnrollment = await Enrollment.findById(enrollment._id)
         .populate("student", "fullName email")
         .populate("course", "title");
 
-      // Generate PDF
+      // 3️⃣ Generate PDF (THIS WAS MISSING ❌)
       const pdfPath = await generateReceiptPdf(populatedEnrollment);
 
-      // ✅ Upload RAW PDF as PUBLIC
+      // 4️⃣ Force clean Cloudinary public_id (NO .pdf)
+      const cleanPublicId = `receipts/${receiptNumber}`;
+
       const uploadResult = await cloudinary.uploader.upload(pdfPath, {
-        folder: "receipts",
         resource_type: "raw",
-        access_mode: "public", // 🔥 FIXES 401 / 404
+        public_id: cleanPublicId,
+        access_mode: "public",
+        overwrite: true,
       });
 
+      // 5️⃣ Save public_id ONLY
       enrollment.receipt.public_id = uploadResult.public_id;
 
+      // 6️⃣ Cleanup local file
       fs.unlinkSync(pdfPath);
+
       await enrollment.save();
     }
 
@@ -222,4 +228,3 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
