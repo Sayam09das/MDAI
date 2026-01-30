@@ -153,6 +153,11 @@ export const getCurrentUser = async (req, res) => {
       isVerified: account.isVerified,
     };
 
+    // Add common profile fields for both users and teachers
+    userObj.profileImage = account.profileImage || "";
+    userObj.about = account.about || "";
+    userObj.skills = account.skills || [];
+
     // Add teacher-specific fields if role is teacher
     if (role === "teacher") {
       userObj.gender = account.gender || "male";
@@ -160,10 +165,7 @@ export const getCurrentUser = async (req, res) => {
       userObj.class12Certificate = account.class12Certificate || "";
       userObj.collegeCertificate = account.collegeCertificate || "";
       userObj.phdOrOtherCertificate = account.phdOrOtherCertificate || null;
-      userObj.profileImage = account.profileImage || "";
       userObj.joinWhatsappGroup = account.joinWhatsappGroup || false;
-      userObj.about = account.about || "";
-      userObj.skills = account.skills || [];
       userObj.experience = account.experience || 0;
       userObj.isSuspended = account.isSuspended || false;
     }
@@ -182,6 +184,16 @@ export const getCurrentUser = async (req, res) => {
 /* ================= UPDATE USER PROFILE ================= */
 export const updateUserProfile = async (req, res) => {
   try {
+    // Parse skills if it's a JSON string
+    let skills = req.body.skills;
+    if (typeof skills === 'string') {
+      try {
+        skills = JSON.parse(skills);
+      } catch (e) {
+        skills = [];
+      }
+    }
+
     const schema = z.object({
       fullName: z.string().min(3).optional(),
       phone: z.string().min(10).optional(),
@@ -190,7 +202,7 @@ export const updateUserProfile = async (req, res) => {
       skills: z.array(z.string()).optional(),
     });
 
-    const data = schema.parse(req.body);
+    const data = schema.parse({ ...req.body, skills });
     const userId = req.user.id;
 
     const user = await User.findById(userId);

@@ -21,7 +21,7 @@ const StudentProfile = () => {
   /* ================= FETCH PROFILE ================= */
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
         },
@@ -57,15 +57,25 @@ const StudentProfile = () => {
 
     try {
       const data = new FormData();
+      
+      // Handle skills as array
+      const skillsArray = formData.skills 
+        ? formData.skills.split(",").map(skill => skill.trim()).filter(skill => skill) 
+        : [];
+      
       Object.entries(formData).forEach(([key, value]) => {
-        data.append(key, value);
+        if (key === "skills") {
+          data.append(key, JSON.stringify(skillsArray));
+        } else {
+          data.append(key, value);
+        }
       });
 
       if (profileImage) {
         data.append("profileImage", profileImage);
       }
 
-      await fetch(`${BACKEND_URL}/api/auth/profile`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${getToken()}`,
@@ -73,11 +83,16 @@ const StudentProfile = () => {
         body: data,
       });
 
+      if (!res.ok) {
+        throw new Error("Failed to update profile");
+      }
+
       setEditMode(false);
       setProfileImage(null);
       fetchProfile();
     } catch (err) {
       console.error("Update profile error:", err);
+      alert("Failed to update profile. Please try again.");
     } finally {
       setLoading(false);
     }
