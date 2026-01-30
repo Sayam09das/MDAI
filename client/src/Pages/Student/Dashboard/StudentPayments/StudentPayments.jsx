@@ -230,13 +230,18 @@ const StudentPayments = () => {
                     </a>
                   )}
 
-                  <button
-                    onClick={() => window.print()}
-                    className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print
-                  </button>
+                  {selectedInvoice.receiptUrl && (
+                    <a
+                      href={selectedInvoice.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print
+                    </a>
+                  )}
+
                 </div>
               </div>
             </motion.div>
