@@ -55,8 +55,8 @@ const StudentPayments = () => {
               e.paymentStatus === "PAID"
                 ? "paid"
                 : e.paymentStatus === "LATER"
-                ? "pending"
-                : "failed",
+                  ? "pending"
+                  : "failed",
             paymentDate: e.verifiedAt || e.createdAt,
             receiptUrl: e.receipt?.url || null,
             items: [
@@ -206,10 +206,18 @@ const StudentPayments = () => {
                       Download
                     </a>
                   )}
-                  <button className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email
-                  </button>
+                  {selectedInvoice.receiptUrl && (
+                    <a
+                      href={selectedInvoice.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View
+                    </a>
+                  )}
+
                   <button
                     onClick={() => window.print()}
                     className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
