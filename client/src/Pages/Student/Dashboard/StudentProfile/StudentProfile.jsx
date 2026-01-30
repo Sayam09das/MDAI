@@ -200,4 +200,3 @@ const StudentProfile = () => {
 };
 
 export default StudentProfile;
-u
