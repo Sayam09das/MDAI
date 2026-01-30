@@ -28,6 +28,7 @@ const enrollmentSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Admin",
             },
+            url: String,
         },
 
         verifiedAt: {

@@ -5,8 +5,13 @@ import path from "path";
 export const generateReceiptPdf = async (enrollment) => {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
 
+    const uploadsDir = path.join(process.cwd(), "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
     const fileName = `receipt-${enrollment.receipt.receiptNumber}.pdf`;
-    const filePath = path.join("uploads", fileName);
+    const filePath = path.join(uploadsDir, fileName);
 
     doc.pipe(fs.createWriteStream(filePath));
 

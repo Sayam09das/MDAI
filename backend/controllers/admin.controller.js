@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";
 import { generateReceiptPdf } from "../utils/generateReceiptPdf.js";
+import fs from "fs";
 
 /* =========================================
    HELPER: GENERATE JWT
@@ -189,10 +190,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             };
 
             // 2️⃣ Generate PDF
-            const pdfPath = await generateReceiptPdf({
-                ...enrollment.toObject(),
-                receipt: { receiptNumber },
-            });
+            const pdfPath = await generateReceiptPdf(enrollment);
 
             // 3️⃣ Upload PDF to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
@@ -202,6 +200,9 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
             // 4️⃣ Save PDF URL
             enrollment.receipt.url = uploadResult.secure_url;
+
+            // 5️⃣ Clean up local file
+            fs.unlinkSync(pdfPath);
         } else {
             enrollment.receipt = undefined;
         }
