@@ -2,6 +2,8 @@ import Admin from "../models/adminModel.js";
 import Enrollment from "../models/enrollmentModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import cloudinary from "../config/cloudinary.js";
+import { generateReceiptPdf } from "../utils/generateReceiptPdf.js";
 
 /* =========================================
    HELPER: GENERATE JWT
@@ -179,11 +181,27 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
                 .toString()
                 .slice(-4)}`;
 
+            // 1️⃣ Save basic receipt info
             enrollment.receipt = {
                 receiptNumber,
                 issuedAt: new Date(),
                 issuedBy: req.user.id,
             };
+
+            // 2️⃣ Generate PDF
+            const pdfPath = await generateReceiptPdf({
+                ...enrollment.toObject(),
+                receipt: { receiptNumber },
+            });
+
+            // 3️⃣ Upload PDF to Cloudinary
+            const uploadResult = await cloudinary.uploader.upload(pdfPath, {
+                folder: "receipts",
+                resource_type: "raw", // IMPORTANT for PDF
+            });
+
+            // 4️⃣ Save PDF URL
+            enrollment.receipt.url = uploadResult.secure_url;
         } else {
             enrollment.receipt = undefined;
         }
@@ -199,6 +217,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             enrollment,
         });
     } catch (error) {
+        console.error("Update payment error:", error);
         res.status(500).json({ message: error.message });
     }
 };
