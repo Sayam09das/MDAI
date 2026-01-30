@@ -15,7 +15,7 @@ import {
     Loader2,
     Camera,
     FileText,
-    Sparkles
+    CheckCircle
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -186,14 +186,14 @@ const StudentProfile = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center gap-4"
                 >
-                    <Loader2 className="w-12 h-12 text-white animate-spin" />
-                    <p className="text-white text-lg font-medium">Loading profile...</p>
+                    <Loader2 className="w-12 h-12 text-slate-600 animate-spin" />
+                    <p className="text-slate-700 text-lg font-medium">Loading profile...</p>
                 </motion.div>
             </div>
         );
@@ -213,7 +213,7 @@ const StudentProfile = () => {
                     theme="light"
                 />
 
-                <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-4 md:p-6 lg:p-8">
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 p-4 md:p-6 lg:p-8">
                     <motion.div
                         initial="hidden"
                         animate="visible"
@@ -222,10 +222,10 @@ const StudentProfile = () => {
                     >
                         <motion.div
                             variants={cardVariants}
-                            className="bg-white rounded-3xl shadow-2xl overflow-hidden"
+                            className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden"
                         >
                             {/* Header Section */}
-                            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 md:p-10">
+                            <div className="bg-gradient-to-r from-slate-700 via-slate-600 to-gray-700 p-6 md:p-10">
                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                                     {/* Profile Image */}
                                     <motion.div
@@ -238,10 +238,10 @@ const StudentProfile = () => {
                                             <img
                                                 src={extractUrl(user.profileImage)}
                                                 alt="Profile"
-                                                className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white/30 object-cover shadow-xl"
+                                                className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white/40 object-cover shadow-xl"
                                             />
                                         ) : (
-                                            <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white/30 bg-white/20 flex items-center justify-center shadow-xl backdrop-blur-sm">
+                                            <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white/40 bg-white/20 flex items-center justify-center shadow-xl backdrop-blur-sm">
                                                 <User className="w-14 h-14 md:w-16 md:h-16 text-white" />
                                             </div>
                                         )}
@@ -249,9 +249,9 @@ const StudentProfile = () => {
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
                                             transition={{ delay: 0.5, type: "spring" }}
-                                            className="absolute -bottom-1 -right-1 bg-green-500 text-white p-2 rounded-full shadow-lg"
+                                            className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-2 rounded-full shadow-lg"
                                         >
-                                            <Sparkles className="w-4 h-4" />
+                                            <CheckCircle className="w-4 h-4" />
                                         </motion.div>
                                     </motion.div>
 
@@ -275,7 +275,7 @@ const StudentProfile = () => {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setEditMode(true)}
-                                            className="bg-white text-indigo-600 px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow mx-auto sm:mx-0"
+                                            className="bg-white text-slate-700 px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow mx-auto sm:mx-0"
                                         >
                                             <Edit3 className="w-4 h-4" />
                                             Edit Profile
@@ -306,15 +306,15 @@ const StudentProfile = () => {
                                 {/* About Section */}
                                 {user.about && (
                                     <motion.div variants={itemVariants} className="mb-8">
-                                        <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                            <FileText className="w-6 h-6 text-indigo-600" />
+                                        <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <FileText className="w-6 h-6 text-slate-600" />
                                             About
                                         </h3>
                                         <motion.div
-                                            whileHover={{ scale: 1.01 }}
-                                            className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 md:p-6 rounded-2xl border border-gray-200"
+                                            whileHover={{ scale: 1.005 }}
+                                            className="bg-slate-50 p-5 md:p-6 rounded-xl border border-slate-200"
                                         >
-                                            <p className="text-gray-700 text-base md:text-lg leading-relaxed">
+                                            <p className="text-slate-700 text-base md:text-lg leading-relaxed">
                                                 {user.about}
                                             </p>
                                         </motion.div>
@@ -324,8 +324,8 @@ const StudentProfile = () => {
                                 {/* Skills Section */}
                                 {user.skills && user.skills.length > 0 && (
                                     <motion.div variants={itemVariants}>
-                                        <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                            <BookOpen className="w-6 h-6 text-indigo-600" />
+                                        <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <BookOpen className="w-6 h-6 text-slate-600" />
                                             Skills
                                         </h3>
                                         <motion.div
@@ -337,7 +337,7 @@ const StudentProfile = () => {
                                                     key={idx}
                                                     variants={itemVariants}
                                                     whileHover={{ scale: 1.05, y: -2 }}
-                                                    className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-full font-medium text-sm md:text-base shadow-md"
+                                                    className="bg-slate-700 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-lg font-medium text-sm md:text-base shadow-sm hover:shadow-md transition-shadow"
                                                 >
                                                     {skill}
                                                 </motion.span>
@@ -366,7 +366,7 @@ const StudentProfile = () => {
                 theme="light"
             />
 
-            <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-4 md:p-6 lg:p-8">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 p-4 md:p-6 lg:p-8">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -375,10 +375,10 @@ const StudentProfile = () => {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-3xl shadow-2xl overflow-hidden"
+                        className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden"
                     >
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 md:p-10">
+                        <div className="bg-gradient-to-r from-slate-700 via-slate-600 to-gray-700 p-6 md:p-10">
                             <motion.h2
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -404,7 +404,7 @@ const StudentProfile = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mb-8"
                             >
-                                <label className="block text-sm font-semibold text-gray-700 mb-4">
+                                <label className="block text-sm font-semibold text-slate-700 mb-4">
                                     Profile Image
                                 </label>
                                 <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -413,11 +413,11 @@ const StudentProfile = () => {
                                             whileHover={{ scale: 1.05 }}
                                             src={profileImagePreview || extractUrl(user.profileImage)}
                                             alt="Profile preview"
-                                            className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-gray-200"
+                                            className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-slate-200"
                                         />
                                     ) : (
-                                        <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
-                                            <Camera className="w-10 h-10 md:w-12 md:h-12 text-gray-400" />
+                                        <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300">
+                                            <Camera className="w-10 h-10 md:w-12 md:h-12 text-slate-400" />
                                         </div>
                                     )}
                                     <label className="flex-1 w-full sm:w-auto">
@@ -430,7 +430,7 @@ const StudentProfile = () => {
                                         <motion.span
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold cursor-pointer shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
+                                            className="flex items-center justify-center gap-2 bg-slate-700 text-white px-6 py-3 rounded-lg font-semibold cursor-pointer shadow-md hover:shadow-lg hover:bg-slate-800 transition-all w-full sm:w-auto"
                                         >
                                             <Upload className="w-5 h-5" />
                                             Choose Image
@@ -475,7 +475,7 @@ const StudentProfile = () => {
                                 />
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
                                         About
                                     </label>
                                     <div className="relative">
@@ -484,15 +484,15 @@ const StudentProfile = () => {
                                             value={formData.about}
                                             onChange={handleChange}
                                             rows={4}
-                                            className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700 resize-none"
+                                            className="w-full px-4 py-3 pl-12 border-2 border-slate-200 rounded-lg focus:border-slate-500 focus:ring-4 focus:ring-slate-100 outline-none transition-all text-slate-700 resize-none"
                                             placeholder="Tell us about yourself..."
                                         />
-                                        <FileText className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
+                                        <FileText className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
                                         Skills (comma separated)
                                     </label>
                                     <div className="relative">
@@ -500,10 +500,10 @@ const StudentProfile = () => {
                                             name="skills"
                                             value={formData.skills}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700"
+                                            className="w-full px-4 py-3 pl-12 border-2 border-slate-200 rounded-lg focus:border-slate-500 focus:ring-4 focus:ring-slate-100 outline-none transition-all text-slate-700"
                                             placeholder="e.g. JavaScript, React, Node.js"
                                         />
-                                        <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                     </div>
                                 </div>
                             </motion.div>
@@ -513,14 +513,14 @@ const StudentProfile = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="flex flex-col-reverse sm:flex-row gap-4 mt-8 pt-8 border-t border-gray-200"
+                                className="flex flex-col-reverse sm:flex-row gap-4 mt-8 pt-8 border-t border-slate-200"
                             >
                                 <motion.button
                                     type="button"
                                     onClick={handleCancel}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="flex-1 sm:flex-none bg-white text-gray-700 border-2 border-gray-300 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 sm:flex-none bg-white text-slate-700 border-2 border-slate-300 px-8 py-3 rounded-lg font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <X className="w-5 h-5" />
                                     Cancel
@@ -530,7 +530,7 @@ const StudentProfile = () => {
                                     disabled={loading}
                                     whileHover={!loading ? { scale: 1.02 } : {}}
                                     whileTap={!loading ? { scale: 0.98 } : {}}
-                                    className="flex-1 sm:flex-none bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="flex-1 sm:flex-none bg-slate-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:bg-slate-800 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
                                         <>
@@ -558,18 +558,18 @@ const StudentProfile = () => {
 const InfoCard = ({ icon, label, value }) => (
     <motion.div
         variants={itemVariants}
-        whileHover={{ scale: 1.02, y: -2 }}
-        className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 md:p-6 rounded-2xl border border-gray-200 shadow-sm"
+        whileHover={{ scale: 1.01, y: -2 }}
+        className="bg-slate-50 p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
     >
         <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white p-3 rounded-xl flex-shrink-0">
+            <div className="bg-slate-700 text-white p-3 rounded-lg flex-shrink-0">
                 {icon}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">
                     {label}
                 </p>
-                <p className="text-sm md:text-base font-medium text-gray-900 break-words">
+                <p className="text-sm md:text-base font-medium text-slate-800 break-words">
                     {value}
                 </p>
             </div>
@@ -579,7 +579,7 @@ const InfoCard = ({ icon, label, value }) => (
 
 const FormInput = ({ label, name, type = "text", value, onChange, placeholder, icon }) => (
     <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
             {label}
         </label>
         <div className="relative">
@@ -589,9 +589,9 @@ const FormInput = ({ label, name, type = "text", value, onChange, placeholder, i
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-gray-700"
+                className="w-full px-4 py-3 pl-12 border-2 border-slate-200 rounded-lg focus:border-slate-500 focus:ring-4 focus:ring-slate-100 outline-none transition-all text-slate-700"
             />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                 {icon}
             </div>
         </div>
