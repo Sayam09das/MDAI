@@ -139,13 +139,25 @@ const StudentPayments = () => {
               {getStatusBadge(payment.status)}
             </div>
 
-            <button
-              onClick={() => setSelectedInvoice(payment)}
-              className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-            >
-              <Eye className="w-4 h-4" />
-              View Invoice
-            </button>
+            {payment.receiptUrl ? (
+              <a
+                href={payment.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                View Invoice
+              </a>
+            ) : (
+              <button
+                onClick={() => setSelectedInvoice(payment)}
+                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                View Invoice
+              </button>
+            )}
 
             <button
               onClick={() => handleCopyInvoiceId(payment.id)}

@@ -33,7 +33,6 @@ export const generateReceiptPdf = async (enrollment) => {
     doc.font("Helvetica-Bold").text("Student Details");
     doc.font("Helvetica");
     doc.text(`Name: ${enrollment.student.fullName}`);
-    doc.text(`Email: ${enrollment.student.email}`);
     doc.moveDown();
 
     /* ================= COURSE INFO ================= */
