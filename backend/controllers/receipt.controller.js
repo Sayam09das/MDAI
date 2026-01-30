@@ -5,13 +5,14 @@ export const getSignedReceiptUrl = async (req, res) => {
         const { publicId } = req.params;
 
         if (!publicId) {
-            return res.status(400).json({ message: "Public ID missing" });
+            return res.status(400).json({ message: "public_id is required" });
         }
 
         const signedUrl = cloudinary.url(publicId, {
             resource_type: "image",
+            format: "pdf",              // 🔥 THIS IS THE FIX
             sign_url: true,
-            expires_at: Math.floor(Date.now() / 1000) + 300, // 5 minutes
+            expires_at: Math.floor(Date.now() / 1000) + 300, // 5 min
         });
 
         res.json({
@@ -19,7 +20,7 @@ export const getSignedReceiptUrl = async (req, res) => {
             url: signedUrl,
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Failed to generate receipt URL" });
+        console.error("Signed URL error:", error);
+        res.status(500).json({ message: "Failed to generate signed receipt URL" });
     }
 };
