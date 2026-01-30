@@ -82,9 +82,6 @@ export const getMyEnrollments = async (req, res) => {
     }
 };
 
-/* ===============================
-   GET RECEIPT
-================================ */
 export const getReceipt = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
@@ -94,47 +91,21 @@ export const getReceipt = async (req, res) => {
             _id: enrollmentId,
             student: studentId,
             paymentStatus: "PAID",
-        })
-            .populate("student", "fullName email")
-            .populate("course", "title");
+        });
 
-        if (!enrollment || !enrollment.receipt) {
+        if (!enrollment?.receipt?.public_id) {
             return res.status(404).json({
                 success: false,
-                message: "Receipt not found",
+                message: "Receipt not available",
             });
         }
 
-        // If receipt URL exists, redirect to it
-        if (enrollment.receipt.url) {
-            return res.redirect(enrollment.receipt.url);
-        }
-
-        // Otherwise, generate PDF on demand
-        const pdfPath = await generateReceiptPdf(enrollment);
-
-        // Upload to Cloudinary
-        const uploadResult = await cloudinary.uploader.upload(pdfPath, {
-            folder: "receipts",
-            resource_type: "raw",
-        });
-
-        // Save URL for future use
-        enrollment.receipt.url = uploadResult.secure_url;
-        enrollment.receipt.public_id = uploadResult.public_id;
-        await enrollment.save();
-
-        // Clean up local file
-        fs.unlinkSync(pdfPath);
-
-        // Redirect to the URL
-        res.redirect(uploadResult.secure_url);
-    } catch (error) {
-        console.error("Get Receipt Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
+        // 🔥 Redirect to SIGNED URL endpoint
+        res.redirect(
+            `/api/receipt/${encodeURIComponent(enrollment.receipt.public_id)}`
+        );
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };
-
