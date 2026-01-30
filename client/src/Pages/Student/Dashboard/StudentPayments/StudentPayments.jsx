@@ -1,63 +1,80 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard,
-  DollarSign,
   CheckCircle2,
   Clock,
   AlertCircle,
-  Download,
   Eye,
-  Receipt,
-  Calendar,
-  Search,
-  X,
-  RefreshCw,
+  Download,
   Mail,
+  Printer,
+  X,
   Copy,
   Check,
-  Zap,
-  Wallet,
-  Printer
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+/* ================= CONFIG ================= */
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const getToken = () => localStorage.getItem("token");
+
 const StudentPayments = () => {
-  const [activeTab, setActiveTab] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [paymentData, setPaymentData] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [copiedInvoice, setCopiedInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const payments = [
-    {
-      id: "INV-2026-001",
-      courseTitle: "Advanced React & Next.js Masterclass",
-      courseThumbnail:
-        "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300",
-      instructor: "Sarah Johnson",
-      amount: 49.99,
-      status: "paid",
-      paymentMethod: "Visa •••• 4242",
-      paymentDate: "2026-01-08",
-      dueDate: "2026-01-08",
-      transactionId: "TXN-987654321",
-      category: "Web Development",
-      items: [
-        { name: "Course Access", price: 39.99 },
-        { name: "Live Sessions", price: 10.0 }
-      ],
-      discount: 0,
-      tax: 0
-    }
-  ];
-
-  const [paymentData, setPaymentData] = useState(payments);
-
+  /* ================= FETCH PAYMENTS ================= */
   useEffect(() => {
-    toast.info("Payment Dashboard Ready 💳");
+    const fetchPayments = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/student/enrollments`, {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        const mapped = data.enrollments.map((e) => ({
+          id: e.receipt?.receiptNumber || e._id,
+          rawId: e._id,
+          courseTitle: e.course.title,
+          courseThumbnail:
+            e.course.thumbnail ||
+            "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300",
+          instructor: "Institute",
+          amount: e.amount || 0,
+          status:
+            e.paymentStatus === "PAID"
+              ? "paid"
+              : e.paymentStatus === "LATER"
+                ? "pending"
+                : "failed",
+          paymentDate: e.verifiedAt || e.createdAt,
+          receiptUrl: e.receipt?.url || null,
+          items: [
+            {
+              name: e.course.title,
+              price: e.amount || 0,
+            },
+          ],
+        }));
+
+        setPaymentData(mapped);
+      } catch (err) {
+        toast.error("Failed to load payments");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
   }, []);
 
+  /* ================= HELPERS ================= */
   const handleCopyInvoiceId = (id) => {
     navigator.clipboard.writeText(id);
     setCopiedInvoice(id);
@@ -85,17 +102,24 @@ const StudentPayments = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading payments...</p>
+      </div>
+    );
+  }
+
+  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <ToastContainer />
-
       <h1 className="text-3xl font-bold mb-6">Payments & Invoices</h1>
 
-      {/* Payments */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {paymentData.map((payment) => (
           <div
-            key={payment.id}
+            key={payment.rawId}
             className="bg-white p-5 rounded-xl shadow"
           >
             <img
@@ -108,7 +132,7 @@ const StudentPayments = () => {
             <p className="text-sm text-gray-600">{payment.instructor}</p>
 
             <div className="flex justify-between items-center mt-4">
-              <p className="text-xl font-bold">${payment.amount}</p>
+              <p className="text-xl font-bold">₹{payment.amount}</p>
               {getStatusBadge(payment.status)}
             </div>
 
@@ -135,7 +159,7 @@ const StudentPayments = () => {
         ))}
       </div>
 
-      {/* Invoice Modal */}
+      {/* ================= INVOICE MODAL ================= */}
       <AnimatePresence>
         {selectedInvoice && (
           <motion.div
@@ -152,7 +176,6 @@ const StudentPayments = () => {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-xl max-w-xl w-full"
             >
-              {/* Header */}
               <div className="bg-blue-600 text-white p-5 rounded-t-xl flex justify-between">
                 <div>
                   <h2 className="text-xl font-bold">Invoice</h2>
@@ -163,16 +186,10 @@ const StudentPayments = () => {
                 </button>
               </div>
 
-              {/* Body */}
               <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="font-bold">
-                    {selectedInvoice.courseTitle}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Instructor: {selectedInvoice.instructor}
-                  </p>
-                </div>
+                <h3 className="font-bold mb-2">
+                  {selectedInvoice.courseTitle}
+                </h3>
 
                 <table className="w-full text-sm mb-4">
                   <tbody>
@@ -180,34 +197,33 @@ const StudentPayments = () => {
                       <tr key={i}>
                         <td className="py-1">{item.name}</td>
                         <td className="py-1 text-right">
-                          ${item.price.toFixed(2)}
+                          ₹{item.price}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
-                <div className="border-t pt-4 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>${selectedInvoice.amount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>${selectedInvoice.amount.toFixed(2)}</span>
-                  </div>
-                </div>
-
                 <div className="flex gap-3 mt-6">
-                  <button className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Download
-                  </button>
+                  {selectedInvoice.receiptUrl && (
+                    <a
+                      href={selectedInvoice.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  )}
                   <button className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2">
                     <Mail className="w-4 h-4" />
                     Email
                   </button>
-                  <button className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
+                  >
                     <Printer className="w-4 h-4" />
                     Print
                   </button>
