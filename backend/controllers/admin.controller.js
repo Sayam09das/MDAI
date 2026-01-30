@@ -149,7 +149,7 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
     }
 };
 
-/* ================= ADMIN: UPDATE PAYMENT ================= */
+
 export const updatePaymentStatusByAdmin = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
@@ -159,36 +159,29 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             return res.status(400).json({ message: "Invalid payment status" });
         }
 
-        let enrollment = await Enrollment.findById(enrollmentId);
+        const enrollment = await Enrollment.findById(enrollmentId);
 
         if (!enrollment) {
             return res.status(404).json({ message: "Enrollment not found" });
         }
 
-        // Prevent double approval
-        if (enrollment.paymentStatus === "PAID") {
-            return res.status(400).json({ message: "Payment already approved" });
-        }
-
-        enrollment.paymentStatus = status;
-        enrollment.verifiedBy = req.user.id;
-        enrollment.verifiedAt = new Date();
-
-        /* ========= AUTO RECEIPT GENERATION ========= */
-        // ✅ allow receipt generation if URL is missing
+        // ✅ Block only if receipt already exists
         if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.url) {
             return res.status(400).json({
                 message: "Payment already approved and receipt generated",
             });
         }
 
+        // Update payment info
         enrollment.paymentStatus = status;
         enrollment.verifiedBy = req.user.id;
         enrollment.verifiedAt = new Date();
 
+        /* ========= AUTO RECEIPT GENERATION ========= */
         if (status === "PAID") {
-            const receiptNumber = enrollment.receipt?.receiptNumber
-                || `REC-${Date.now()}-${enrollment._id.toString().slice(-4)}`;
+            const receiptNumber =
+                enrollment.receipt?.receiptNumber ||
+                `REC-${Date.now()}-${enrollment._id.toString().slice(-4)}`;
 
             enrollment.receipt = {
                 receiptNumber,
@@ -198,21 +191,26 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
             await enrollment.save();
 
+            // Populate required data for PDF
             const populatedEnrollment = await Enrollment.findById(enrollment._id)
                 .populate("student", "fullName email")
                 .populate("course", "title");
 
+            // Generate PDF
             const pdfPath = await generateReceiptPdf(populatedEnrollment);
+
+            // Upload to Cloudinary (viewable PDF)
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
-                resource_type: "image", // ✅ IMPORTANT
+                resource_type: "image", // ✅ allows browser preview
             });
 
-
+            // Save URL
             enrollment.receipt.url = uploadResult.secure_url;
+
+            // Cleanup local file
             fs.unlinkSync(pdfPath);
-        }
-        else {
+        } else {
             enrollment.receipt = undefined;
         }
 
