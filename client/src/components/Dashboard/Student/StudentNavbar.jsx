@@ -11,6 +11,12 @@ import {
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
+const extractUrl = (val) => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "object" && val.url) return val.url;
+    return "";
+};
 
 const StudentNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
@@ -162,13 +168,22 @@ const StudentNavbar = ({ onMenuClick }) => {
                                 }}
                                 className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
                             >
-                                <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center">
-                                    <span className="text-white text-sm font-semibold">
-                                        {currentUser?.fullName
-                                            ? currentUser.fullName.charAt(0).toUpperCase()
-                                            : "U"}
-                                    </span>
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center">
+                                    {currentUser?.profileImage?.url ? (
+                                        <img
+                                            src={currentUser.profileImage.url}
+                                            alt="profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-white text-sm font-semibold">
+                                            {currentUser?.fullName
+                                                ? currentUser.fullName.charAt(0).toUpperCase()
+                                                : "U"}
+                                        </span>
+                                    )}
                                 </div>
+
 
                                 <ChevronDown
                                     className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""
