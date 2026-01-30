@@ -5,8 +5,6 @@ import {
   Clock,
   AlertCircle,
   Eye,
-  Download,
-  Mail,
   Printer,
   X,
   Copy,
@@ -29,7 +27,7 @@ const StudentPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/auth/enrollments`, {
+        const res = await fetch(`${BACKEND_URL}/api/student/enrollments`, {
           headers: {
             Authorization: `Bearer ${getToken()}`,
           },
@@ -49,22 +47,14 @@ const StudentPayments = () => {
             rawId: e._id,
             courseTitle,
             courseThumbnail,
-            instructor: "Institute",
             amount: e.amount || 0,
             status:
               e.paymentStatus === "PAID"
                 ? "paid"
                 : e.paymentStatus === "LATER"
-                  ? "pending"
-                  : "failed",
-            paymentDate: e.verifiedAt || e.createdAt,
+                ? "pending"
+                : "failed",
             receiptUrl: e.receipt?.url || null,
-            items: [
-              {
-                name: courseTitle,
-                price: e.amount || 0,
-              },
-            ],
           };
         });
 
@@ -85,7 +75,7 @@ const StudentPayments = () => {
     navigator.clipboard.writeText(id);
     setCopiedInvoice(id);
     setTimeout(() => setCopiedInvoice(null), 2000);
-    toast.success("Invoice ID copied");
+    toast.success("Receipt number copied");
   };
 
   const getStatusBadge = (status) => {
@@ -120,11 +110,14 @@ const StudentPayments = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <ToastContainer />
-      <h1 className="text-3xl font-bold mb-6">Payments & Invoices</h1>
+      <h1 className="text-3xl font-bold mb-6">Payments & Receipts</h1>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {paymentData.map((payment) => (
-          <div key={payment.rawId} className="bg-white p-5 rounded-xl shadow">
+          <div
+            key={payment.rawId}
+            className="bg-white p-5 rounded-xl shadow"
+          >
             <img
               src={payment.courseThumbnail}
               alt=""
@@ -132,14 +125,14 @@ const StudentPayments = () => {
             />
 
             <h3 className="font-bold text-lg">{payment.courseTitle}</h3>
-            <p className="text-sm text-gray-600">{payment.instructor}</p>
 
             <div className="flex justify-between items-center mt-4">
               <p className="text-xl font-bold">₹{payment.amount}</p>
               {getStatusBadge(payment.status)}
             </div>
 
-            {payment.receiptUrl ? (
+            {/* VIEW RECEIPT (PDF) */}
+            {payment.receiptUrl && (
               <a
                 href={payment.receiptUrl}
                 target="_blank"
@@ -147,18 +140,11 @@ const StudentPayments = () => {
                 className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
               >
                 <Eye className="w-4 h-4" />
-                View Invoice
+                View Receipt
               </a>
-            ) : (
-              <button
-                onClick={() => setSelectedInvoice(payment)}
-                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                View Invoice
-              </button>
             )}
 
+            {/* COPY RECEIPT NUMBER */}
             <button
               onClick={() => handleCopyInvoiceId(payment.id)}
               className="mt-2 w-full text-sm flex justify-center items-center gap-1 text-gray-600"
@@ -174,7 +160,7 @@ const StudentPayments = () => {
         ))}
       </div>
 
-      {/* ================= INVOICE MODAL ================= */}
+      {/* ================= OPTIONAL MODAL (INFO ONLY) ================= */}
       <AnimatePresence>
         {selectedInvoice && (
           <motion.div
@@ -189,61 +175,38 @@ const StudentPayments = () => {
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl max-w-xl w-full"
+              className="bg-white rounded-xl max-w-md w-full p-6"
             >
-              <div className="bg-blue-600 text-white p-5 rounded-t-xl flex justify-between">
-                <div>
-                  <h2 className="text-xl font-bold">Invoice</h2>
-                  <p className="text-sm">{selectedInvoice.id}</p>
-                </div>
+              <div className="flex justify-between mb-4">
+                <h2 className="text-xl font-bold">Receipt Info</h2>
                 <button onClick={() => setSelectedInvoice(null)}>
                   <X />
                 </button>
               </div>
 
-              <div className="p-6">
-                <h3 className="font-bold mb-2">
-                  {selectedInvoice.courseTitle}
-                </h3>
+              <p className="text-sm text-gray-600">
+                Receipts are opened as secure PDF files in a new tab.
+              </p>
 
-                <div className="flex gap-3 mt-6">
-                  {selectedInvoice.receiptUrl && (
-                    <a
-                      href={selectedInvoice.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download
-                    </a>
-                  )}
-                  {selectedInvoice.receiptUrl && (
-                    <a
-                      href={selectedInvoice.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View
-                    </a>
-                  )}
+              <a
+                href={selectedInvoice.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                Open PDF
+              </a>
 
-                  {selectedInvoice.receiptUrl && (
-                    <a
-                      href={selectedInvoice.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Print
-                    </a>
-                  )}
-
-                </div>
-              </div>
+              <a
+                href={selectedInvoice.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 w-full bg-gray-100 py-2 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                Print
+              </a>
             </motion.div>
           </motion.div>
         )}
