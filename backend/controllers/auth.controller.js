@@ -6,6 +6,33 @@ import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/generateToken.js";
 import cloudinary from "../config/cloudinary.js";
 
+
+// Helper function to upload file to Cloudinary
+const uploadToCloudinary = async (file, folder, oldPublicId = null) => {
+  if (!file) return null;
+
+  if (oldPublicId) {
+    await cloudinary.uploader.destroy(oldPublicId, {
+      resource_type: "auto",
+    });
+  }
+
+  const result = await cloudinary.uploader.upload(
+    `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+    {
+      folder,
+      resource_type: "auto",
+    }
+  );
+
+  return {
+    public_id: result.public_id,
+    url: result.secure_url,
+  };
+};
+
+
+
 /* ================= REGISTER USER ONLY ================= */
 export const registerUser = async (req, res) => {
   try {
@@ -180,99 +207,72 @@ export const getCurrentUser = async (req, res) => {
 };
 
 
-
 /* ================= UPDATE USER PROFILE ================= */
 export const updateUserProfile = async (req, res) => {
   console.log("Update profile endpoint hit");
+
   try {
     console.log("Update profile request body:", req.body);
     console.log("Update profile file:", req.file);
 
-    // Parse skills if it's a JSON string
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    /* ========= PARSE SKILLS ========= */
     let skills = req.body.skills;
-    if (typeof skills === 'string') {
+    if (typeof skills === "string") {
       try {
         skills = JSON.parse(skills);
-      } catch (e) {
-        console.log("Failed to parse skills:", e);
-        skills = [];
+      } catch {
+        skills = skills
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean);
       }
     }
 
-    // Prepare data object with only valid fields
+    /* ========= SAFE BODY UPDATE ========= */
     const data = {};
 
-    if (req.body.fullName && req.body.fullName.trim().length >= 3) {
+    if (req.body.fullName?.trim().length >= 3) {
       data.fullName = req.body.fullName.trim();
     }
-    if (req.body.phone && req.body.phone.trim().length >= 10) {
+
+    if (req.body.phone?.trim().length >= 10) {
       data.phone = req.body.phone.trim();
     }
-    if (req.body.address && req.body.address.trim().length >= 10) {
+
+    if (req.body.address?.trim().length >= 10) {
       data.address = req.body.address.trim();
     }
+
     if (req.body.about !== undefined) {
       data.about = req.body.about.trim();
     }
+
     if (skills !== undefined) {
       data.skills = skills;
     }
 
-    console.log("Final data to update:", data);
-    const userId = req.user.id;
-    console.log("User ID from token:", userId);
-
-    const user = await User.findById(userId);
-    if (!user) {
-      console.log("User not found with ID:", userId);
-      return res.status(404).json({ message: "User not found" });
-    }
-    console.log("User found:", user._id);
-
-    // Handle profile image upload
+    /* ========= PROFILE IMAGE (FIXED) ========= */
     if (req.file) {
-      console.log("Uploading file to Cloudinary...");
-      try {
-        // Delete old image from Cloudinary if exists
-        if (user.profileImage && user.profileImage.public_id) {
-          await cloudinary.uploader.destroy(user.profileImage.public_id);
-        }
-
-        // Upload new image to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.buffer, {
-          folder: "user_profiles",
-          resource_type: "image",
-        });
-
-        data.profileImage = {
-          public_id: result.public_id,
-          url: result.secure_url,
-        };
-        console.log("Image uploaded successfully:", result.secure_url);
-      } catch (cloudinaryError) {
-        console.error("Cloudinary upload error:", cloudinaryError);
-        // Don't fail the entire request if image upload fails
-        // Just continue without updating the image
-      }
+      data.profileImage = await uploadToCloudinary(
+        req.file,
+        "user_profiles",
+        user.profileImage?.public_id
+      );
     }
 
-    // Update user fields
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined) {
-        user[key] = data[key];
-      }
-    });
-    console.log("User before save:", user);
-
-    try {
-      await user.save();
-      console.log("User saved successfully");
-    } catch (saveError) {
-      console.error("Save error:", saveError);
-      return res.status(400).json({ message: "Failed to save user data" });
-    }
+    /* ========= APPLY UPDATES ========= */
+    Object.assign(user, data);
+    await user.save();
 
     res.json({
+      success: true,
       message: "Profile updated successfully",
       user: {
         id: user._id,
@@ -287,13 +287,13 @@ export const updateUserProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: error.errors[0].message });
-    }
     console.error("Update profile error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+/* ================= GET ALL STUDENTS ================= */
 export const getAllStudents = async (req, res) => {
   try {
     // First get students with basic info
