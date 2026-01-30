@@ -203,6 +203,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
                 resource_type: "image", // ✅ allows browser preview
+                flags: "attachment:false",
             });
 
             // Save URL
