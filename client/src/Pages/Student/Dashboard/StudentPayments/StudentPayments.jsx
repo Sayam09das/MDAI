@@ -10,7 +10,7 @@ const StudentPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/auth/enrollments`, {
+        const res = await fetch(`${BACKEND_URL}/api/student/enrollments`, {
           headers: {
             Authorization: `Bearer ${getToken()}`,
           },
@@ -19,7 +19,7 @@ const StudentPayments = () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        setPayments(data.enrollments);
+        setPayments(data.enrollments || []);
       } catch (err) {
         console.error(err);
         alert("Failed to load payments");
@@ -41,39 +41,45 @@ const StudentPayments = () => {
 
       {payments.length === 0 && <p>No payments found.</p>}
 
-      {payments.map((p) => (
-        <div key={p._id}>
-          <hr />
+      {payments.map((p) => {
+        const courseTitle =
+          typeof p.course === "object" && p.course !== null
+            ? p.course.title
+            : "Course Removed";
 
-          <p>
-            <strong>Course:</strong>{" "}
-            {p.course?.title || "Course Removed"}
-          </p>
+        return (
+          <div key={p._id}>
+            <hr />
 
-          <p>
-            <strong>Status:</strong> {p.paymentStatus}
-          </p>
-
-          <p>
-            <strong>Receipt No:</strong>{" "}
-            {p.receipt?.receiptNumber || "Not generated"}
-          </p>
-
-          {p.receipt?.url ? (
             <p>
-              <a
-                href={p.receipt.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                👉 View / Print Receipt
-              </a>
+              <strong>Course:</strong> {courseTitle}
             </p>
-          ) : (
-            <p>👉 Receipt not available</p>
-          )}
-        </div>
-      ))}
+
+            <p>
+              <strong>Status:</strong> {p.paymentStatus}
+            </p>
+
+            <p>
+              <strong>Receipt No:</strong>{" "}
+              {p.receipt?.receiptNumber || "Not generated"}
+            </p>
+
+            {p.receipt?.url ? (
+              <p>
+                <a
+                  href={p.receipt.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  👉 View / Print Receipt
+                </a>
+              </p>
+            ) : (
+              <p>👉 Receipt not available</p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
