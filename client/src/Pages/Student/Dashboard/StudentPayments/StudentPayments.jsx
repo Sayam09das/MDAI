@@ -21,8 +21,8 @@ const StudentPayments = () => {
 
         setPayments(data.enrollments);
       } catch (err) {
-        alert("Failed to load payments");
         console.error(err);
+        alert("Failed to load payments");
       } finally {
         setLoading(false);
       }
@@ -59,16 +59,18 @@ const StudentPayments = () => {
             {p.receipt?.receiptNumber || "Not generated"}
           </p>
 
-          {p.receipt?.url && (
+          {p.receipt?.url ? (
             <p>
               <a
                 href={p.receipt.url}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                View / Print Receipt
+                👉 View / Print Receipt
               </a>
             </p>
+          ) : (
+            <p>👉 Receipt not available</p>
           )}
         </div>
       ))}
