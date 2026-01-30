@@ -204,6 +204,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             // 7️⃣ Upload PDF to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
+                resource_type: "raw",
                 resource_type: "image", // PDFs handled as images
             });
 
