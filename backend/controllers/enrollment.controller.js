@@ -121,6 +121,7 @@ export const getReceipt = async (req, res) => {
 
         // Save URL for future use
         enrollment.receipt.url = uploadResult.secure_url;
+        enrollment.receipt.public_id = uploadResult.public_id;
         await enrollment.save();
 
         // Clean up local file

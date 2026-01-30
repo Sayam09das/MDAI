@@ -10,8 +10,7 @@ export const getSignedReceiptUrl = async (req, res) => {
 
     const signedUrl = cloudinary.url(publicId, {
       resource_type: "raw",     // 🔥 MOST IMPORTANT LINE
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + 300, // 5 min
+      sign_url: false,
     });
 
     res.json({
