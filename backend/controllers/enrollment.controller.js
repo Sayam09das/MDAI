@@ -137,5 +137,3 @@ export const getReceipt = async (req, res) => {
     }
 };
 
-export default { enrollCourse, getMyEnrollments, getReceipt };
-

@@ -29,7 +29,7 @@ const StudentPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/student/enrollments`, {
+        const res = await fetch(`${BACKEND_URL}/api/enroll/my-courses`, {
           headers: {
             Authorization: `Bearer ${getToken()}`,
           },
@@ -205,9 +205,19 @@ const StudentPayments = () => {
                 </table>
 
                 <div className="flex gap-3 mt-6">
-                  {selectedInvoice.receiptUrl && (
+                  {selectedInvoice.receiptUrl ? (
                     <a
                       href={selectedInvoice.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  ) : (
+                    <a
+                      href={`${BACKEND_URL}/api/enroll/receipt/${selectedInvoice.rawId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
