@@ -4,11 +4,6 @@ import { getSignedReceiptUrl } from "../controllers/receipt.controller.js";
 
 const router = express.Router();
 
-router.get(
-  "/receipt/:publicId",
-  protect,
-  getSignedReceiptUrl
-);
-
+router.get("/receipt/:publicId", protect, getSignedReceiptUrl);
 
 export default router;
