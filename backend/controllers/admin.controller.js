@@ -156,21 +156,46 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             return res.status(400).json({ message: "Invalid payment status" });
         }
 
-        const enrollment = await Enrollment.findById(enrollmentId);
+        const enrollment = await Enrollment.findById(enrollmentId)
+            .populate("student", "fullName email")
+            .populate("course", "title");
 
         if (!enrollment) {
             return res.status(404).json({ message: "Enrollment not found" });
+        }
+
+        // Prevent double approval
+        if (enrollment.paymentStatus === "PAID") {
+            return res.status(400).json({ message: "Payment already approved" });
         }
 
         enrollment.paymentStatus = status;
         enrollment.verifiedBy = req.user.id;
         enrollment.verifiedAt = new Date();
 
+        /* ========= AUTO RECEIPT GENERATION ========= */
+        if (status === "PAID") {
+            const receiptNumber = `REC-${Date.now()}-${enrollment._id
+                .toString()
+                .slice(-4)}`;
+
+            enrollment.receipt = {
+                receiptNumber,
+                issuedAt: new Date(),
+                issuedBy: req.user.id,
+            };
+        } else {
+            enrollment.receipt = undefined;
+        }
+
         await enrollment.save();
 
         res.json({
             success: true,
-            message: "Payment status updated",
+            message:
+                status === "PAID"
+                    ? "Payment approved & receipt generated"
+                    : "Payment marked as pending",
             enrollment,
         });
     } catch (error) {

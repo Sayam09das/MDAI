@@ -21,6 +21,15 @@ const enrollmentSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Admin",
         },
+        receipt: {
+            receiptNumber: String,
+            issuedAt: Date,
+            issuedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Admin",
+            },
+        },
+
         verifiedAt: {
             type: Date,
         },
