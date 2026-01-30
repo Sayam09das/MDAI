@@ -203,16 +203,16 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
                 .populate("course", "title");
 
             const pdfPath = await generateReceiptPdf(populatedEnrollment);
-
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
-                resource_type: "raw",
+                resource_type: "image", // ✅ IMPORTANT
             });
+
 
             enrollment.receipt.url = uploadResult.secure_url;
             fs.unlinkSync(pdfPath);
         }
-        else{
+        else {
             enrollment.receipt = undefined;
         }
 
