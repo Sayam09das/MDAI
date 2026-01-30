@@ -175,43 +175,44 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         enrollment.verifiedAt = new Date();
 
         /* ========= AUTO RECEIPT GENERATION ========= */
-        if (status === "PAID") {
-            const receiptNumber = `REC-${Date.now()}-${enrollment._id
-                .toString()
-                .slice(-4)}`;
+        // ✅ allow receipt generation if URL is missing
+        if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.url) {
+            return res.status(400).json({
+                message: "Payment already approved and receipt generated",
+            });
+        }
 
-            // Save receipt meta first
+        enrollment.paymentStatus = status;
+        enrollment.verifiedBy = req.user.id;
+        enrollment.verifiedAt = new Date();
+
+        if (status === "PAID") {
+            const receiptNumber = enrollment.receipt?.receiptNumber
+                || `REC-${Date.now()}-${enrollment._id.toString().slice(-4)}`;
+
             enrollment.receipt = {
                 receiptNumber,
                 issuedAt: new Date(),
                 issuedBy: req.user.id,
             };
 
-            await enrollment.save(); // save before generating PDF
+            await enrollment.save();
 
-            /* 🔥 Re-fetch with full population (CRITICAL) */
             const populatedEnrollment = await Enrollment.findById(enrollment._id)
                 .populate("student", "fullName email")
                 .populate("course", "title");
 
-            // Generate PDF with full data
-            const pdfPath = await generateReceiptPdf({
-                ...populatedEnrollment.toObject(),
-                amount: populatedEnrollment.amount || 0, // safety
-            });
+            const pdfPath = await generateReceiptPdf(populatedEnrollment);
 
-            // Upload PDF to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 folder: "receipts",
-                resource_type: "raw", // REQUIRED for PDF
+                resource_type: "raw",
             });
 
-            // Save PDF URL
             enrollment.receipt.url = uploadResult.secure_url;
-
-            // Cleanup local file
             fs.unlinkSync(pdfPath);
-        } else {
+        }
+        else{
             enrollment.receipt = undefined;
         }
 

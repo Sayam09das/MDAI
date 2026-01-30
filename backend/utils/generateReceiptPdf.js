@@ -8,6 +8,9 @@ export const generateReceiptPdf = async (enrollment) => {
     const fileName = `receipt-${enrollment.receipt.receiptNumber}.pdf`;
     const filePath = path.join("uploads", fileName);
 
+    // Ensure the uploads directory exists
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+
     doc.pipe(fs.createWriteStream(filePath));
 
     /* ================= HEADER ================= */
