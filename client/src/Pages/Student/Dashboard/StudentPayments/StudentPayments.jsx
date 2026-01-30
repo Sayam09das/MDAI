@@ -54,7 +54,7 @@ const StudentPayments = () => {
                 ? "pending"
                 : "failed",
           paymentDate: e.verifiedAt || e.createdAt,
-          receiptUrl: e.receipt?.url || null,
+          receiptUrl: e.receipt?.url || `${BACKEND_URL}/api/student/enrollments/receipt/${e._id}`,
           items: [
             {
               name: e.course.title,
