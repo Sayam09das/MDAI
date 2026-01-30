@@ -29,7 +29,7 @@ const StudentPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/enroll/my-courses`, {
+        const res = await fetch(`${BACKEND_URL}/api/auth/enrollments`, {
           headers: {
             Authorization: `Bearer ${getToken()}`,
           },
@@ -38,33 +38,39 @@ const StudentPayments = () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        const mapped = data.enrollments.map((e) => ({
-          id: e.receipt?.receiptNumber || e._id,
-          rawId: e._id,
-          courseTitle: e.course.title,
-          courseThumbnail:
-            e.course.thumbnail ||
-            "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300",
-          instructor: "Institute",
-          amount: e.amount || 0,
-          status:
-            e.paymentStatus === "PAID"
-              ? "paid"
-              : e.paymentStatus === "LATER"
+        const mapped = data.enrollments.map((e) => {
+          const courseTitle = e.course?.title || "Course Removed";
+          const courseThumbnail =
+            e.course?.thumbnail?.url ||
+            "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300";
+
+          return {
+            id: e.receipt?.receiptNumber || e._id,
+            rawId: e._id,
+            courseTitle,
+            courseThumbnail,
+            instructor: "Institute",
+            amount: e.amount || 0,
+            status:
+              e.paymentStatus === "PAID"
+                ? "paid"
+                : e.paymentStatus === "LATER"
                 ? "pending"
                 : "failed",
-          paymentDate: e.verifiedAt || e.createdAt,
-          receiptUrl: e.receipt?.url || `${BACKEND_URL}/api/student/enrollments/receipt/${e._id}`,
-          items: [
-            {
-              name: e.course.title,
-              price: e.amount || 0,
-            },
-          ],
-        }));
+            paymentDate: e.verifiedAt || e.createdAt,
+            receiptUrl: e.receipt?.url || null,
+            items: [
+              {
+                name: courseTitle,
+                price: e.amount || 0,
+              },
+            ],
+          };
+        });
 
         setPaymentData(mapped);
       } catch (err) {
+        console.error(err);
         toast.error("Failed to load payments");
       } finally {
         setLoading(false);
@@ -118,10 +124,7 @@ const StudentPayments = () => {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {paymentData.map((payment) => (
-          <div
-            key={payment.rawId}
-            className="bg-white p-5 rounded-xl shadow"
-          >
+          <div key={payment.rawId} className="bg-white p-5 rounded-xl shadow">
             <img
               src={payment.courseThumbnail}
               alt=""
@@ -191,33 +194,10 @@ const StudentPayments = () => {
                   {selectedInvoice.courseTitle}
                 </h3>
 
-                <table className="w-full text-sm mb-4">
-                  <tbody>
-                    {selectedInvoice.items.map((item, i) => (
-                      <tr key={i}>
-                        <td className="py-1">{item.name}</td>
-                        <td className="py-1 text-right">
-                          ₹{item.price}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
                 <div className="flex gap-3 mt-6">
-                  {selectedInvoice.receiptUrl ? (
+                  {selectedInvoice.receiptUrl && (
                     <a
                       href={selectedInvoice.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download
-                    </a>
-                  ) : (
-                    <a
-                      href={`${BACKEND_URL}/api/enroll/receipt/${selectedInvoice.rawId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 bg-green-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
