@@ -14,6 +14,7 @@ import ReturnStudentResources from "../Pages/Student/Dashboard/StudentResources/
 import ReturnStudentFinance from "../Pages/Student/Dashboard/StudentFinance/ReturnStudentFinance";
 import ReturnAllCourse from "../Pages/Student/Dashboard/AllCourse/ReturnAllCourse";
 import CourseView from "../Pages/Student/Dashboard/MyCourses/CourseView";
+import ReturnStudentProfile from "../Pages/Student/Dashboard/StudentProfile/ReturnStudentProfile";
 
 const StudentRoutes = () => {
     return (
@@ -39,6 +40,7 @@ const StudentRoutes = () => {
                     <Route path="student-payments" element={<StudentPayments />} />
                     <Route path="resources" element={<ReturnStudentResources />} />
                     <Route path="finance" element={<ReturnStudentFinance />} />
+                    <Route path="profile" element= {<ReturnStudentProfile />} />
                 </Route>
             </Routes>
         </Suspense>

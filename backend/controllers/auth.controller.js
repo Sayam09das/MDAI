@@ -4,6 +4,7 @@ import Enrollment from "../models/enrollmentModel.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/generateToken.js";
+import cloudinary from "../config/cloudinary.js";
 
 /* ================= REGISTER USER ONLY ================= */
 export const registerUser = async (req, res) => {
@@ -178,7 +179,75 @@ export const getCurrentUser = async (req, res) => {
 
 
 
-/* ================= GET ALL STUDENTS ================= */
+/* ================= UPDATE USER PROFILE ================= */
+export const updateUserProfile = async (req, res) => {
+  try {
+    const schema = z.object({
+      fullName: z.string().min(3).optional(),
+      phone: z.string().min(10).optional(),
+      address: z.string().min(10).optional(),
+      about: z.string().max(500).optional(),
+      skills: z.array(z.string()).optional(),
+    });
+
+    const data = schema.parse(req.body);
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Handle profile image upload
+    if (req.file) {
+      // Delete old image from Cloudinary if exists
+      if (user.profileImage && user.profileImage.public_id) {
+        await cloudinary.uploader.destroy(user.profileImage.public_id);
+      }
+
+      // Upload new image to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.buffer, {
+        folder: "user_profiles",
+        resource_type: "image",
+      });
+
+      data.profileImage = {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    }
+
+    // Update user fields
+    Object.keys(data).forEach(key => {
+      if (data[key] !== undefined) {
+        user[key] = data[key];
+      }
+    });
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        about: user.about,
+        skills: user.skills,
+        profileImage: user.profileImage,
+        isVerified: user.isVerified,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 export const getAllStudents = async (req, res) => {
   try {
     // First get students with basic info

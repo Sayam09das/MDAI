@@ -7,8 +7,10 @@ import {
   getAllStudents,
   suspendStudent,
   resumeStudent,
+  updateUserProfile,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
+import upload from "../middlewares/multer.js";
 
 const router = express.Router();
 
@@ -25,6 +27,9 @@ router.post("/logout", logout);
 
 // Get current logged-in user
 router.get("/me", protect, getCurrentUser);
+
+// Update user profile
+router.put("/profile", protect, upload.single("profileImage"), updateUserProfile);
 
 router.get("/students", protect, getAllStudents);
 
