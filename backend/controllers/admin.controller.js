@@ -204,10 +204,10 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             // IMPORTANT: NO .pdf here
             const publicId = `receipts/${receiptNumber}`;
 
-            // Upload to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 resource_type: "raw",
                 public_id: publicId,
+                format: "pdf",          // ✅ THIS STOPS `.pdf` APPENDING
                 access_mode: "public",
                 overwrite: true,
             });
