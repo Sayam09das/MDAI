@@ -148,83 +148,78 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+
+
+/* ================= UPDATE PAYMENT + RECEIPT ================= */
 export const updatePaymentStatusByAdmin = async (req, res) => {
-  try {
-    const { enrollmentId } = req.params;
-    const { status } = req.body;
+    try {
+        const { enrollmentId } = req.params;
+        const { status } = req.body;
 
-    if (!["PAID", "LATER"].includes(status)) {
-      return res.status(400).json({ message: "Invalid payment status" });
+        if (!["PAID", "LATER"].includes(status))
+            return res.status(400).json({ message: "Invalid status" });
+
+        const enrollment = await Enrollment.findById(enrollmentId);
+        if (!enrollment)
+            return res.status(404).json({ message: "Enrollment not found" });
+
+        // prevent duplicate receipt
+        if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.public_id) {
+            return res
+                .status(400)
+                .json({ message: "Receipt already generated" });
+        }
+
+        enrollment.paymentStatus = status;
+        enrollment.verifiedBy = req.user.id;
+        enrollment.verifiedAt = new Date();
+
+        if (status === "PAID") {
+            const receiptNumber = `REC-${Date.now()}-${enrollment._id
+                .toString()
+                .slice(-4)}`;
+
+            enrollment.receipt = {
+                receiptNumber,
+                issuedAt: new Date(),
+                issuedBy: req.user.id,
+            };
+
+            await enrollment.save();
+
+            const populated = await Enrollment.findById(enrollment._id)
+                .populate("student", "fullName email")
+                .populate("course", "title");
+
+            const pdfPath = await generateReceiptPdf(populated);
+
+            const publicId = `receipts/${receiptNumber}`; // ✅ NO .pdf
+
+            await cloudinary.uploader.upload(pdfPath, {
+                resource_type: "raw",
+                public_id: publicId,
+                overwrite: true,
+                access_mode: "public",
+            });
+
+            enrollment.receipt.public_id = publicId;
+
+            fs.unlinkSync(pdfPath);
+            await enrollment.save();
+        }
+
+        res.json({
+            success: true,
+            message:
+                status === "PAID"
+                    ? "Payment approved & receipt generated"
+                    : "Payment marked as pending",
+            enrollment,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
-
-    const enrollment = await Enrollment.findById(enrollmentId);
-
-    if (!enrollment) {
-      return res.status(404).json({ message: "Enrollment not found" });
-    }
-
-    // ⛔ Prevent duplicate receipt
-    if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.public_id) {
-      return res.status(400).json({
-        message: "Payment already approved and receipt generated",
-      });
-    }
-
-    enrollment.paymentStatus = status;
-    enrollment.verifiedBy = req.user.id;
-    enrollment.verifiedAt = new Date();
-
-    if (status === "PAID") {
-      const receiptNumber = `REC-${Date.now()}-${enrollment._id
-        .toString()
-        .slice(-4)}`;
-
-      // 1️⃣ Save receipt metadata
-      enrollment.receipt = {
-        receiptNumber,
-        issuedAt: new Date(),
-        issuedBy: req.user.id,
-      };
-
-      await enrollment.save();
-
-      // 2️⃣ Re-fetch populated data (IMPORTANT)
-      const populatedEnrollment = await Enrollment.findById(enrollment._id)
-        .populate("student", "fullName email")
-        .populate("course", "title");
-
-      // 3️⃣ Generate PDF (THIS WAS MISSING ❌)
-      const pdfPath = await generateReceiptPdf(populatedEnrollment);
-
-      // 4️⃣ Force clean Cloudinary public_id (NO .pdf)
-      const cleanPublicId = `receipts/${receiptNumber}`;
-
-      const uploadResult = await cloudinary.uploader.upload(pdfPath, {
-        resource_type: "raw",
-        public_id: cleanPublicId,
-        access_mode: "public",
-        overwrite: true,
-      });
-
-      // 5️⃣ Save public_id ONLY
-      enrollment.receipt.public_id = uploadResult.public_id;
-
-      // 6️⃣ Cleanup local file
-      fs.unlinkSync(pdfPath);
-
-      await enrollment.save();
-    }
-
-    res.json({
-      success: true,
-      message:
-        status === "PAID"
-          ? "Payment approved & receipt generated"
-          : "Payment marked as pending",
-      enrollment,
-    });
-  } catch (error) {
-    console.error("Update payment error:", error);
-    res.status(500).json({ message: error.message });
-  }
 };
