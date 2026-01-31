@@ -28,11 +28,8 @@ const enrollmentSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Admin",
             },
-            public_id: String,
-            version: Number, // ✅ MUST HAVE THIS
+            public_id: String, // ✅ ONLY THIS
         },
-
-
 
         verifiedAt: {
             type: Date,

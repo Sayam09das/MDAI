@@ -152,6 +152,7 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
 
 
 
+
 /* ================= UPDATE PAYMENT + RECEIPT ================= */
 export const updatePaymentStatusByAdmin = async (req, res) => {
     try {
@@ -183,7 +184,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
                 .toString()
                 .slice(-4)}`;
 
-            // 1️⃣ Save basic receipt data first
+            // Save receipt meta
             enrollment.receipt = {
                 receiptNumber,
                 issuedAt: new Date(),
@@ -192,17 +193,18 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
             await enrollment.save();
 
-            // 2️⃣ Populate data for PDF
+            // Populate for PDF
             const populatedEnrollment = await Enrollment.findById(enrollment._id)
                 .populate("student", "fullName email")
                 .populate("course", "title");
 
-            // 3️⃣ Generate PDF
+            // Generate PDF
             const pdfPath = await generateReceiptPdf(populatedEnrollment);
 
+            // IMPORTANT: NO .pdf here
             const publicId = `receipts/${receiptNumber}`;
 
-            // 4️⃣ Upload to Cloudinary (RAW)
+            // Upload to Cloudinary
             const uploadResult = await cloudinary.uploader.upload(pdfPath, {
                 resource_type: "raw",
                 public_id: publicId,
@@ -210,27 +212,20 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
                 overwrite: true,
             });
 
-            // 5️⃣ SAVE public_id + version (🔥 IMPORTANT 🔥)
+            // Save clean public_id
             enrollment.receipt.public_id = uploadResult.public_id;
-            enrollment.receipt.version = uploadResult.version;
 
-            // 6️⃣ Cleanup local file
             fs.unlinkSync(pdfPath);
-
             await enrollment.save();
         }
 
         res.json({
             success: true,
-            message:
-                status === "PAID"
-                    ? "Payment approved & receipt generated"
-                    : "Payment marked as later",
+            message: "Payment approved & receipt generated",
             enrollment,
         });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
     }
 };
-
