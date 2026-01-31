@@ -186,7 +186,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         // Now populate for receipt generation
         const enrollment = await Enrollment.findById(enrollmentId)
             .populate("student", "fullName email")
-            .populate("course", "title");
+            .populate("course", "title price");
 
         // 1️⃣ Generate image with populated data
         const imagePath = await generateReceiptImage(enrollment);
