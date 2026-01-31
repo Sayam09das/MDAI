@@ -11,7 +11,7 @@ const StudentPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/student/enrollments`, {
+        const res = await fetch(`${BACKEND_URL}/api/auth/enrollments`, {
           headers: {
             Authorization: `Bearer ${getToken()}`,
           },
