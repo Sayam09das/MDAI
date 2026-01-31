@@ -3,7 +3,7 @@ import Enrollment from "../models/enrollmentModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";
-import { generateReceiptPdf } from "../utils/generateReceiptPdf.js";
+import { generateReceiptImage } from "../utils/generateReceiptImage.js";
 import fs from "fs";
 
 /* =========================================
@@ -153,79 +153,60 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
 
 
 
-/* ================= UPDATE PAYMENT + RECEIPT ================= */
 export const updatePaymentStatusByAdmin = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
         const { status } = req.body;
 
-        if (!["PAID", "LATER"].includes(status)) {
-            return res.status(400).json({ message: "Invalid status" });
-        }
+        const enrollment = await Enrollment.findById(enrollmentId)
+            .populate("student", "fullName")
+            .populate("course", "title");
 
-        const enrollment = await Enrollment.findById(enrollmentId);
         if (!enrollment) {
             return res.status(404).json({ message: "Enrollment not found" });
         }
 
-        // Prevent duplicate receipt
-        if (enrollment.paymentStatus === "PAID" && enrollment.receipt?.public_id) {
-            return res
-                .status(400)
-                .json({ message: "Receipt already generated" });
+        if (status !== "PAID") {
+            return res.status(400).json({ message: "Only PAID allowed" });
         }
 
-        enrollment.paymentStatus = status;
+        const receiptNumber = `REC-${Date.now()}-${enrollment._id
+            .toString()
+            .slice(-4)}`;
+
+        enrollment.receipt = {
+            receiptNumber,
+            issuedAt: new Date(),
+            issuedBy: req.user.id,
+        };
+
+        enrollment.paymentStatus = "PAID";
         enrollment.verifiedBy = req.user.id;
         enrollment.verifiedAt = new Date();
+        await enrollment.save();
 
-        if (status === "PAID") {
-            const receiptNumber = `REC-${Date.now()}-${enrollment._id
-                .toString()
-                .slice(-4)}`;
+        // 1️⃣ Generate image
+        const imagePath = await generateReceiptImage(enrollment);
 
-            // Save receipt meta
-            enrollment.receipt = {
-                receiptNumber,
-                issuedAt: new Date(),
-                issuedBy: req.user.id,
-            };
+        // 2️⃣ Upload image to Cloudinary
+        const uploadResult = await cloudinary.uploader.upload(imagePath, {
+            folder: "receipts",
+            resource_type: "image",
+        });
 
-            await enrollment.save();
+        enrollment.receipt.public_id = uploadResult.public_id;
+        enrollment.receipt.url = uploadResult.secure_url;
 
-            // Populate for PDF
-            const populatedEnrollment = await Enrollment.findById(enrollment._id)
-                .populate("student", "fullName email")
-                .populate("course", "title");
-
-            // Generate PDF
-            const pdfPath = await generateReceiptPdf(populatedEnrollment);
-
-            // IMPORTANT: NO .pdf here
-            const publicId = `receipts/${receiptNumber}`;
-
-            const uploadResult = await cloudinary.uploader.upload(pdfPath, {
-                resource_type: "raw",
-                public_id: `receipts/${receiptNumber}`,
-                access_mode: "public",
-                overwrite: true,
-            });
-
-
-            // Save clean public_id
-            enrollment.receipt.public_id = uploadResult.public_id;
-
-            fs.unlinkSync(pdfPath);
-            await enrollment.save();
-        }
+        fs.unlinkSync(imagePath);
+        await enrollment.save();
 
         res.json({
             success: true,
-            message: "Payment approved & receipt generated",
-            enrollment,
+            message: "Payment approved & receipt image generated",
+            receiptImage: uploadResult.secure_url,
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
+

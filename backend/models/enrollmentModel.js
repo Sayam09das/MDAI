@@ -28,8 +28,10 @@ const enrollmentSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Admin",
             },
-            public_id: String, // ✅ ONLY THIS
+            public_id: String,
+            url: String, // ✅ IMAGE URL
         },
+
 
         verifiedAt: {
             type: Date,
