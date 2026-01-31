@@ -145,7 +145,7 @@ export const generateReceiptImage = async (enrollment) => {
     currentY += 60;
 
     const amount = enrollment.amount || enrollment.course?.price || enrollment.course?.fees || 0;
-    const formattedAmount = `₹${Number(amount).toLocaleString("en-IN")}`;
+    const formattedAmount = `$${Number(amount).toLocaleString("en-US")}`;
 
     // Payment Status Badge
     ctx.fillStyle = "#dcfce7";
