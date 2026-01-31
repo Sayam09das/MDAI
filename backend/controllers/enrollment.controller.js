@@ -91,19 +91,19 @@ export const getReceipt = async (req, res) => {
             _id: enrollmentId,
             student: studentId,
             paymentStatus: "PAID",
-        });
+        })
+            .populate("student", "fullName email")
+            .populate("course", "title");
 
-        if (!enrollment?.receipt?.public_id) {
+        if (!enrollment?.receipt?.url) {
             return res.status(404).json({
                 success: false,
                 message: "Receipt not available",
             });
         }
 
-        // 🔥 Redirect to SIGNED URL endpoint
-        res.redirect(
-            `/api/receipt/${encodeURIComponent(enrollment.receipt.public_id)}`
-        );
+        // 🔥 Direct redirect to the Cloudinary URL
+        res.redirect(enrollment.receipt.url);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });

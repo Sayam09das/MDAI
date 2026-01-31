@@ -158,11 +158,9 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         const { enrollmentId } = req.params;
         const { status } = req.body;
 
-        const enrollment = await Enrollment.findById(enrollmentId)
-            .populate("student", "fullName")
-            .populate("course", "title");
-
-        if (!enrollment) {
+        // First, check if enrollment exists
+        const existingEnrollment = await Enrollment.findById(enrollmentId);
+        if (!existingEnrollment) {
             return res.status(404).json({ message: "Enrollment not found" });
         }
 
@@ -170,22 +168,27 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             return res.status(400).json({ message: "Only PAID allowed" });
         }
 
-        const receiptNumber = `REC-${Date.now()}-${enrollment._id
+        const receiptNumber = `REC-${Date.now()}-${existingEnrollment._id
             .toString()
             .slice(-4)}`;
 
-        enrollment.receipt = {
+        existingEnrollment.receipt = {
             receiptNumber,
             issuedAt: new Date(),
             issuedBy: req.user.id,
         };
 
-        enrollment.paymentStatus = "PAID";
-        enrollment.verifiedBy = req.user.id;
-        enrollment.verifiedAt = new Date();
-        await enrollment.save();
+        existingEnrollment.paymentStatus = "PAID";
+        existingEnrollment.verifiedBy = req.user.id;
+        existingEnrollment.verifiedAt = new Date();
+        await existingEnrollment.save();
 
-        // 1️⃣ Generate image
+        // Now populate for receipt generation
+        const enrollment = await Enrollment.findById(enrollmentId)
+            .populate("student", "fullName email")
+            .populate("course", "title");
+
+        // 1️⃣ Generate image with populated data
         const imagePath = await generateReceiptImage(enrollment);
 
         // 2️⃣ Upload image to Cloudinary
@@ -194,11 +197,11 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             resource_type: "image",
         });
 
-        enrollment.receipt.public_id = uploadResult.public_id;
-        enrollment.receipt.url = uploadResult.secure_url;
+        existingEnrollment.receipt.public_id = uploadResult.public_id;
+        existingEnrollment.receipt.url = uploadResult.secure_url;
 
         fs.unlinkSync(imagePath);
-        await enrollment.save();
+        await existingEnrollment.save();
 
         res.json({
             success: true,
@@ -206,6 +209,7 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             receiptImage: uploadResult.secure_url,
         });
     } catch (error) {
+        console.error("Payment approval error:", error);
         res.status(500).json({ message: error.message });
     }
 };
