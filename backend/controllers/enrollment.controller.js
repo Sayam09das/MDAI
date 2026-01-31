@@ -1,6 +1,6 @@
 import Enrollment from "../models/enrollmentModel.js";
 import Course from "../models/Course.js";
-import { generateReceiptPdf } from "../utils/generateReceiptPdf.js";
+import { generateReceiptImage } from "../utils/generateReceiptImage.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
 

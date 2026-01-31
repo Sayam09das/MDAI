@@ -29,8 +29,9 @@ const enrollmentSchema = new mongoose.Schema(
                 ref: "Admin",
             },
             public_id: String,
-            url: String, // ✅ IMAGE URL
+            url: String, // ✅ REQUIRED FOR IMAGE RECEIPT
         },
+
 
 
         verifiedAt: {
