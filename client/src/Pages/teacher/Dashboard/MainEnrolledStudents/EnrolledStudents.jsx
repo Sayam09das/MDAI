@@ -54,6 +54,7 @@ const EnrolledStudents = () => {
                         Authorization: `Bearer ${getToken()}`,
                     },
                     body: JSON.stringify({
+                        date: new Date().toISOString(),
                         records: [
                             {
                                 studentId: student._id,
