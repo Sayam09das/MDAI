@@ -3,6 +3,11 @@ import React, { useEffect, useState } from "react";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
 
+// Helper function to validate ObjectId
+const isValidObjectId = (id) => {
+    return typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 const StudentAttendance = ({ courseId, studentId }) => {
     const [student, setStudent] = useState(null);
     const [course, setCourse] = useState(null);
@@ -12,6 +17,19 @@ const StudentAttendance = ({ courseId, studentId }) => {
     const [error, setError] = useState("");
 
     useEffect(() => {
+        // Validate props before making API call
+        if (!courseId || !studentId) {
+            setError("Course ID and Student ID are required");
+            setLoading(false);
+            return;
+        }
+
+        if (!isValidObjectId(courseId) || !isValidObjectId(studentId)) {
+            setError("Invalid Course ID or Student ID format");
+            setLoading(false);
+            return;
+        }
+
         const fetchAttendance = async () => {
             try {
                 const res = await fetch(

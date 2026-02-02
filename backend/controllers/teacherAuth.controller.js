@@ -456,7 +456,39 @@ export const markAttendance = async (req, res) => {
   try {
     const teacherId = req.user.id;
     const { courseId } = req.params;
+
+    // Validate request body exists
+    if (!req.body) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body is missing",
+      });
+    }
+
     const { date, records } = req.body;
+
+    // Validate required fields
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: "Date is required",
+      });
+    }
+
+    if (!records || !Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Records array is required and must not be empty",
+      });
+    }
+
+    // Validate courseId is a valid ObjectId
+    if (!courseId || courseId === "undefined" || !/^[0-9a-fA-F]{24}$/.test(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID",
+      });
+    }
 
     // Validate course belongs to this teacher
     const course = await Course.findOne({
@@ -542,6 +574,14 @@ export const getAttendance = async (req, res) => {
     const { courseId } = req.params;
     const { startDate, endDate } = req.query;
 
+    // Validate courseId is a valid ObjectId
+    if (!courseId || courseId === "undefined" || !/^[0-9a-fA-F]{24}$/.test(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID",
+      });
+    }
+
     // Validate course belongs to this teacher
     const course = await Course.findOne({
       _id: courseId,
@@ -613,6 +653,22 @@ export const getStudentAttendance = async (req, res) => {
     const teacherId = req.user.id;
     const { courseId, studentId } = req.params;
     const { startDate, endDate } = req.query;
+
+    // Validate courseId is a valid ObjectId
+    if (!courseId || courseId === "undefined" || !/^[0-9a-fA-F]{24}$/.test(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID",
+      });
+    }
+
+    // Validate studentId is a valid ObjectId
+    if (!studentId || studentId === "undefined" || !/^[0-9a-fA-F]{24}$/.test(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID",
+      });
+    }
 
     // Validate course belongs to this teacher
     const course = await Course.findOne({
