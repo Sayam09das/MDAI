@@ -1,6 +1,7 @@
 import Teacher from "../models/teacherModel.js";
 import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
+import Attendance from "../models/attendanceModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
 
@@ -445,5 +446,249 @@ export const getMyStudents = async (req, res) => {
   } catch (error) {
     console.error("Get My Students Error:", error);
     res.status(500).json({ message: "Failed to fetch students" });
+  }
+};
+
+/* ======================================================
+   MARK ATTENDANCE (For a course on a specific date)
+====================================================== */
+export const markAttendance = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { courseId } = req.params;
+    const { date, records } = req.body;
+
+    // Validate course belongs to this teacher
+    const course = await Course.findOne({
+      _id: courseId,
+      instructor: teacherId,
+    });
+
+    if (!course) {
+      return res.status(403).json({
+        success: false,
+        message: "Course not found or you don't have permission",
+      });
+    }
+
+    // Parse date (default to today)
+    const attendanceDate = date ? new Date(date) : new Date();
+    // Set time to start of day for consistent matching
+    attendanceDate.setHours(0, 0, 0, 0);
+
+    // Check if attendance already exists for this date
+    let attendance = await Attendance.findOne({
+      course: courseId,
+      teacher: teacherId,
+      date: {
+        $gte: attendanceDate,
+        $lt: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    if (attendance) {
+      // Update existing attendance
+      attendance.records = records.map((record) => ({
+        student: record.studentId,
+        status: record.status || "PRESENT",
+        remarks: record.remarks || "",
+        markedAt: new Date(),
+      }));
+      await attendance.save();
+
+      return res.json({
+        success: true,
+        message: "Attendance updated successfully",
+        attendance,
+      });
+    }
+
+    // Create new attendance record
+    attendance = await Attendance.create({
+      course: courseId,
+      teacher: teacherId,
+      date: attendanceDate,
+      records: records.map((record) => ({
+        student: record.studentId,
+        status: record.status || "PRESENT",
+        remarks: record.remarks || "",
+        markedAt: new Date(),
+      })),
+    });
+
+    // Populate for response
+    await attendance.populate([
+      { path: "course", select: "title" },
+      { path: "records.student", select: "fullName email phone" },
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "Attendance marked successfully",
+      attendance,
+    });
+  } catch (error) {
+    console.error("Mark Attendance Error:", error);
+    res.status(500).json({ message: "Failed to mark attendance" });
+  }
+};
+
+/* ======================================================
+   GET ATTENDANCE (For a course)
+====================================================== */
+export const getAttendance = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { courseId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    // Validate course belongs to this teacher
+    const course = await Course.findOne({
+      _id: courseId,
+      instructor: teacherId,
+    });
+
+    if (!course) {
+      return res.status(403).json({
+        success: false,
+        message: "Course not found or you don't have permission",
+      });
+    }
+
+    // Build query
+    const query = {
+      course: courseId,
+      teacher: teacherId,
+    };
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+
+    // Get attendance records
+    const attendanceRecords = await Attendance.find(query)
+      .populate("records.student", "fullName email phone profileImage")
+      .populate("course", "title")
+      .sort({ date: -1 });
+
+    // Calculate statistics
+    const stats = {
+      totalDays: attendanceRecords.length,
+      present: 0,
+      absent: 0,
+      late: 0,
+    };
+
+    attendanceRecords.forEach((record) => {
+      record.records.forEach((r) => {
+        if (r.status === "PRESENT") stats.present++;
+        else if (r.status === "ABSENT") stats.absent++;
+        else if (r.status === "LATE") stats.late++;
+      });
+    });
+
+    res.json({
+      success: true,
+      course: {
+        _id: course._id,
+        title: course.title,
+      },
+      attendanceRecords,
+      stats,
+      totalRecords: attendanceRecords.length,
+    });
+  } catch (error) {
+    console.error("Get Attendance Error:", error);
+    res.status(500).json({ message: "Failed to fetch attendance" });
+  }
+};
+
+/* ======================================================
+   GET STUDENT ATTENDANCE (For a specific student in a course)
+====================================================== */
+export const getStudentAttendance = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { courseId, studentId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    // Validate course belongs to this teacher
+    const course = await Course.findOne({
+      _id: courseId,
+      instructor: teacherId,
+    });
+
+    if (!course) {
+      return res.status(403).json({
+        success: false,
+        message: "Course not found or you don't have permission",
+      });
+    }
+
+    // Build query
+    const query = {
+      course: courseId,
+      teacher: teacherId,
+      "records.student": studentId,
+    };
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+
+    // Get attendance records for this student
+    const attendanceRecords = await Attendance.find(query)
+      .populate("records.student", "fullName email phone profileImage")
+      .populate("course", "title")
+      .sort({ date: -1 });
+
+    // Extract only this student's records
+    const studentRecords = attendanceRecords.map((record) => {
+      const studentRecord = record.records.find(
+        (r) => r.student._id.toString() === studentId
+      );
+      return {
+        date: record.date,
+        status: studentRecord?.status,
+        remarks: studentRecord?.remarks,
+        markedAt: studentRecord?.markedAt,
+      };
+    });
+
+    // Calculate stats
+    const stats = {
+      totalDays: studentRecords.length,
+      present: studentRecords.filter((r) => r.status === "PRESENT").length,
+      absent: studentRecords.filter((r) => r.status === "ABSENT").length,
+      late: studentRecords.filter((r) => r.status === "LATE").length,
+      attendancePercentage:
+        studentRecords.length > 0
+          ? Math.round(
+              (studentRecords.filter((r) => r.status === "PRESENT").length /
+                studentRecords.length) *
+                100
+            )
+          : 0,
+    };
+
+    res.json({
+      success: true,
+      student: attendanceRecords[0]?.records.find(
+        (r) => r.student._id.toString() === studentId
+      )?.student,
+      course: {
+        _id: course._id,
+        title: course.title,
+      },
+      attendanceRecords: studentRecords,
+      stats,
+    });
+  } catch (error) {
+    console.error("Get Student Attendance Error:", error);
+    res.status(500).json({ message: "Failed to fetch student attendance" });
   }
 };
