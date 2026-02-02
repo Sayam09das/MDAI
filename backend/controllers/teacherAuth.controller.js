@@ -1,4 +1,6 @@
 import Teacher from "../models/teacherModel.js";
+import Course from "../models/Course.js";
+import Enrollment from "../models/enrollmentModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
 
@@ -377,5 +379,71 @@ export const feedbackAnalytics = async (req, res) => {
     ]);
   } catch {
     res.status(500).json({ message: "Failed feedback analytics" });
+  }
+};
+
+/* ======================================================
+   GET MY STUDENTS (Students enrolled in teacher's courses)
+====================================================== */
+export const getMyStudents = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // 1. Find all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        message: "No courses found for this teacher",
+        students: [],
+        totalStudents: 0,
+      });
+    }
+
+    // 2. Find all enrollments for these courses
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+    })
+      .populate("student", "fullName email phone profileImage")
+      .populate("course", "title")
+      .sort({ createdAt: -1 });
+
+    // 3. Extract unique students from enrollments
+    const studentMap = new Map();
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student && !studentMap.has(enrollment.student._id.toString())) {
+        studentMap.set(enrollment.student._id.toString(), {
+          ...enrollment.student.toObject(),
+          enrolledCourses: [],
+        });
+      }
+    });
+
+    // 4. Add course information to each student
+    enrollments.forEach((enrollment) => {
+      const studentId = enrollment.student._id.toString();
+      if (studentMap.has(studentId) && enrollment.course) {
+        studentMap.get(studentId).enrolledCourses.push({
+          courseId: enrollment.course._id,
+          courseTitle: enrollment.course.title,
+          enrolledAt: enrollment.createdAt,
+          paymentStatus: enrollment.paymentStatus,
+        });
+      }
+    });
+
+    // 5. Convert Map to array
+    const students = Array.from(studentMap.values());
+
+    res.json({
+      success: true,
+      students,
+      totalStudents: students.length,
+    });
+  } catch (error) {
+    console.error("Get My Students Error:", error);
+    res.status(500).json({ message: "Failed to fetch students" });
   }
 };

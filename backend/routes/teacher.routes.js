@@ -9,6 +9,7 @@ import {
     courseCreationAnalytics,
     feedbackAnalytics,
     updateTeacherProfile,
+    getMyStudents,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -51,6 +52,9 @@ router.get("/stats", protect, getTeacherStats);
 
 // 🔥 GET ALL TEACHERS (THIS FIXES 404)
 router.get("/", protect, getAllTeachers);
+
+// 🔥 GET MY STUDENTS (Students enrolled in teacher's courses)
+router.get("/students", protect, teacherOnly, getMyStudents);
 
 
 // 🔥 Suspend a teacher (admin action)
