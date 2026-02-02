@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
@@ -9,6 +10,7 @@ const EnrolledStudents = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [submittingKey, setSubmittingKey] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -132,6 +134,23 @@ const EnrolledStudents = () => {
                                                     {attendance.remarks} •{" "}
                                                     {new Date(attendance.markedAt).toLocaleTimeString()}
                                                 </p>
+                                                <button
+                                                    style={{
+                                                        marginTop: 8,
+                                                        padding: "6px 12px",
+                                                        background: "#e3f2fd",
+                                                        color: "#1976d2",
+                                                        border: "1px solid #1976d2",
+                                                        borderRadius: 6,
+                                                        cursor: "pointer",
+                                                        fontWeight: 600,
+                                                    }}
+                                                    onClick={() =>
+                                                        navigate(`/teacher-dashboard/attendance?courseId=${course.courseId}&studentId=${student._id}`)
+                                                    }
+                                                >
+                                                    👁️ View Details
+                                                </button>
                                             </div>
                                         ) : (
                                             <div style={btnGroup}>

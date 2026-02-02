@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import StudentAttendance from './StudentAttendance'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
@@ -11,6 +12,7 @@ const ReturnStudentAttendance = () => {
   const [selectedStudent, setSelectedStudent] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [searchParams] = useSearchParams()
 
   // Fetch teacher's courses
   useEffect(() => {
@@ -64,6 +66,25 @@ const ReturnStudentAttendance = () => {
     }
     fetchStudents()
   }, [selectedCourse])
+
+  // Handle URL query parameters for auto-selection
+  useEffect(() => {
+    const courseIdParam = searchParams.get('courseId')
+    const studentIdParam = searchParams.get('studentId')
+    
+    if (courseIdParam) {
+      setSelectedCourse(courseIdParam)
+    }
+    if (studentIdParam) {
+      // Wait for students to be loaded, then select
+      const setStudentFromParams = async () => {
+        if (courses.length > 0) {
+          setSelectedStudent(studentIdParam)
+        }
+      }
+      setStudentFromParams()
+    }
+  }, [searchParams, courses.length])
 
   const handleCourseChange = (e) => {
     setSelectedCourse(e.target.value)

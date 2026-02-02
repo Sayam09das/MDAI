@@ -1,23 +1,18 @@
-# Attendance Frontend Fix
+# TODO: Interconnect EnrolledStudents.jsx and StudentAttendance.jsx
 
-## Issue
-Course ID and Student ID are required but attendance is not showing because the frontend doesn't pass these IDs.
+## Changes Required:
 
-## Root Cause
-- `ReturnStudentAttendance.jsx` doesn't pass `courseId` and `studentId` props to `StudentAttendance` component
-- There's no UI to select a course and student
+### 1. EnrolledStudents.jsx
+- [x] Import `useNavigate` from react-router-dom
+- [x] Add "View Details" button that navigates to attendance page with query params
 
-## Solution
-Update `ReturnStudentAttendance.jsx` to:
-1. Fetch teacher's courses using `/api/courses/teacher`
-2. Fetch students using `/api/teacher/students`
-3. Add dropdowns to select course and student
-4. Pass the selected IDs to `StudentAttendance` component
+### 2. ReturnStudentAttendance.jsx
+- [x] Import `useSearchParams` from react-router-dom
+- [x] Add logic to read courseId and studentId from URL query parameters
+- [x] Auto-select course and student if params exist
 
-## Files to Edit
-- `client/src/Pages/teacher/Dashboard/MainAttendance/ReturnStudentAttendance.jsx`
+## Execution Order:
+- [x] 1. Edit EnrolledStudents.jsx - Add navigation
+- [x] 2. Edit ReturnStudentAttendance.jsx - Add URL param handling
 
-## Status
-- [x] Update ReturnStudentAttendance.jsx with course/student selection UI
-- [x] Test the fix
 
