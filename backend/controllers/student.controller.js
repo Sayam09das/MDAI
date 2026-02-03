@@ -411,7 +411,9 @@ export const getStudentActivityHours = async (req, res) => {
       paymentStatus: "PAID",
     }).populate("course", "_id title");
 
-    if (enrollments.length === 0) {
+    const validEnrollments = enrollments.filter(e => e.course);
+
+    if (validEnrollments.length === 0) {
       return res.json({
         success: true,
         message: "No courses enrolled",
@@ -427,72 +429,67 @@ export const getStudentActivityHours = async (req, res) => {
       });
     }
 
-    const courseIds = enrollments.map((e) => e.course._id);
+    const courseIds = validEnrollments.map(e => e.course._id);
 
-    // 2. Get lessons completed by student
+    // 2. Lessons completed
     const completedLessons = await Lesson.find({
       course: { $in: courseIds },
       "completionTracker.studentId": studentId,
     });
 
-    // 3. Get attendance records for the date range
+    // 3. Attendance (last 30 days)
     const now = new Date();
-    const startDate = new Date(now);
-    startDate.setDate(now.getDate() - 30); // Last 30 days
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - 30);
 
     const attendanceRecords = await Attendance.find({
       course: { $in: courseIds },
       "records.student": studentId,
       date: { $gte: startDate, $lte: now },
-    }).sort({ date: 1 });
+    });
 
-    // 4. Calculate hourly activity (simplified - using lesson completion times)
-    const hourlyData = calculateHourlyActivity(completedLessons, attendanceRecords);
+    // 4. Hourly data
+    const hourlyData = calculateHourlyActivity(
+      completedLessons,
+      attendanceRecords
+    );
 
-    // 5. Calculate activity distribution
+    // 5. Study time calculation (SAFE)
     const totalStudyMinutes = completedLessons.reduce((sum, lesson) => {
-      const tracker = lesson.completionTracker.find(
+      const tracker = lesson.completionTracker?.find(
         (t) => t.studentId.toString() === studentId
       );
       return sum + (tracker?.timeSpent || lesson.duration || 30);
     }, 0);
 
-    const studyHours = Math.round(totalStudyMinutes / 60 * 10) / 10;
-    const breakHours = Math.round(studyHours * 0.3 * 10) / 10; // Estimate 30% break time
-    const sleepHours = 7.5; // Default sleep hours
-    const freeHours = 24 - studyHours - breakHours - sleepHours;
+    const studyHours = Math.round((totalStudyMinutes / 60) * 10) / 10;
+    const breakHours = Math.round(studyHours * 0.3 * 10) / 10;
+    const sleepHours = 7.5;
+    const freeHours = Math.max(0, 24 - studyHours - breakHours - sleepHours);
 
     const activityDistribution = [
-      { name: "Study Time", value: Math.round((studyHours / 24) * 100), color: "#6366f1" },
-      { name: "Break Time", value: Math.round((breakHours / 24) * 100), color: "#f59e0b" },
-      { name: "Sleep Time", value: Math.round((sleepHours / 24) * 100), color: "#8b5cf6" },
-      { name: "Free Time", value: Math.max(0, Math.round((freeHours / 24) * 100)), color: "#10b981" },
+      { name: "Study Time", value: Math.round((studyHours / 24) * 100) },
+      { name: "Break Time", value: Math.round((breakHours / 24) * 100) },
+      { name: "Sleep Time", value: Math.round((sleepHours / 24) * 100) },
+      { name: "Free Time", value: Math.round((freeHours / 24) * 100) },
     ];
 
-    // 6. Calculate weekly data
     const weeklyData = calculateWeeklyActivity(attendanceRecords, studentId);
-
-    // 7. Calculate stats
-    const stats = {
-      totalStudyHours: Math.round(studyHours * 10) / 10,
-      totalBreakTime: Math.round(breakHours * 10) / 10,
-      productivity: Math.min(100, Math.round((studyHours / 8) * 100)), // Target 8 hours
-      sleepHours,
-    };
 
     res.json({
       success: true,
       hourlyData,
       activityDistribution,
       weeklyData,
-      stats,
-      dateRange: {
-        start: startDate,
-        end: now,
+      stats: {
+        totalStudyHours: studyHours,
+        totalBreakTime: breakHours,
+        productivity: Math.min(100, Math.round((studyHours / 8) * 100)),
+        sleepHours,
       },
     });
   } catch (error) {
-    console.error("Get Student Activity Hours Error:", error);
+    console.error("❌ Activity Hours Error:", error);
     res.status(500).json({ message: "Failed to fetch activity hours" });
   }
 };
