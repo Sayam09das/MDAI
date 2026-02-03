@@ -308,9 +308,10 @@ export const getStudentOverview = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // 3. Calculate overview stats
-    const totalCourses = enrollments.length;
-    const completedCourses = enrollments.filter((e) => e.status === "COMPLETED").length;
-    const ongoingCourses = enrollments.filter((e) => e.status === "ACTIVE").length;
+    const validEnrollments = enrollments.filter(e => e.course);
+    const totalCourses = validEnrollments.length;
+    const completedCourses = validEnrollments.filter((e) => e.status === "COMPLETED").length;
+    const ongoingCourses = validEnrollments.filter((e) => e.status === "ACTIVE").length;
 
     // 4. Get recent activity (last 5 attendance records)
     const attendanceRecords = await Attendance.find({
@@ -335,7 +336,7 @@ export const getStudentOverview = async (req, res) => {
     let totalAttendanceDays = 0;
     let presentDays = 0;
 
-    for (const enrollment of enrollments) {
+    for (const enrollment of validEnrollments) {
       const courseAttendance = await Attendance.find({
         course: enrollment.course._id,
         "records.student": studentId,
@@ -354,7 +355,7 @@ export const getStudentOverview = async (req, res) => {
       : 0;
 
     // 6. Format enrolled courses
-    const courses = enrollments.map((enrollment) => ({
+    const courses = validEnrollments.map((enrollment) => ({
       id: enrollment.course._id,
       title: enrollment.course.title,
       thumbnail: enrollment.course.thumbnail,
@@ -737,7 +738,7 @@ function calculateHourlyActivity(completedLessons, attendanceRecords) {
 }
 
 function calculateWeeklyActivity(attendanceRecords, studentId) {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const now = new Date();
   
   // Initialize with zeros
