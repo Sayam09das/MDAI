@@ -87,7 +87,7 @@ const TeacherStats = () => {
             id: "earnings",
             label: "Earnings",
             value: stats.earnings,
-            prefix: "₹",
+            prefix: "$",
             icon: Wallet,
             bg: "bg-amber-50",
             iconColor: "text-amber-600",

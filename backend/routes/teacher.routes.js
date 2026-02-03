@@ -14,6 +14,7 @@ import {
     markAttendance,
     getAttendance,
     getStudentAttendance,
+    getStudentPerformanceAnalytics,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -101,6 +102,14 @@ router.get(
     protect,
     teacherOnly,
     getStudentAttendance
+);
+
+// 🔥 GET STUDENT PERFORMANCE ANALYTICS (Weekly/Monthly/Yearly)
+router.get(
+    "/dashboard/student-performance",
+    protect,
+    teacherOnly,
+    getStudentPerformanceAnalytics
 );
 
 

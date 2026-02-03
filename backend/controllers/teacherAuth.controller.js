@@ -802,3 +802,254 @@ export const getStudentAttendance = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch student attendance" });
   }
 };
+
+/* ======================================================
+   GET STUDENT PERFORMANCE ANALYTICS (Weekly/Monthly/Yearly)
+====================================================== */
+export const getStudentPerformanceAnalytics = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { range = "weekly" } = req.query;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      // Return empty data if no courses
+      return res.json({
+        success: true,
+        data: getEmptyDataByRange(range),
+      });
+    }
+
+    // 2. Calculate date ranges
+    const now = new Date();
+    let startDate;
+    
+    switch (range) {
+      case "yearly":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      case "monthly":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1); // Last 3 months (12 weeks)
+        break;
+      default: // weekly
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+    }
+
+    // 3. Get attendance records for teacher's courses within the date range
+    const attendanceRecords = await Attendance.find({
+      course: { $in: courseIds },
+      teacher: teacherId,
+      date: { $gte: startDate, $lte: now },
+    })
+      .populate("course", "title")
+      .sort({ date: 1 });
+
+    // 4. Get enrollment statistics
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    }).populate("student", "_id");
+
+    const totalEnrollments = enrollments.length;
+    const uniqueStudents = new Set(
+      enrollments.map((e) => e.student._id.toString())
+    ).size;
+
+    // 5. Calculate performance data based on range
+    const performanceData = calculatePerformanceData(
+      attendanceRecords,
+      uniqueStudents,
+      range,
+      now
+    );
+
+    res.json({
+      success: true,
+      data: performanceData,
+      summary: {
+        totalStudents: uniqueStudents,
+        totalEnrollments,
+        averageAttendance: calculateAverageAttendance(attendanceRecords),
+      },
+    });
+  } catch (error) {
+    console.error("Get Student Performance Analytics Error:", error);
+    res.status(500).json({ message: "Failed to fetch student performance analytics" });
+  }
+};
+
+/* ======================================================
+   HELPER FUNCTIONS FOR PERFORMANCE ANALYTICS
+====================================================== */
+function getEmptyDataByRange(range) {
+  switch (range) {
+    case "yearly":
+      return [
+        { name: "Jan", students: 0 },
+        { name: "Mar", students: 0 },
+        { name: "May", students: 0 },
+        { name: "Jul", students: 0 },
+        { name: "Sep", students: 0 },
+        { name: "Nov", students: 0 },
+      ];
+    case "monthly":
+      return [
+        { name: "Week 1", students: 0 },
+        { name: "Week 2", students: 0 },
+        { name: "Week 3", students: 0 },
+        { name: "Week 4", students: 0 },
+      ];
+    default:
+      return [
+        { name: "Mon", students: 0 },
+        { name: "Tue", students: 0 },
+        { name: "Wed", students: 0 },
+        { name: "Thu", students: 0 },
+        { name: "Fri", students: 0 },
+        { name: "Sat", students: 0 },
+      ];
+  }
+}
+
+function calculatePerformanceData(attendanceRecords, totalStudents, range, now) {
+  // Group attendance by date and calculate average attendance rate per day
+  const attendanceByDate = new Map();
+
+  attendanceRecords.forEach((record) => {
+    const dateKey = new Date(record.date).toISOString().split("T")[0];
+    const totalPresent = record.records.filter(
+      (r) => r.status === "PRESENT" || r.status === "LATE"
+    ).length;
+    const attendanceRate = totalStudents > 0 
+      ? Math.round((totalPresent / totalStudents) * 100) 
+      : 0;
+
+    if (!attendanceByDate.has(dateKey)) {
+      attendanceByDate.set(dateKey, {
+        date: dateKey,
+        present: totalPresent,
+        total: totalStudents,
+        rate: attendanceRate,
+      });
+    }
+  });
+
+  // Convert to array and format based on range
+  const data = Array.from(attendanceByDate.values());
+
+  switch (range) {
+    case "yearly": {
+      // Aggregate by month (every 2 months for display)
+      const monthlyData = new Map();
+      const months = ["Jan", "Mar", "May", "Jul", "Sep", "Nov"];
+      
+      months.forEach((month, index) => {
+        const monthStart = index * 2;
+        const monthEnd = monthStart + 2;
+        monthlyData.set(month, {
+          name: month,
+          students: 0,
+          count: 0,
+        });
+      });
+
+      data.forEach((item) => {
+        const date = new Date(item.date);
+        const monthIndex = Math.floor(date.getMonth() / 2);
+        const monthName = months[monthIndex];
+        if (monthlyData.has(monthName)) {
+          const entry = monthlyData.get(monthName);
+          entry.students += item.rate;
+          entry.count += 1;
+        }
+      });
+
+      return months.map((month) => {
+        const entry = monthlyData.get(month);
+        return {
+          name: month,
+          students: entry.count > 0 ? Math.round(entry.students / entry.count) : 0,
+        };
+      });
+    }
+
+    case "monthly": {
+      // Aggregate by week (last 4 weeks)
+      const weekData = [
+        { name: "Week 1", students: 0, count: 0 },
+        { name: "Week 2", students: 0, count: 0 },
+        { name: "Week 3", students: 0, count: 0 },
+        { name: "Week 4", students: 0, count: 0 },
+      ];
+
+      data.forEach((item) => {
+        const date = new Date(item.date);
+        const weeksAgo = Math.floor(
+          (now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        );
+        const weekIndex = Math.min(3, 3 - weeksAgo);
+        if (weekIndex >= 0 && weekIndex < 4) {
+          weekData[weekIndex].students += item.rate;
+          weekData[weekIndex].count += 1;
+        }
+      });
+
+      return weekData.map((week) => ({
+        name: week.name,
+        students: week.count > 0 ? Math.round(week.students / week.count) : 0,
+      }));
+    }
+
+    default: {
+      // Weekly: Return last 6 days (Mon-Sat)
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const dayData = new Map();
+      
+      // Initialize for Mon-Sat
+      dayNames.slice(1, 7).forEach((day) => {
+        dayData.set(day, { students: 0, count: 0 });
+      });
+
+      data.forEach((item) => {
+        const date = new Date(item.date);
+        const dayName = dayNames[date.getDay()];
+        if (dayData.has(dayName)) {
+          const entry = dayData.get(dayName);
+          entry.students += item.rate;
+          entry.count += 1;
+        }
+      });
+
+      return dayNames.slice(1, 7).map((day) => {
+        const entry = dayData.get(day);
+        return {
+          name: day,
+          students: entry.count > 0 ? Math.round(entry.students / entry.count) : 0,
+        };
+      });
+    }
+  }
+}
+
+function calculateAverageAttendance(attendanceRecords) {
+  if (attendanceRecords.length === 0) return 0;
+
+  let totalRate = 0;
+  let count = 0;
+
+  attendanceRecords.forEach((record) => {
+    const totalPresent = record.records.filter(
+      (r) => r.status === "PRESENT" || r.status === "LATE"
+    ).length;
+    if (record.records.length > 0) {
+      totalRate += (totalPresent / record.records.length) * 100;
+      count++;
+    }
+  });
+
+  return count > 0 ? Math.round(totalRate / count) : 0;
+}
