@@ -1,6 +1,7 @@
 import Teacher from "../models/teacherModel.js";
 import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
+import Lesson from "../models/lessonModel.js";
 import Attendance from "../models/attendanceModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
@@ -237,6 +238,59 @@ export const getTeacherStats = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch teacher stats" });
+  }
+};
+
+/* ======================================================
+   GET TEACHER DASHBOARD STATS (Real-time)
+====================================================== */
+export const getTeacherDashboardStats = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // 1. Get all courses created by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id price");
+    const courseIds = courses.map((course) => course._id);
+
+    // 2. Calculate Total Courses
+    const totalCourses = courses.length;
+
+    // 3. Calculate Total Students (unique students with PAID enrollments)
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    }).populate("student", "_id");
+
+    const uniqueStudentIds = new Set(
+      enrollments.map((e) => e.student._id.toString())
+    );
+    const totalStudents = uniqueStudentIds.size;
+
+    // 4. Calculate Earnings (sum of course prices from PAID enrollments)
+    const earnings = enrollments.reduce((sum, enrollment) => {
+      const course = courses.find(
+        (c) => c._id.toString() === enrollment.course.toString()
+      );
+      return sum + (course?.price || 0);
+    }, 0);
+
+    // 5. Calculate Live Classes (lessons scheduled for teacher's courses)
+    const liveClasses = await Lesson.countDocuments({
+      course: { $in: courseIds },
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalCourses,
+        totalStudents,
+        liveClasses,
+        earnings,
+      },
+    });
+  } catch (error) {
+    console.error("Get Teacher Dashboard Stats Error:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard stats" });
   }
 };
 

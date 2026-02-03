@@ -2,6 +2,7 @@ import express from "express";
 import {
     registerTeacher,
     getTeacherStats,
+    getTeacherDashboardStats,
     suspendTeacher,
     resumeTeacher,
     getAllTeachers,
@@ -51,6 +52,9 @@ router.patch(
 
 // 🔥 Admin / Dashboard stats
 router.get("/stats", protect, getTeacherStats);
+
+// 🔥 Teacher Dashboard Stats (Real-time)
+router.get("/dashboard/stats", protect, teacherOnly, getTeacherDashboardStats);
 
 
 // 🔥 GET ALL TEACHERS (THIS FIXES 404)

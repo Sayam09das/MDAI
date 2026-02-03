@@ -1,18 +1,26 @@
-# TODO: Interconnect EnrolledStudents.jsx and StudentAttendance.jsx
+# TODO - Teacher Real-time Stats Implementation
 
-## Changes Required:
+## Backend Changes
+- [x] 1. Add `getTeacherDashboardStats` function in `backend/controllers/teacherAuth.controller.js`
+- [x] 2. Add new route `GET /api/teacher/dashboard/stats` in `backend/routes/teacher.routes.js`
 
-### 1. EnrolledStudents.jsx
-- [x] Import `useNavigate` from react-router-dom
-- [x] Add "View Details" button that navigates to attendance page with query params
+## Frontend Changes
+- [x] 3. Update `TeacherStats.jsx` to fetch and display real-time stats
+- [ ] 4. Test the implementation
 
-### 2. ReturnStudentAttendance.jsx
-- [x] Import `useSearchParams` from react-router-dom
-- [x] Add logic to read courseId and studentId from URL query parameters
-- [x] Auto-select course and student if params exist
+## Details
 
-## Execution Order:
-- [x] 1. Edit EnrolledStudents.jsx - Add navigation
-- [x] 2. Edit ReturnStudentAttendance.jsx - Add URL param handling
+### Backend: `getTeacherDashboardStats` function should:
+1. Get teacher ID from `req.user.id`
+2. Find all courses by this teacher
+3. Calculate:
+   - totalCourses: count of courses
+   - totalStudents: count of unique students from PAID enrollments
+   - liveClasses: count of lessons (from lessonModel)
+   - earnings: sum of course price × PAID enrollment count
 
+### Frontend: `TeacherStats.jsx` changes:
+1. Use `useEffect` to fetch data on mount
+2. Add loading state
+3. Handle API response and display real data
 

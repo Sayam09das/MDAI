@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     BookOpen,
@@ -8,49 +8,99 @@ import {
 } from "lucide-react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 
-/* ===== Stats Data (replace with API later) ===== */
-const stats = [
-    {
-        id: 1,
-        label: "Total Courses",
-        value: 12,
-        icon: BookOpen,
-        bg: "bg-sky-50",
-        iconColor: "text-sky-600",
-    },
-    {
-        id: 2,
-        label: "Total Students",
-        value: 1240,
-        icon: Users,
-        bg: "bg-emerald-50",
-        iconColor: "text-emerald-600",
-    },
-    {
-        id: 3,
-        label: "Live Classes",
-        value: 6,
-        icon: Video,
-        bg: "bg-violet-50",
-        iconColor: "text-violet-600",
-    },
-    {
-        id: 4,
-        label: "Earnings",
-        value: 42500,
-        prefix: "₹",
-        icon: Wallet,
-        bg: "bg-amber-50",
-        iconColor: "text-amber-600",
-    },
-];
-
-
+/* ===== Stats Component with Real-time Data ===== */
 const TeacherStats = () => {
+    const [stats, setStats] = useState({
+        totalCourses: 0,
+        totalStudents: 0,
+        liveClasses: 0,
+        earnings: 0,
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch("/api/teacher/dashboard/stats", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    setStats(data.stats);
+                }
+            } catch (error) {
+                console.error("Failed to fetch teacher stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const statsData = [
+        {
+            id: 1,
+            label: "Total Courses",
+            value: stats.totalCourses,
+            icon: BookOpen,
+            bg: "bg-sky-50",
+            iconColor: "text-sky-600",
+        },
+        {
+            id: 2,
+            label: "Total Students",
+            value: stats.totalStudents,
+            icon: Users,
+            bg: "bg-emerald-50",
+            iconColor: "text-emerald-600",
+        },
+        {
+            id: 3,
+            label: "Live Classes",
+            value: stats.liveClasses,
+            icon: Video,
+            bg: "bg-violet-50",
+            iconColor: "text-violet-600",
+        },
+        {
+            id: 4,
+            label: "Earnings",
+            value: stats.earnings,
+            prefix: "₹",
+            icon: Wallet,
+            bg: "bg-amber-50",
+            iconColor: "text-amber-600",
+        },
+    ];
+
+    if (loading) {
+        return (
+            <div className="w-full mt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div
+                            key={i}
+                            className="rounded-2xl p-5 bg-white shadow-sm animate-pulse"
+                        >
+                            <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
+                            <div className="h-8 bg-gray-200 rounded w-16"></div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat, index) => {
+                {statsData.map((stat, index) => {
                     const Icon = stat.icon;
 
                     return (
