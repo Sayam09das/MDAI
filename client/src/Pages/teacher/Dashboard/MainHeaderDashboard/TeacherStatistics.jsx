@@ -15,6 +15,39 @@ import {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
 
+/* ===== DEFAULT DATA ===== */
+const defaultWeeklyData = [
+    { name: "Mon", students: 45, revenue: 12000 },
+    { name: "Tue", students: 52, revenue: 15000 },
+    { name: "Wed", students: 48, revenue: 13500 },
+    { name: "Thu", students: 61, revenue: 18000 },
+    { name: "Fri", students: 55, revenue: 16200 },
+    { name: "Sat", students: 32, revenue: 9000 },
+    { name: "Sun", students: 28, revenue: 7500 },
+];
+
+const defaultMonthlyData = [
+    { name: "Week 1", students: 180, revenue: 52000 },
+    { name: "Week 2", students: 210, revenue: 63000 },
+    { name: "Week 3", students: 195, revenue: 58000 },
+    { name: "Week 4", students: 240, revenue: 72000 },
+];
+
+const defaultYearlyData = [
+    { name: "Jan", students: 850, revenue: 250000 },
+    { name: "Feb", students: 920, revenue: 280000 },
+    { name: "Mar", students: 880, revenue: 265000 },
+    { name: "Apr", students: 950, revenue: 290000 },
+    { name: "May", students: 1020, revenue: 310000 },
+    { name: "Jun", students: 980, revenue: 295000 },
+    { name: "Jul", students: 1100, revenue: 340000 },
+    { name: "Aug", students: 1150, revenue: 355000 },
+    { name: "Sep", students: 1080, revenue: 330000 },
+    { name: "Oct", students: 1200, revenue: 370000 },
+    { name: "Nov", students: 1250, revenue: 385000 },
+    { name: "Dec", students: 1300, revenue: 400000 },
+];
+
 
 /* ===== TOOLTIP ===== */
 const CustomTooltip = ({ active, payload, label }) => {
