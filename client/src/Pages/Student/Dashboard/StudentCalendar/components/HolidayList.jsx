@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, ChevronDown, Info, MapPin } from 'lucide-react';
 import { useCalendar } from '../../../../../context/CalendarContext';
-import { COUNTRIES, HOLIDAY_TYPES, getHolidaysForMonth, getHolidayColor } from '../../../utils/holidays';
+import { COUNTRIES, HOLIDAY_TYPES, getHolidaysForMonth, getHolidayColor } from '../../../../../utils/holidays';
 
 const HolidayList = ({ compact = false }) => {
   const { currentDate, selectedCountry, setSelectedCountry } = useCalendar();

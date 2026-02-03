@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Edit2, Trash2, CheckCircle, Circle, Bell } from 'lucide-react';
 import { useCalendar } from '../../../../../context/CalendarContext';
-import { formatTime } from '../../../utils/dateUtils';
+import { formatTime } from '../../../../../utils/dateUtils';
 
 const EVENT_ICONS = {
   task: (
