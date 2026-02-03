@@ -11,7 +11,7 @@ const getToken = () => localStorage.getItem("token");
 
 const TodayLectures = () => {
     const navigate = useNavigate();
-    const [lectures, setLectures] = useState(defaultLectures);
+    const [lectures, setLectures] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [completed, setCompleted] = useState([]);
