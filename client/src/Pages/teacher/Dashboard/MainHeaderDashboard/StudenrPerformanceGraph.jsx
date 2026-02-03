@@ -15,6 +15,22 @@ import { MoreHorizontal, TrendingUp, TrendingDown } from "lucide-react";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
 
+/* ===== DEFAULT DATA ===== */
+const defaultData = [
+    { month: "Jan", value: 72 },
+    { month: "Feb", value: 68 },
+    { month: "Mar", value: 75 },
+    { month: "Apr", value: 71 },
+    { month: "May", value: 78 },
+    { month: "Jun", value: 82 },
+    { month: "Jul", value: 79 },
+    { month: "Aug", value: 85 },
+    { month: "Sep", value: 81 },
+    { month: "Oct", value: 88 },
+    { month: "Nov", value: 86 },
+    { month: "Dec", value: 90 },
+];
+
 
 
 /* ===== TOOLTIP ===== */
