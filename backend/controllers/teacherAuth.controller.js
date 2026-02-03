@@ -1758,3 +1758,187 @@ function getEmptyPerformanceTrends(range) {
     { month: "Dec", value: 0 },
   ];
 }
+
+/* ======================================================
+   GET TEACHER SETTINGS
+====================================================== */
+export const getTeacherSettings = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    const teacher = await Teacher.findById(teacherId).select("settings");
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json({
+      success: true,
+      settings: teacher.settings || {
+        theme: "system",
+        language: "en",
+        notifications: {
+          email: true,
+          push: true,
+          sms: false,
+          newStudent: true,
+          classReminder: true,
+          newMessage: true,
+          weeklyReport: false,
+        },
+        privacy: {
+          profileVisible: true,
+          showEmail: false,
+          showPhone: false,
+          allowMessages: true,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get Teacher Settings Error:", error);
+    res.status(500).json({ message: "Failed to fetch settings" });
+  }
+};
+
+/* ======================================================
+   UPDATE TEACHER SETTINGS
+====================================================== */
+export const updateTeacherSettings = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { theme, language, notifications, privacy } = req.body;
+
+    // Build update object dynamically
+    const updateData = {};
+    
+    if (theme) updateData["settings.theme"] = theme;
+    if (language) updateData["settings.language"] = language;
+    
+    if (notifications) {
+      // Merge notification settings
+      updateData["settings.notifications"] = {
+        email: notifications.email ?? true,
+        push: notifications.push ?? true,
+        sms: notifications.sms ?? false,
+        newStudent: notifications.newStudent ?? true,
+        classReminder: notifications.classReminder ?? true,
+        newMessage: notifications.newMessage ?? true,
+        weeklyReport: notifications.weeklyReport ?? false,
+      };
+    }
+    
+    if (privacy) {
+      // Merge privacy settings
+      updateData["settings.privacy"] = {
+        profileVisible: privacy.profileVisible ?? true,
+        showEmail: privacy.showEmail ?? false,
+        showPhone: privacy.showPhone ?? false,
+        allowMessages: privacy.allowMessages ?? true,
+      };
+    }
+
+    const teacher = await Teacher.findByIdAndUpdate(
+      teacherId,
+      { $set: updateData },
+      { new: true, upsert: true }
+    ).select("settings");
+
+    res.json({
+      success: true,
+      message: "Settings updated successfully",
+      settings: teacher.settings,
+    });
+  } catch (error) {
+    console.error("Update Teacher Settings Error:", error);
+    res.status(500).json({ message: "Failed to update settings" });
+  }
+};
+
+/* ======================================================
+   CHANGE TEACHER PASSWORD
+====================================================== */
+export const changeTeacherPassword = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All password fields are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New passwords don't match",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    // Get teacher with password
+    const teacher = await Teacher.findById(teacherId).select("+password");
+
+    if (!teacher) {
+      return res.status(404).json({
+        success: false,
+        message: "Teacher not found",
+      });
+    }
+
+    // Verify current password
+    const isMatch = await teacher.comparePassword(currentPassword);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Update password
+    teacher.password = newPassword;
+    await teacher.save();
+
+    res.json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change Teacher Password Error:", error);
+    res.status(500).json({ message: "Failed to change password" });
+  }
+};
+
+/* ======================================================
+   GET TEACHER PROFILE (For Settings Page)
+====================================================== */
+export const getTeacherProfile = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    const teacher = await Teacher.findById(teacherId).select(
+      "-password -class10Certificate -class12Certificate -collegeCertificate -phdOrOtherCertificate"
+    );
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json({
+      success: true,
+      teacher,
+    });
+  } catch (error) {
+    console.error("Get Teacher Profile Error:", error);
+    res.status(500).json({ message: "Failed to fetch profile" });
+  }
+};

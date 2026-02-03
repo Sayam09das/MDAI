@@ -21,6 +21,10 @@ import {
     getTeacherTodayLectures,
     getTeacherStatisticsOverview,
     getStudentPerformanceTrends,
+    getTeacherSettings,
+    updateTeacherSettings,
+    changeTeacherPassword,
+    getTeacherProfile,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -164,6 +168,38 @@ router.get(
     protect,
     teacherOnly,
     getStudentPerformanceTrends
+);
+
+// 🔥 GET TEACHER SETTINGS
+router.get(
+    "/settings",
+    protect,
+    teacherOnly,
+    getTeacherSettings
+);
+
+// 🔥 UPDATE TEACHER SETTINGS
+router.patch(
+    "/settings",
+    protect,
+    teacherOnly,
+    updateTeacherSettings
+);
+
+// 🔥 CHANGE PASSWORD
+router.post(
+    "/change-password",
+    protect,
+    teacherOnly,
+    changeTeacherPassword
+);
+
+// 🔥 GET TEACHER PROFILE (For Settings Page)
+router.get(
+    "/profile",
+    protect,
+    teacherOnly,
+    getTeacherProfile
 );
 
 

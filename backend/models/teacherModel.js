@@ -96,6 +96,35 @@ const teacherSchema = new mongoose.Schema(
 
     isSuspended: { type: Boolean, default: false },
 
+    /* ================= SETTINGS ================= */
+    settings: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "system"],
+        default: "system",
+      },
+      language: {
+        type: String,
+        enum: ["en", "es", "fr", "de", "zh", "ja"],
+        default: "en",
+      },
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        newStudent: { type: Boolean, default: true },
+        classReminder: { type: Boolean, default: true },
+        newMessage: { type: Boolean, default: true },
+        weeklyReport: { type: Boolean, default: false },
+      },
+      privacy: {
+        profileVisible: { type: Boolean, default: true },
+        showEmail: { type: Boolean, default: false },
+        showPhone: { type: Boolean, default: false },
+        allowMessages: { type: Boolean, default: true },
+      },
+    },
+
   },
   {
     timestamps: true,
