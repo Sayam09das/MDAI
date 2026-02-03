@@ -1,33 +1,27 @@
-// Helper to get the API base URL
-const getBaseUrl = () => {
-  // Use environment variable if available
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Default for production
-  return '/api/v1';
-};
+/* ================= CONFIG ================= */
 
-const API_BASE_URL = getBaseUrl();
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-// Helper to get auth token
+/* ================= TOKEN HELPER ================= */
+
 const getAuthToken = () => {
   const token = localStorage.getItem("token");
-  return token ? `Bearer ${token}` : "";
+  return token ? `Bearer ${token}` : null;
 };
 
-// Generic fetch wrapper
+/* ================= GENERIC FETCH WRAPPER ================= */
+
 const fetchAPI = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const headers = {
     "Content-Type": "application/json",
-    ...options.headers,
+    ...(options.headers || {}),
   };
 
   const token = getAuthToken();
   if (token) {
-    headers["Authorization"] = token;
+    headers.Authorization = token;
   }
 
   try {
@@ -39,44 +33,58 @@ const fetchAPI = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Something went wrong");
+      throw new Error(data.message || "API request failed");
     }
 
     return data;
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("API Error:", error.message);
     throw error;
   }
 };
 
-/* ================= STUDENT API ================= */
+/* ================= STUDENT APIs ================= */
 
-// Get student's attendance records
-export const getStudentAttendance = async (params = {}) => {
-  const queryString = new URLSearchParams(params).toString();
-  return fetchAPI(`/student/attendance${queryString ? `?${queryString}` : ""}`);
+export const getStudentAttendance = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchAPI(
+    `/api/student/attendance${query ? `?${query}` : ""}`
+  );
 };
 
-// Get student's performance data
-export const getStudentPerformance = async (range = "monthly") => {
-  return fetchAPI(`/student/performance?range=${range}`);
+export const getStudentPerformance = (range = "monthly") => {
+  return fetchAPI(
+    `/api/student/performance?range=${range}`
+  );
 };
 
-// Get student's overview (enrolled courses, stats)
-export const getStudentOverview = async () => {
-  return fetchAPI("/student/overview");
+export const getStudentOverview = () => {
+  return fetchAPI(
+    "/api/student/overview"
+  );
 };
 
-// Get student's activity hours
-export const getStudentActivityHours = async (date) => {
-  const queryString = date ? `?date=${date}` : "";
-  return fetchAPI(`/student/activity-hours${queryString}`);
+export const getStudentActivityHours = (date) => {
+  return fetchAPI(
+    `/api/student/activity-hours${date ? `?date=${date}` : ""}`
+  );
 };
 
-// Get student's dashboard stats
-export const getStudentDashboardStats = async () => {
-  return fetchAPI("/student/dashboard/stats");
+export const getStudentDashboardStats = () => {
+  return fetchAPI(
+    "/api/student/dashboard/stats"
+  );
 };
+
+/* ================= TEACHER APIs ================= */
+
+export const getTeacherDashboardStats = () => {
+  return fetchAPI(
+    "/api/teacher/dashboard/stats"
+  );
+};
+
+/* ================= EXPORT ================= */
 
 export default {
   getStudentAttendance,
@@ -84,5 +92,5 @@ export default {
   getStudentOverview,
   getStudentActivityHours,
   getStudentDashboardStats,
+  getTeacherDashboardStats,
 };
-
