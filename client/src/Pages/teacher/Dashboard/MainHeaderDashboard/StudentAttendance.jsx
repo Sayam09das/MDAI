@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     PieChart,
@@ -8,8 +8,11 @@ import {
     Tooltip,
 } from "recharts";
 import Calendar from "react-calendar";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import "react-calendar/dist/Calendar.css";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const getToken = () => localStorage.getItem("token");
 
 /* COLORS */
 const COLORS = {
@@ -26,30 +29,56 @@ const isFutureDate = (date) => {
 const StudentAttendance = () => {
     const [date, setDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
+    const [attendance, setAttendance] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    /* 🎯 Attendance depends on date */
-    const attendance = useMemo(() => {
-        if (isFutureDate(date)) {
-            return null; // ❌ No data for future
+    // Fetch attendance data from backend
+    const fetchAttendance = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Format date as YYYY-MM-DD
+            const dateStr = date.toISOString().split('T')[0];
+            
+            const res = await fetch(
+                `${BACKEND_URL}/api/teacher/dashboard/attendance?date=${dateStr}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${getToken()}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to fetch attendance");
+            }
+
+            setAttendance(data.attendance);
+        } catch (err) {
+            console.error("Fetch Attendance Error:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        // ✅ Stable pseudo-data based on date
-        const seed = date.getDate() + date.getMonth() * 3;
-        const present = 60 + (seed % 30); // 60–89%
-        const absent = 100 - present;
-
-        return {
-            present,
-            absent,
-        };
+    useEffect(() => {
+        fetchAttendance();
     }, [date]);
 
-    const data = attendance
-        ? [
-            { name: "Present", value: attendance.present },
-            { name: "Absent", value: attendance.absent },
-        ]
-        : [];
+    // Calculate chart data
+    const chartData = useMemo(() => {
+        if (!attendance) return [];
+        return [
+            { name: "Present", value: attendance.present || 0 },
+            { name: "Absent", value: attendance.absent || 0 },
+        ];
+    }, [attendance]);
 
     /* DATE NAVIGATION */
     const changeDate = (days) => {
@@ -57,6 +86,52 @@ const StudentAttendance = () => {
         newDate.setDate(date.getDate() + days);
         setDate(newDate);
     };
+
+    // Show loading state
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-2xl p-5 shadow-sm w-full h-full"
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+                <div className="h-52 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                </div>
+            </motion.div>
+        );
+    }
+
+    // Show error state
+    if (error && !attendance) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-2xl p-5 shadow-sm w-full h-full"
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Student Attendance
+                    </h3>
+                </div>
+                <div className="h-52 flex flex-col items-center justify-center text-center">
+                    <span className="text-lg font-semibold text-gray-400">
+                        Unable to load attendance
+                    </span>
+                    <span className="text-sm text-gray-500 mt-1">
+                        {error}
+                    </span>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -75,7 +150,7 @@ const StudentAttendance = () => {
                 <div className="relative">
                     <div className="flex items-center gap-2 text-sm bg-gray-50 px-3 py-1.5 rounded-lg">
                         <ChevronLeft
-                            className="w-4 h-4 cursor-pointer text-gray-500"
+                            className="w-4 h-4 cursor-pointer text-gray-500 hover:text-gray-700"
                             onClick={() => changeDate(-1)}
                         />
 
@@ -91,7 +166,7 @@ const StudentAttendance = () => {
                         </span>
 
                         <ChevronRight
-                            className="w-4 h-4 cursor-pointer text-gray-500"
+                            className="w-4 h-4 cursor-pointer text-gray-500 hover:text-gray-700"
                             onClick={() => changeDate(1)}
                         />
                     </div>
@@ -104,6 +179,7 @@ const StudentAttendance = () => {
                                     setDate(d);
                                     setShowCalendar(false);
                                 }}
+                                maxDate={new Date()}
                             />
                         </div>
                     )}
@@ -112,7 +188,7 @@ const StudentAttendance = () => {
 
             {/* CONTENT */}
             {!attendance ? (
-                /* 🚫 FUTURE DATE */
+                /* 🚫 NO DATA */
                 <div className="h-52 flex flex-col items-center justify-center text-center">
                     <span className="text-lg font-semibold text-gray-400">
                         No attendance data
@@ -128,7 +204,7 @@ const StudentAttendance = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={data}
+                                    data={chartData}
                                     dataKey="value"
                                     innerRadius={70}
                                     outerRadius={90}
@@ -187,6 +263,15 @@ const StudentAttendance = () => {
                             </span>
                         </div>
                     </div>
+
+                    {/* STUDENT COUNTS */}
+                    <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-500">
+                        <span>{attendance.presentCount} present</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{attendance.absentCount} absent</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{attendance.totalStudents} total</span>
+                    </div>
                 </>
             )}
         </motion.div>
@@ -194,3 +279,4 @@ const StudentAttendance = () => {
 };
 
 export default StudentAttendance;
+

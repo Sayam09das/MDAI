@@ -15,6 +15,8 @@ import {
     getAttendance,
     getStudentAttendance,
     getStudentPerformanceAnalytics,
+    getTeacherDashboardAttendance,
+    getStudentGenderStats,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -110,6 +112,22 @@ router.get(
     protect,
     teacherOnly,
     getStudentPerformanceAnalytics
+);
+
+// 🔥 GET TEACHER DASHBOARD ATTENDANCE (For MainHeaderDashboard)
+router.get(
+    "/dashboard/attendance",
+    protect,
+    teacherOnly,
+    getTeacherDashboardAttendance
+);
+
+// 🔥 GET STUDENT GENDER STATS (For MainHeaderDashboard)
+router.get(
+    "/dashboard/gender-stats",
+    protect,
+    teacherOnly,
+    getStudentGenderStats
 );
 
 

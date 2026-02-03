@@ -1053,3 +1053,146 @@ function calculateAverageAttendance(attendanceRecords) {
 
   return count > 0 ? Math.round(totalRate / count) : 0;
 }
+
+/* ======================================================
+   GET TEACHER DASHBOARD ATTENDANCE (For MainHeaderDashboard)
+====================================================== */
+export const getTeacherDashboardAttendance = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { date } = req.query;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        attendance: null,
+        message: "No courses found for this teacher",
+      });
+    }
+
+    // 2. Parse the date (default to today)
+    const attendanceDate = date ? new Date(date) : new Date();
+    attendanceDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000);
+
+    // 3. Get all attendance records for all teacher's courses on this date
+    const attendanceRecords = await Attendance.find({
+      course: { $in: courseIds },
+      teacher: teacherId,
+      date: { $gte: attendanceDate, $lt: nextDay },
+    }).populate("records.student", "fullName");
+
+    if (attendanceRecords.length === 0) {
+      return res.json({
+        success: true,
+        attendance: null,
+        message: "No attendance data available for this date",
+      });
+    }
+
+    // 4. Calculate total present and absent
+    let totalPresent = 0;
+    let totalAbsent = 0;
+    let totalStudents = 0;
+
+    attendanceRecords.forEach((record) => {
+      record.records.forEach((r) => {
+        totalStudents++;
+        if (r.status === "PRESENT" || r.status === "LATE") {
+          totalPresent++;
+        } else if (r.status === "ABSENT") {
+          totalAbsent++;
+        }
+      });
+    });
+
+    const presentPercentage = totalStudents > 0 
+      ? Math.round((totalPresent / totalStudents) * 100) 
+      : 0;
+    const absentPercentage = totalStudents > 0 
+      ? Math.round((totalAbsent / totalStudents) * 100) 
+      : 0;
+
+    res.json({
+      success: true,
+      attendance: {
+        date: attendanceDate,
+        present: presentPercentage,
+        absent: absentPercentage,
+        totalStudents,
+        presentCount: totalPresent,
+        absentCount: totalAbsent,
+      },
+    });
+  } catch (error) {
+    console.error("Get Teacher Dashboard Attendance Error:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard attendance" });
+  }
+};
+
+/* ======================================================
+   GET STUDENT GENDER STATS (For MainHeaderDashboard)
+====================================================== */
+export const getStudentGenderStats = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        stats: {
+          male: 0,
+          female: 0,
+          other: 0,
+          total: 0,
+        },
+      });
+    }
+
+    // 2. Get all paid enrollments for these courses
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    }).populate("student", "gender");
+
+    // 3. Count by gender
+    let male = 0;
+    let female = 0;
+    let other = 0;
+
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student && enrollment.student.gender) {
+        if (enrollment.student.gender === "male") {
+          male++;
+        } else if (enrollment.student.gender === "female") {
+          female++;
+        } else {
+          other++;
+        }
+      }
+    });
+
+    const total = male + female + other;
+
+    res.json({
+      success: true,
+      stats: {
+        male,
+        female,
+        other,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("Get Student Gender Stats Error:", error);
+    res.status(500).json({ message: "Failed to fetch gender stats" });
+  }
+};
