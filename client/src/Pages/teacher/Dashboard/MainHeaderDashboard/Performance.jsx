@@ -133,7 +133,7 @@ const Performance = () => {
             >
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">
-                        Pyana Performance
+                        Teacher Performance
                     </h3>
                 </div>
                 <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
