@@ -29,7 +29,7 @@ const ReturnStudentMain = () => {
             </div>
             <div>
                 <StudentHourActivity />
-                Ï<StudentPerformance />
+                <StudentPerformance />
             </div>
             <div>
                 {/* WORKING PROCESS CARD */}
