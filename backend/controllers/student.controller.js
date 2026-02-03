@@ -33,7 +33,8 @@ export const getStudentAttendance = async (req, res) => {
       });
     }
 
-    const courseIds = enrollments.map((e) => e.course._id);
+    const validEnrollments = enrollments.filter(e => e.course);
+    const courseIds = validEnrollments.map(e => e.course._id);
 
     // 2. Build query
     const query = {
@@ -107,10 +108,10 @@ export const getStudentAttendance = async (req, res) => {
 
     // 6. Get attendance by course
     const attendanceByCourse = {};
-    enrollments.forEach((enrollment) => {
+    validEnrollments.forEach((enrollment) => {
       const courseIdStr = enrollment.course._id.toString();
       const courseRecords = studentRecords.filter(
-        (r) => r.course._id.toString() === courseIdStr
+        (r) => r.course && r.course._id.toString() === courseIdStr
       );
       const present = courseRecords.filter(
         (r) => r.status === "PRESENT" || r.status === "LATE"
@@ -133,7 +134,7 @@ export const getStudentAttendance = async (req, res) => {
       attendanceRecords: studentRecords,
       attendanceByCourse,
       stats,
-      totalCourses: enrollments.length,
+      totalCourses: validEnrollments.length,
     });
   } catch (error) {
     console.error("Get Student Attendance Error:", error);
@@ -170,7 +171,8 @@ export const getStudentPerformance = async (req, res) => {
       });
     }
 
-    const courseIds = enrollments.map((e) => e.course._id);
+    const validEnrollments = enrollments.filter(e => e.course);
+    const courseIds = validEnrollments.map(e => e.course._id);
 
     // 2. Get student's attendance records
     const attendanceRecords = await Attendance.find({
@@ -230,17 +232,21 @@ export const getStudentPerformance = async (req, res) => {
 
     // 7. Calculate subject-wise performance (by course)
     const subjectData = [];
-    for (const enrollment of enrollments) {
-      const courseId = enrollment.course._id;
-      const courseRecords = attendanceRecords.filter(
-        (r) => r.course.toString() === courseId.toString()
-      );
-      
+    for (const enrollment of validEnrollments) {
+      const courseId = enrollment.course._id.toString();
+
+      const courseRecords = attendanceRecords.filter((r) => {
+        if (!r.course) return false;
+        return r.course.toString() === courseId;
+      });
+
       const present = courseRecords.filter((r) => {
-        const sr = r.records.find((rec) => rec.student.toString() === studentId);
+        const sr = r.records.find(
+          (rec) => rec.student.toString() === studentId
+        );
         return sr && (sr.status === "PRESENT" || sr.status === "LATE");
       }).length;
-      
+
       const total = courseRecords.length;
       const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
@@ -266,8 +272,8 @@ export const getStudentPerformance = async (req, res) => {
       attendanceRate: totalAttendance > 0
         ? Math.round((presentAttendance / totalAttendance) * 100)
         : 0,
-      totalCourses: enrollments.length,
-      completedCourses: enrollments.filter((e) => e.status === "COMPLETED").length,
+      totalCourses: validEnrollments.length,
+      completedCourses: validEnrollments.filter((e) => e.status === "COMPLETED").length,
     };
 
     res.json({
