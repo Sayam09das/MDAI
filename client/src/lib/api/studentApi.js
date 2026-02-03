@@ -1,4 +1,14 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+// Helper to get the API base URL
+const getBaseUrl = () => {
+  // Use environment variable if available
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // Default for production
+  return '/api/v1';
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Helper to get auth token
 const getAuthToken = () => {
