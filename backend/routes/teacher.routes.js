@@ -17,6 +17,10 @@ import {
     getStudentPerformanceAnalytics,
     getTeacherDashboardAttendance,
     getStudentGenderStats,
+    getTeacherPerformanceMetrics,
+    getTeacherTodayLectures,
+    getTeacherStatisticsOverview,
+    getStudentPerformanceTrends,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -128,6 +132,38 @@ router.get(
     protect,
     teacherOnly,
     getStudentGenderStats
+);
+
+// 🔥 GET TEACHER PERFORMANCE METRICS (For Performance.jsx)
+router.get(
+    "/dashboard/performance-metrics",
+    protect,
+    teacherOnly,
+    getTeacherPerformanceMetrics
+);
+
+// 🔥 GET TEACHER TODAY'S LECTURES (For TodayLectures.jsx)
+router.get(
+    "/dashboard/today-lectures",
+    protect,
+    teacherOnly,
+    getTeacherTodayLectures
+);
+
+// 🔥 GET TEACHER STATISTICS OVERVIEW (For TeacherStatistics.jsx)
+router.get(
+    "/dashboard/statistics-overview",
+    protect,
+    teacherOnly,
+    getTeacherStatisticsOverview
+);
+
+// 🔥 GET STUDENT PERFORMANCE TRENDS (For StudentPerformanceGraph.jsx)
+router.get(
+    "/dashboard/student-performance-trends",
+    protect,
+    teacherOnly,
+    getStudentPerformanceTrends
 );
 
 

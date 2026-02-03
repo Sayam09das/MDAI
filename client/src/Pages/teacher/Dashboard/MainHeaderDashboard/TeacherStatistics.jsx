@@ -11,29 +11,10 @@ import {
     Legend,
 } from "recharts";
 
-/* ===== DATA ===== */
-const weeklyData = [
-    { name: "Week 1", students: 6000, revenue: 9000 },
-    { name: "Week 2", students: 12000, revenue: 15000 },
-    { name: "Week 3", students: 10000, revenue: 12000 },
-    { name: "Week 4", students: 18000, revenue: 22000 },
-    { name: "Week 5", students: 14000, revenue: 10000 },
-];
+/* ===== CONFIG ===== */
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const getToken = () => localStorage.getItem("token");
 
-const monthlyData = [
-    { name: "Jan", students: 12000, revenue: 18000 },
-    { name: "Feb", students: 16000, revenue: 22000 },
-    { name: "Mar", students: 14000, revenue: 20000 },
-    { name: "Apr", students: 22000, revenue: 28000 },
-    { name: "May", students: 26000, revenue: 30000 },
-];
-
-const yearlyData = [
-    { name: "2022", students: 120000, revenue: 180000 },
-    { name: "2023", students: 180000, revenue: 240000 },
-    { name: "2024", students: 220000, revenue: 300000 },
-    { name: "2025", students: 280000, revenue: 360000 },
-];
 
 /* ===== TOOLTIP ===== */
 const CustomTooltip = ({ active, payload, label }) => {
@@ -78,6 +59,15 @@ const CustomLegend = () => (
 const TeacherStatistics = () => {
     const [range, setRange] = useState("weekly");
     const [isMobile, setIsMobile] = useState(false);
+    const [chartData, setChartData] = useState(defaultWeeklyData);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [summary, setSummary] = useState({
+        totalStudents: 0,
+        totalRevenue: 0,
+        avgStudents: 0,
+        avgRevenue: 0,
+    });
 
     useEffect(() => {
         const checkMobile = () => {
@@ -89,18 +79,123 @@ const TeacherStatistics = () => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const chartData =
-        range === "weekly"
-            ? weeklyData
-            : range === "monthly"
-                ? monthlyData
-                : yearlyData;
+    /* ===== FETCH DATA FROM BACKEND ===== */
+    useEffect(() => {
+        const fetchStatistics = async () => {
+            try {
+                setLoading(true);
+                const token = getToken();
+                if (!token) {
+                    setError(true);
+                    return;
+                }
+
+                const res = await fetch(
+                    `${BACKEND_URL}/api/teacher/dashboard/statistics-overview?range=${range}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const responseData = await res.json();
+
+                if (!res.ok || !responseData.success) {
+                    setError(true);
+                    return;
+                }
+
+                if (responseData.data && responseData.data.length > 0) {
+                    setChartData(responseData.data);
+                }
+                if (responseData.summary) {
+                    setSummary(responseData.summary);
+                }
+            } catch (err) {
+                console.error("Statistics overview fetch error:", err);
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStatistics();
+    }, [range]);
+
+    const getDefaultData = () => {
+        switch (range) {
+            case "yearly":
+                return defaultYearlyData;
+            case "monthly":
+                return defaultMonthlyData;
+            default:
+                return defaultWeeklyData;
+        }
+    };
+
+    const displayData = chartData.length > 0 ? chartData : getDefaultData();
 
     // Calculate summary stats
-    const totalStudents = chartData.reduce((sum, item) => sum + item.students, 0);
-    const totalRevenue = chartData.reduce((sum, item) => sum + item.revenue, 0);
-    const avgStudents = Math.round(totalStudents / chartData.length);
-    const avgRevenue = Math.round(totalRevenue / chartData.length);
+    const totalStudents = summary.totalStudents || displayData.reduce((sum, item) => sum + (item.students || 0), 0);
+    const totalRevenue = summary.totalRevenue || displayData.reduce((sum, item) => sum + (item.revenue || 0), 0);
+    const avgStudents = summary.avgStudents || Math.round(totalStudents / displayData.length);
+    const avgRevenue = summary.avgRevenue || Math.round(totalRevenue / displayData.length);
+
+    /* ===== LOADING STATE ===== */
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow w-full"
+            >
+                {/* HEADER */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
+                    <div className="h-6 w-40 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* SUMMARY CARDS LOADING */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-5">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-gray-100 rounded-lg p-3 animate-pulse">
+                            <div className="h-3 w-16 bg-gray-200 rounded mb-2"></div>
+                            <div className="h-5 w-20 bg-gray-200 rounded"></div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* CHART LOADING */}
+                <div className="w-full h-52 sm:h-64 md:h-72 lg:h-80 -ml-2 sm:-ml-4">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                        <div className="animate-pulse flex flex-col items-center">
+                            <div className="h-8 w-8 bg-gray-200 rounded-full mb-2"></div>
+                            <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
+    /* ===== ERROR STATE ===== */
+    if (error) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow w-full"
+            >
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
+                    Failed to load statistics. Please try again later.
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -165,7 +260,7 @@ const TeacherStatistics = () => {
             <div className="w-full h-52 sm:h-64 md:h-72 lg:h-80 -ml-2 sm:-ml-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                        data={chartData}
+                        data={displayData}
                         margin={{
                             top: 10,
                             right: isMobile ? 5 : 10,
@@ -241,3 +336,4 @@ const TeacherStatistics = () => {
 };
 
 export default TeacherStatistics;
+

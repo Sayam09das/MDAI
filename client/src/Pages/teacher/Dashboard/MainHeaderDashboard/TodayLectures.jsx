@@ -1,85 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MoreHorizontal, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-/* ===== LECTURE DATA ===== */
-const lecturesData = [
-    {
-        id: 1,
-        class: "5B - Mathematics",
-        time: "8:30 am - 9:10 am",
-        chapter: "Shapes and Angles",
-        color: "border-emerald-400",
-    },
-    {
-        id: 2,
-        class: "6A - Civics",
-        time: "9:10 am - 9:50 am",
-        chapter: "Understanding Diversity",
-        color: "border-yellow-400",
-    },
-    {
-        id: 3,
-        class: "7C - Mathematics",
-        time: "11:10 am - 11:50 am",
-        chapter: "Integers",
-        color: "border-sky-400",
-    },
-    {
-        id: 4,
-        class: "8A - Science",
-        time: "12:00 pm - 12:40 pm",
-        chapter: "Chemical Reactions",
-        color: "border-violet-400",
-    },
-    {
-        id: 5,
-        class: "9B - Physics",
-        time: "1:00 pm - 1:40 pm",
-        chapter: "Motion",
-        color: "border-rose-400",
-    },
-    {
-        id: 6,
-        class: "10A - Biology",
-        time: "2:00 pm - 2:40 pm",
-        chapter: "Life Processes",
-        color: "border-amber-400",
-    },
-    {
-        id: 7,
-        class: "6C - Geography",
-        time: "3:00 pm - 3:40 pm",
-        chapter: "Resources",
-        color: "border-teal-400",
-    },
-    {
-        id: 8,
-        class: "7A - English",
-        time: "4:00 pm - 4:40 pm",
-        chapter: "Poetry",
-        color: "border-indigo-400",
-    },
-    {
-        id: 9,
-        class: "8C - History",
-        time: "5:00 pm - 5:40 pm",
-        chapter: "Colonial Rule",
-        color: "border-orange-400",
-    },
-    {
-        id: 10,
-        class: "9A - Chemistry",
-        time: "6:00 pm - 6:40 pm",
-        chapter: "Acids & Bases",
-        color: "border-pink-400",
-    },
-];
+/* ===== CONFIG ===== */
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const getToken = () => localStorage.getItem("token");
+
+
 
 const TodayLectures = () => {
     const navigate = useNavigate();
+    const [lectures, setLectures] = useState(defaultLectures);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [completed, setCompleted] = useState([]);
+
+    /* ===== FETCH DATA FROM BACKEND ===== */
+    useEffect(() => {
+        const fetchTodayLectures = async () => {
+            try {
+                setLoading(true);
+                const token = getToken();
+                if (!token) {
+                    setError(true);
+                    return;
+                }
+
+                const res = await fetch(
+                    `${BACKEND_URL}/api/teacher/dashboard/today-lectures`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const responseData = await res.json();
+
+                if (!res.ok || !responseData.success) {
+                    setError(true);
+                    return;
+                }
+
+                if (responseData.lectures && responseData.lectures.length > 0) {
+                    setLectures(responseData.lectures);
+                }
+            } catch (err) {
+                console.error("Today's lectures fetch error:", err);
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTodayLectures();
+    }, []);
 
     const toggleComplete = (id) => {
         setCompleted((prev) =>
@@ -88,6 +65,61 @@ const TodayLectures = () => {
                 : [...prev, id]
         );
     };
+
+    /* ===== LOADING STATE ===== */
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-2xl p-5 shadow-sm w-full h-full"
+            >
+                {/* HEADER */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* LIST LOADING */}
+                <div className="max-h-[450px] overflow-y-auto pr-2 custom-scroll space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div
+                            key={i}
+                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border-l-4 border-gray-200"
+                        >
+                            <div className="w-6 h-6 rounded-full border border-gray-300 bg-gray-200"></div>
+                            <div className="flex-1">
+                                <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+                                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+        );
+    }
+
+    /* ===== ERROR STATE ===== */
+    if (error) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-2xl p-5 shadow-sm w-full h-full"
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Today's Lectures
+                    </h3>
+                </div>
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
+                    Failed to load lectures. Please try again later.
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -99,7 +131,7 @@ const TodayLectures = () => {
             {/* HEADER */}
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                    Today’s Lectures
+                    Today's Lectures
                 </h3>
 
                 <button
@@ -112,7 +144,7 @@ const TodayLectures = () => {
 
             {/* SCROLLABLE FRAME */}
             <div className="max-h-[450px] overflow-y-auto pr-2 custom-scroll">
-                {lecturesData.map((lecture) => {
+                {lectures.map((lecture) => {
                     const isDone = completed.includes(lecture.id);
 
                     return (
@@ -120,7 +152,7 @@ const TodayLectures = () => {
                             key={lecture.id}
                             layout
                             whileHover={{ scale: 1.01 }}
-                            className={`flex items-center gap-4 mb-3 p-4 rounded-xl bg-gray-50 border-l-4 ${lecture.color}`}
+                            className={`flex items-center gap-4 mb-3 p-4 rounded-xl bg-gray-50 border-l-4 ${lecture.color || "border-gray-400"}`}
                         >
                             {/* CHECK */}
                             <button
@@ -184,3 +216,4 @@ const TodayLectures = () => {
 };
 
 export default TodayLectures;
+

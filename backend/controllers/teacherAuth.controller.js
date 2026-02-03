@@ -1196,3 +1196,565 @@ export const getStudentGenderStats = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch gender stats" });
   }
 };
+
+/* ======================================================
+   GET TEACHER PERFORMANCE METRICS (For Performance.jsx)
+====================================================== */
+export const getTeacherPerformanceMetrics = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        data: [
+          { name: "Lagging", value: 0, color: "#f97316" },
+          { name: "On Track", value: 0, color: "#3b82f6" },
+          { name: "Completed", value: 0, color: "#22c55e" },
+          { name: "Ahead", value: 0, color: "#a855f7" },
+        ],
+        highest: { name: "None", value: 0 },
+      });
+    }
+
+    // 2. Get all attendance records for teacher's courses
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const attendanceRecords = await Attendance.find({
+      course: { $in: courseIds },
+      teacher: teacherId,
+      date: { $gte: startOfMonth, $lte: now },
+    });
+
+    // 3. Get all unique students
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    }).populate("student", "_id");
+
+    const uniqueStudents = new Set(
+      enrollments.map((e) => e.student._id.toString())
+    );
+    const totalStudents = uniqueStudents.size;
+
+    if (totalStudents === 0) {
+      return res.json({
+        success: true,
+        data: [
+          { name: "Lagging", value: 0, color: "#f97316" },
+          { name: "On Track", value: 0, color: "#3b82f6" },
+          { name: "Completed", value: 0, color: "#22c55e" },
+          { name: "Ahead", value: 0, color: "#a855f7" },
+        ],
+        highest: { name: "None", value: 0 },
+      });
+    }
+
+    // 4. Calculate student performance based on attendance
+    const studentAttendanceMap = new Map();
+
+    // Initialize all students with 0 attendance
+    uniqueStudents.forEach((studentId) => {
+      studentAttendanceMap.set(studentId, { present: 0, total: 0 });
+    });
+
+    // Count attendance for each student
+    attendanceRecords.forEach((record) => {
+      record.records.forEach((r) => {
+        const studentId = r.student.toString();
+        if (studentAttendanceMap.has(studentId)) {
+          const studentData = studentAttendanceMap.get(studentId);
+          studentData.total++;
+          if (r.status === "PRESENT" || r.status === "LATE") {
+            studentData.present++;
+          }
+        }
+      });
+    });
+
+    // 5. Categorize students
+    let lagging = 0; // < 50%
+    let onTrack = 0; // 50-74%
+    let completed = 0; // 75-89%
+    let ahead = 0; // 90-100%
+
+    studentAttendanceMap.forEach((data) => {
+      if (data.total === 0) {
+        onTrack++; // Default to on track if no attendance yet
+      } else {
+        const attendanceRate = (data.present / data.total) * 100;
+        if (attendanceRate < 50) {
+          lagging++;
+        } else if (attendanceRate < 75) {
+          onTrack++;
+        } else if (attendanceRate < 90) {
+          completed++;
+        } else {
+          ahead++;
+        }
+      }
+    });
+
+    const performanceData = [
+      { name: "Lagging", value: lagging, color: "#f97316" },
+      { name: "On Track", value: onTrack, color: "#3b82f6" },
+      { name: "Completed", value: completed, color: "#22c55e" },
+      { name: "Ahead", value: ahead, color: "#a855f7" },
+    ];
+
+    // Find highest category
+    const highest = performanceData.reduce((max, item) =>
+      item.value > max.value ? item : max
+    );
+
+    res.json({
+      success: true,
+      data: performanceData,
+      highest: { name: highest.name, value: highest.value },
+      summary: {
+        totalStudents,
+        averageAttendance: calculateAverageAttendance(attendanceRecords),
+      },
+    });
+  } catch (error) {
+    console.error("Get Teacher Performance Metrics Error:", error);
+    res.status(500).json({ message: "Failed to fetch performance metrics" });
+  }
+};
+
+/* ======================================================
+   GET TEACHER TODAY'S LECTURES (For TodayLectures.jsx)
+====================================================== */
+export const getTeacherTodayLectures = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { date } = req.query;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id title");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        lectures: [],
+        message: "No courses found for this teacher",
+      });
+    }
+
+    // 2. Parse the date (default to today)
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000);
+
+    // 3. Get all lessons scheduled for today across all teacher's courses
+    const lessons = await Lesson.find({
+      course: { $in: courseIds },
+      scheduledAt: { $gte: targetDate, $lt: nextDay },
+    })
+      .populate("course", "title")
+      .sort({ scheduledAt: 1 });
+
+    // 4. Format the response
+    const lectures = lessons.map((lesson, index) => {
+      const scheduledTime = new Date(lesson.scheduledAt);
+      const endTime = new Date(scheduledTime.getTime() + (lesson.duration || 45) * 60000);
+
+      // Assign colors based on index
+      const colors = [
+        "border-emerald-400",
+        "border-yellow-400",
+        "border-sky-400",
+        "border-violet-400",
+        "border-rose-400",
+        "border-amber-400",
+        "border-teal-400",
+        "border-indigo-400",
+        "border-orange-400",
+        "border-pink-400",
+      ];
+
+      return {
+        id: lesson._id,
+        class: lesson.course?.title || "Unknown Course",
+        time: `${scheduledTime.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })} - ${endTime.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })}`,
+        chapter: lesson.title || "Chapter",
+        color: colors[index % colors.length],
+        isLive: lesson.isLive || false,
+        status: lesson.status || "scheduled",
+      };
+    });
+
+    res.json({
+      success: true,
+      lectures,
+      date: targetDate,
+      totalLectures: lectures.length,
+    });
+  } catch (error) {
+    console.error("Get Teacher Today Lectures Error:", error);
+    res.status(500).json({ message: "Failed to fetch today's lectures" });
+  }
+};
+
+/* ======================================================
+   GET TEACHER STATISTICS OVERVIEW (For TeacherStatistics.jsx)
+====================================================== */
+export const getTeacherStatisticsOverview = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { range = "weekly" } = req.query;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id price");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        data: getEmptyStatsData(range),
+        summary: {
+          totalStudents: 0,
+          totalRevenue: 0,
+          avgStudents: 0,
+          avgRevenue: 0,
+        },
+      });
+    }
+
+    // 2. Calculate date ranges
+    const now = new Date();
+    let startDate;
+    let groupBy;
+
+    switch (range) {
+      case "yearly":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        groupBy = "month";
+        break;
+      case "monthly":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1); // Last 3 months
+        groupBy = "week";
+        break;
+      default: // weekly
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        groupBy = "day";
+    }
+
+    // 3. Get enrollments within date range
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+      createdAt: { $gte: startDate, $lte: now },
+    });
+
+    // 4. Group data by time period
+    const dataByPeriod = new Map();
+
+    enrollments.forEach((enrollment) => {
+      const date = new Date(enrollment.createdAt);
+      let key;
+
+      switch (groupBy) {
+        case "month":
+          key = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+            date.getMonth()
+          ];
+          break;
+        case "week":
+          const weeksAgo = Math.floor(
+            (now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000)
+          );
+          const weekNum = Math.max(1, 4 - weeksAgo);
+          key = `Week ${weekNum}`;
+          break;
+        default:
+          const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          key = days[date.getDay()];
+      }
+
+      if (!dataByPeriod.has(key)) {
+        dataByPeriod.set(key, { students: 0, revenue: 0 });
+      }
+
+      const course = courses.find((c) => c._id.toString() === enrollment.course.toString());
+      const entry = dataByPeriod.get(key);
+      entry.students++;
+      entry.revenue += course?.price || 0;
+    });
+
+    // 5. Get all-time students (for summary)
+    const allTimeEnrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    });
+    const uniqueStudents = new Set(
+      allTimeEnrollments.map((e) => e.student.toString())
+    );
+
+    // 6. Calculate total revenue
+    const totalRevenue = allTimeEnrollments.reduce((sum, enrollment) => {
+      const course = courses.find((c) => c._id.toString() === enrollment.course.toString());
+      return sum + (course?.price || 0);
+    }, 0);
+
+    // 7. Format response data
+    const data = formatStatsData(range, dataByPeriod);
+
+    // 8. Calculate summary stats
+    const totalStudents = uniqueStudents.size;
+    const avgStudents = data.length > 0
+      ? Math.round(data.reduce((sum, item) => sum + item.students, 0) / data.length)
+      : 0;
+    const avgRevenue = data.length > 0
+      ? Math.round(data.reduce((sum, item) => sum + item.revenue, 0) / data.length)
+      : 0;
+
+    res.json({
+      success: true,
+      data,
+      summary: {
+        totalStudents,
+        totalRevenue,
+        avgStudents,
+        avgRevenue,
+      },
+    });
+  } catch (error) {
+    console.error("Get Teacher Statistics Overview Error:", error);
+    res.status(500).json({ message: "Failed to fetch statistics overview" });
+  }
+};
+
+/* ======================================================
+   GET STUDENT PERFORMANCE TRENDS (For StudentPerformanceGraph.jsx)
+====================================================== */
+export const getStudentPerformanceTrends = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { range = "yearly" } = req.query;
+
+    // 1. Get all courses taught by this teacher
+    const courses = await Course.find({ instructor: teacherId }).select("_id");
+    const courseIds = courses.map((course) => course._id);
+
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        data: getEmptyPerformanceTrends(range),
+        summary: {
+          average: 0,
+          highest: 0,
+          lowest: 0,
+          trend: 0,
+          trendDirection: "up",
+        },
+      });
+    }
+
+    // 2. Calculate date ranges
+    const now = new Date();
+    let startDate;
+    let groupBy;
+
+    switch (range) {
+      case "monthly":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1); // Last 12 months
+        groupBy = "month";
+        break;
+      default: // yearly (default)
+        startDate = new Date(now.getFullYear() - 1, 0, 1); // Last 2 years
+        groupBy = "month";
+    }
+
+    // 3. Get attendance records within date range
+    const attendanceRecords = await Attendance.find({
+      course: { $in: courseIds },
+      teacher: teacherId,
+      date: { $gte: startDate, $lte: now },
+    }).sort({ date: 1 });
+
+    // 4. Calculate average attendance percentage per month
+    const monthlyData = new Map();
+
+    // Get unique students count
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      paymentStatus: "PAID",
+    });
+    const totalStudents = enrollments.length;
+
+    // Initialize monthly data
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    const startMonth = startDate.getMonth();
+    const startYear = startDate.getFullYear();
+    const totalMonths = range === "monthly" ? 12 : 24;
+
+    for (let i = 0; i < totalMonths; i++) {
+      const monthIndex = (startMonth + i) % 12;
+      const year = startYear + Math.floor((startMonth + i) / 12);
+      const key = `${months[monthIndex]} ${year}`;
+      monthlyData.set(key, { totalPresent: 0, totalDays: 0, count: 0 });
+    }
+
+    // Calculate attendance for each record
+    attendanceRecords.forEach((record) => {
+      const recordDate = new Date(record.date);
+      const monthIndex = recordDate.getMonth();
+      const year = recordDate.getFullYear();
+      const key = `${months[monthIndex]} ${year}`;
+
+      if (monthlyData.has(key)) {
+        const present = record.records.filter(
+          (r) => r.status === "PRESENT" || r.status === "LATE"
+        ).length;
+        const entry = monthlyData.get(key);
+        entry.totalPresent += present;
+        entry.totalDays += record.records.length;
+        entry.count++;
+      }
+    });
+
+    // 5. Format data and calculate percentages
+    const data = Array.from(monthlyData.entries()).map(([key, value]) => {
+      const avgRate = value.totalDays > 0
+        ? Math.round((value.totalPresent / value.totalDays) * 100)
+        : 0;
+      return {
+        month: key.split(" ")[0], // Just the month name for display
+        year: key.split(" ")[1], // The year
+        value: avgRate,
+      };
+    });
+
+    // Filter to only include months up to now
+    const filteredData = data.filter((item) => {
+      const itemDate = new Date(`${item.month} 1, ${item.year}`);
+      return itemDate <= now;
+    });
+
+    // 6. Calculate summary stats
+    const validValues = filteredData.map((d) => d.value).filter((v) => v > 0);
+    const average = validValues.length > 0
+      ? Math.round(validValues.reduce((a, b) => a + b, 0) / validValues.length)
+      : 0;
+    const highest = validValues.length > 0 ? Math.max(...validValues) : 0;
+    const lowest = validValues.length > 0 ? Math.min(...validValues) : 0;
+
+    // Calculate trend (last month vs previous month)
+    const lastMonth = filteredData.length > 0 ? filteredData[filteredData.length - 1]?.value || 0 : 0;
+    const prevMonth = filteredData.length > 1 ? filteredData[filteredData.length - 2]?.value || 0 : 0;
+    const trend = lastMonth - prevMonth;
+    const trendDirection = trend >= 0 ? "up" : "down";
+
+    res.json({
+      success: true,
+      data: filteredData.map((d) => ({ month: d.month, value: d.value })),
+      summary: {
+        average,
+        highest,
+        lowest,
+        trend: Math.abs(trend),
+        trendDirection,
+      },
+    });
+  } catch (error) {
+    console.error("Get Student Performance Trends Error:", error);
+    res.status(500).json({ message: "Failed to fetch performance trends" });
+  }
+};
+
+/* ======================================================
+   HELPER FUNCTIONS
+====================================================== */
+function getEmptyStatsData(range) {
+  switch (range) {
+    case "yearly":
+      return [
+        { name: "Jan", students: 0, revenue: 0 },
+        { name: "Feb", students: 0, revenue: 0 },
+        { name: "Mar", students: 0, revenue: 0 },
+        { name: "Apr", students: 0, revenue: 0 },
+        { name: "May", students: 0, revenue: 0 },
+        { name: "Jun", students: 0, revenue: 0 },
+      ];
+    case "monthly":
+      return [
+        { name: "Week 1", students: 0, revenue: 0 },
+        { name: "Week 2", students: 0, revenue: 0 },
+        { name: "Week 3", students: 0, revenue: 0 },
+        { name: "Week 4", students: 0, revenue: 0 },
+      ];
+    default:
+      return [
+        { name: "Mon", students: 0, revenue: 0 },
+        { name: "Tue", students: 0, revenue: 0 },
+        { name: "Wed", students: 0, revenue: 0 },
+        { name: "Thu", students: 0, revenue: 0 },
+        { name: "Fri", students: 0, revenue: 0 },
+        { name: "Sat", students: 0, revenue: 0 },
+      ];
+  }
+}
+
+function formatStatsData(range, dataByPeriod) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  switch (range) {
+    case "yearly":
+      return months.slice(0, 6).map((month) => ({
+        name: month,
+        students: dataByPeriod.get(month)?.students || 0,
+        revenue: dataByPeriod.get(month)?.revenue || 0,
+      }));
+    case "monthly":
+      return ["Week 1", "Week 2", "Week 3", "Week 4"].map((week) => ({
+        name: week,
+        students: dataByPeriod.get(week)?.students || 0,
+        revenue: dataByPeriod.get(week)?.revenue || 0,
+      }));
+    default:
+      return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => ({
+        name: day,
+        students: dataByPeriod.get(day)?.students || 0,
+        revenue: dataByPeriod.get(day)?.revenue || 0,
+      }));
+  }
+}
+
+function getEmptyPerformanceTrends(range) {
+  if (range === "monthly") {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months.map((month) => ({ month, value: 0 }));
+  }
+  return [
+    { month: "Jan", value: 0 },
+    { month: "Feb", value: 0 },
+    { month: "Mar", value: 0 },
+    { month: "Apr", value: 0 },
+    { month: "May", value: 0 },
+    { month: "Jun", value: 0 },
+    { month: "Jul", value: 0 },
+    { month: "Aug", value: 0 },
+    { month: "Sep", value: 0 },
+    { month: "Oct", value: 0 },
+    { month: "Nov", value: 0 },
+    { month: "Dec", value: 0 },
+  ];
+}

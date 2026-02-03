@@ -11,21 +11,11 @@ import {
 } from "recharts";
 import { MoreHorizontal, TrendingUp, TrendingDown } from "lucide-react";
 
-/* ===== DATA ===== */
-const data = [
-    { month: "Jan", value: 52 },
-    { month: "Feb", value: 32 },
-    { month: "Mar", value: 58 },
-    { month: "Apr", value: 36 },
-    { month: "May", value: 34 },
-    { month: "Jun", value: 29 },
-    { month: "Jul", value: 43 },
-    { month: "Aug", value: 14 },
-    { month: "Sep", value: 32 },
-    { month: "Oct", value: 35 },
-    { month: "Nov", value: 66 },
-    { month: "Dec", value: 72 },
-];
+/* ===== CONFIG ===== */
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const getToken = () => localStorage.getItem("token");
+
+
 
 /* ===== TOOLTIP ===== */
 const CustomTooltip = ({ active, payload, label }) => {
@@ -45,6 +35,17 @@ const CustomTooltip = ({ active, payload, label }) => {
 const StudentPerformanceGraph = () => {
     const [isMobile, setIsMobile] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [data, setData] = useState(defaultData);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [range, setRange] = useState("yearly");
+    const [summary, setSummary] = useState({
+        average: 0,
+        highest: 0,
+        lowest: 0,
+        trend: 0,
+        trendDirection: "up",
+    });
 
     useEffect(() => {
         const checkMobile = () => {
@@ -56,14 +57,114 @@ const StudentPerformanceGraph = () => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Calculate statistics
-    const average = Math.round(data.reduce((sum, item) => sum + item.value, 0) / data.length);
-    const highest = Math.max(...data.map(item => item.value));
-    const lowest = Math.min(...data.map(item => item.value));
-    const lastMonth = data[data.length - 1].value;
-    const previousMonth = data[data.length - 2].value;
-    const trend = lastMonth > previousMonth;
-    const trendValue = Math.abs(lastMonth - previousMonth);
+    /* ===== FETCH DATA FROM BACKEND ===== */
+    useEffect(() => {
+        const fetchPerformanceTrends = async () => {
+            try {
+                setLoading(true);
+                const token = getToken();
+                if (!token) {
+                    setError(true);
+                    return;
+                }
+
+                const res = await fetch(
+                    `${BACKEND_URL}/api/teacher/dashboard/student-performance-trends?range=${range}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const responseData = await res.json();
+
+                if (!res.ok || !responseData.success) {
+                    setError(true);
+                    return;
+                }
+
+                if (responseData.data && responseData.data.length > 0) {
+                    setData(responseData.data);
+                }
+                if (responseData.summary) {
+                    setSummary(responseData.summary);
+                }
+            } catch (err) {
+                console.error("Performance trends fetch error:", err);
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPerformanceTrends();
+    }, [range]);
+
+    // Calculate statistics from data
+    const displayData = data.length > 0 ? data : defaultData;
+    const average = summary.average || Math.round(displayData.reduce((sum, item) => sum + item.value, 0) / displayData.length);
+    const highest = summary.highest || Math.max(...displayData.map(item => item.value));
+    const lowest = summary.lowest || Math.min(...displayData.map(item => item.value));
+    const lastMonth = displayData[displayData.length - 1]?.value || 0;
+    const previousMonth = displayData.length > 1 ? displayData[displayData.length - 2]?.value || 0 : 0;
+    const trend = summary.trend || (lastMonth - previousMonth);
+    const trendDirection = summary.trend >= 0 ? "up" : "down";
+
+    /* ===== LOADING STATE ===== */
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow w-full"
+            >
+                {/* HEADER */}
+                <div className="flex items-start sm:items-center justify-between mb-4 sm:mb-5">
+                    <div className="h-6 w-40 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* STATS CARDS LOADING */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-gray-100 rounded-lg p-2 sm:p-3 animate-pulse">
+                            <div className="h-3 w-12 bg-gray-200 rounded mb-1"></div>
+                            <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* CHART LOADING */}
+                <div className="w-full h-48 sm:h-56 md:h-64 lg:h-72 -ml-2 sm:-ml-4">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                        <div className="animate-pulse flex flex-col items-center">
+                            <div className="h-8 w-8 bg-gray-200 rounded-full mb-2"></div>
+                            <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
+    /* ===== ERROR STATE ===== */
+    if (error) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow w-full"
+            >
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">
+                    Failed to load performance trends. Please try again later.
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -82,15 +183,15 @@ const StudentPerformanceGraph = () => {
                         <p className="text-xs sm:text-sm text-gray-500">
                             Yearly average: {average}%
                         </p>
-                        {trend ? (
+                        {trend >= 0 ? (
                             <div className="flex items-center gap-1 text-green-600 text-xs">
                                 <TrendingUp className="w-3 h-3" />
-                                <span>+{trendValue}%</span>
+                                <span>+{trend}%</span>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 text-red-600 text-xs">
                                 <TrendingDown className="w-3 h-3" />
-                                <span>-{trendValue}%</span>
+                                <span>-{Math.abs(trend)}%</span>
                             </div>
                         )}
                     </div>
@@ -107,14 +208,17 @@ const StudentPerformanceGraph = () => {
 
                     {showMenu && (
                         <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 z-10">
-                            <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-gray-700">
-                                Export Data
+                            <button 
+                                onClick={() => { setRange("monthly"); setShowMenu(false); }}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-gray-700"
+                            >
+                                Monthly View
                             </button>
-                            <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-gray-700">
-                                View Details
-                            </button>
-                            <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-gray-700">
-                                Settings
+                            <button 
+                                onClick={() => { setRange("yearly"); setShowMenu(false); }}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 text-gray-700"
+                            >
+                                Yearly View
                             </button>
                         </div>
                     )}
@@ -147,7 +251,7 @@ const StudentPerformanceGraph = () => {
             <div className="w-full h-48 sm:h-56 md:h-64 lg:h-72 -ml-2 sm:-ml-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                        data={data}
+                        data={displayData}
                         margin={{
                             top: 10,
                             right: isMobile ? 5 : 10,
@@ -227,20 +331,20 @@ const StudentPerformanceGraph = () => {
             {/* INSIGHT BADGE */}
             <div className="mt-4 flex items-center justify-center">
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium
-                    ${trend
+                    ${trend >= 0
                         ? 'bg-green-50 text-green-700 border border-green-200'
                         : 'bg-red-50 text-red-700 border border-red-200'
                     }`}
                 >
-                    {trend ? (
+                    {trend >= 0 ? (
                         <>
                             <TrendingUp className="w-3.5 h-3.5" />
-                            <span>Performance improving by {trendValue}% this month</span>
+                            <span>Performance improving by {trend}% this month</span>
                         </>
                     ) : (
                         <>
                             <TrendingDown className="w-3.5 h-3.5" />
-                            <span>Performance decreased by {trendValue}% this month</span>
+                            <span>Performance decreased by {Math.abs(trend)}% this month</span>
                         </>
                     )}
                 </div>
@@ -250,3 +354,4 @@ const StudentPerformanceGraph = () => {
 };
 
 export default StudentPerformanceGraph;
+
