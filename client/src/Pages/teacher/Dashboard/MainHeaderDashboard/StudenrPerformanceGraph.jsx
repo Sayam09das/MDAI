@@ -31,8 +31,6 @@ const defaultData = [
     { month: "Dec", value: 90 },
 ];
 
-
-
 /* ===== TOOLTIP ===== */
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
