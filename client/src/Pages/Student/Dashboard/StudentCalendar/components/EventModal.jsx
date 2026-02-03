@@ -25,8 +25,16 @@ const RECURRENCE_OPTIONS = [
   { value: 'yearly', label: 'Yearly' },
 ];
 
-const EventModal = ({ isOpen, onClose, initialDate }) => {
-  const { addEvent, updateEvent, deleteEvent, editingEvent, selectedDate } = useCalendar();
+const EventModal = () => {
+  const { 
+    addEvent, 
+    updateEvent, 
+    deleteEvent, 
+    editingEvent, 
+    selectedDate, 
+    isEventModalOpen, 
+    closeEventModal 
+  } = useCalendar();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -59,18 +67,18 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
         recurrence: editingEvent.recurrence || 'none',
         allDay: editingEvent.allDay ?? false,
       });
-    } else if (initialDate || selectedDate) {
-      const date = initialDate || selectedDate;
+    } else if (selectedDate) {
+      const date = selectedDate;
       setFormData((prev) => ({
         ...prev,
         date: date.toISOString().split('T')[0],
       }));
     }
-  }, [editingEvent, initialDate, selectedDate]);
+  }, [editingEvent, selectedDate]);
 
   // Reset form when modal opens without editing event
   useEffect(() => {
-    if (!editingEvent && isOpen) {
+    if (!editingEvent && isEventModalOpen) {
       setFormData({
         title: '',
         description: '',
@@ -85,7 +93,7 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
       });
       setErrors({});
     }
-  }, [editingEvent, isOpen, selectedDate]);
+  }, [editingEvent, isEventModalOpen, selectedDate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -137,7 +145,7 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
       addEvent(eventData);
     }
     
-    onClose();
+    closeEventModal();
   };
 
   const handleDelete = () => {
@@ -146,7 +154,7 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
       setTimeout(() => {
         deleteEvent(editingEvent.id);
         setIsDeleting(false);
-        onClose();
+        closeEventModal();
       }, 500);
     }
   };
@@ -157,14 +165,14 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isEventModalOpen && (
         <>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={closeEventModal}
             className="fixed inset-0 bg-black/50 z-50"
           />
 
@@ -192,7 +200,7 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
                 </div>
               </div>
               <button
-                onClick={onClose}
+                onClick={closeEventModal}
                 className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               >
                 <X className="w-5 h-5 text-gray-600" />
@@ -417,7 +425,7 @@ const EventModal = ({ isOpen, onClose, initialDate }) => {
               
               <div className="flex items-center gap-3">
                 <button
-                  onClick={onClose}
+                  onClick={closeEventModal}
                   className="px-5 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors font-medium text-gray-700"
                 >
                   Cancel

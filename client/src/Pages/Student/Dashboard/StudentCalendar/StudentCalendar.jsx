@@ -147,7 +147,7 @@ const StudentCalendar = () => {
       <NotificationToast />
 
       {/* Event Modal */}
-      <EventModal isOpen={true} onClose={() => {}} />
+      <EventModal />
 
       {/* Main Content */}
       <div className="p-4 lg:p-6 space-y-4">
