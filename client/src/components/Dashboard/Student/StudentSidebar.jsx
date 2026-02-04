@@ -29,7 +29,6 @@ const mainMenu = [
 const extraMenu = [
   { icon: ClipboardCheck, label: "Attendance", path: "/student-dashboard/attendance" },
   { icon: Calendar, label: "Calendar", path: "/student-dashboard/calendar" },
-  { icon: Library, label: "Library", path: "/student-dashboard/library" },
   { icon: MessageSquare, label: "Messages", path: "/student-dashboard/messages" },
   { icon: Wallet, label: "Finance", path: "/student-dashboard/finance" },
   { icon: CreditCard, label: "Payments", path: "/student-dashboard/student-payments" },
