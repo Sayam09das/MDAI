@@ -30,15 +30,25 @@ const fetchAPI = async (endpoint, options = {}) => {
       headers,
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.message || "API request failed");
+      if (response.status === 401) {
+        // Clear invalid token and redirect to login
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return [];
+      }
+      const errorData = await response.json().catch(() => ({ message: "Request failed" }));
+      throw new Error(errorData.message || "API request failed");
     }
 
+    const data = await response.json();
     return data;
   } catch (error) {
     console.error("API Error:", error.message);
+    // Return empty array for resource endpoints to prevent map errors
+    if (endpoint.includes('/api/resource')) {
+      return [];
+    }
     throw error;
   }
 };

@@ -26,12 +26,38 @@ const StudentResources = () => {
 
   const fetchResources = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/resource`);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        setResources([]);
+        setFilteredResources([]);
+        return;
+      }
+
+      const res = await fetch(`${BACKEND_URL}/api/resource`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setResources(data || []);
-      setFilteredResources(data || []);
+      const resourcesArray = Array.isArray(data) ? data : [];
+      setResources(resourcesArray);
+      setFilteredResources(resourcesArray);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to fetch resources:", error);
+      setResources([]);
+      setFilteredResources([]);
     } finally {
       setLoading(false);
     }
