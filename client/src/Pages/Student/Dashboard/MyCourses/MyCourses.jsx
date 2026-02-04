@@ -92,7 +92,8 @@ export default function MyCourses() {
       
       results.forEach((result) => {
         if (result) {
-          progressMap[result.courseId] = result.progress;
+          // Extract only the percentage value from the progress object
+          progressMap[result.courseId] = result.progress?.percentage || 0;
         }
       });
 
