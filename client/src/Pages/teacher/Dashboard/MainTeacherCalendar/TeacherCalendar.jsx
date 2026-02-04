@@ -1,539 +1,572 @@
-import React, { useState } from "react"
-import { motion } from "framer-motion"
-import { ToastContainer, toast } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
-import {
-    Calendar,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    Video,
-    BookOpen,
-    Users,
-    ArrowLeft,
-    Plus,
-    X,
-    MapPin,
-    Eye,
-} from "lucide-react"
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Calendar from 'react-calendar';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Bell, 
+  Calendar as CalendarIcon,
+  List,
+  Grid,
+  Settings,
+  Globe,
+  Clock,
+  BookOpen,
+  Users,
+  Video,
+  Briefcase
+} from 'lucide-react';
+import { useCalendar } from '../../../context/CalendarContext';
+import { getHolidaysForMonth, isHoliday, getHolidayColor, COUNTRIES } from '../../../utils/holidays';
+import { formatDate, isToday, isSameDay } from '../../../utils/dateUtils';
+import EventModal from '../../Student/Dashboard/StudentCalendar/components/EventModal';
+import EventList from '../../Student/Dashboard/StudentCalendar/components/EventList';
+import HolidayList from '../../Student/Dashboard/StudentCalendar/components/HolidayList';
+import TaskList from '../../Student/Dashboard/StudentCalendar/components/TaskList';
+import NotificationToast from '../../Student/Dashboard/StudentCalendar/components/NotificationToast';
+import 'react-calendar/dist/Calendar.css';
 
 const TeacherCalendar = () => {
-    const [currentDate, setCurrentDate] = useState(new Date())
-    const [selectedDate, setSelectedDate] = useState(null)
-    const [showEventModal, setShowEventModal] = useState(false)
-    const [selectedEvent, setSelectedEvent] = useState(null)
+  const {
+    selectedDate,
+    setSelectedDate,
+    currentDate,
+    setCurrentDate,
+    selectedCountry,
+    events,
+    getEventsForDate,
+    openNewEventModal,
+    openEditModal,
+    deleteEvent,
+    toggleEventCompletion,
+    notificationPermission,
+    requestPerm,
+    getUpcomingEvents,
+    getPendingTasks,
+    loading,
+  } = useCalendar();
 
-    const events = [
-        {
-            id: 1,
-            title: "React Hooks Masterclass",
-            date: "2025-01-05",
-            startTime: "10:00",
-            endTime: "11:30",
-            type: "live",
-            course: "Full Stack Development",
-            students: 45,
-            location: "Google Meet",
-            color: "blue",
-        },
-        {
-            id: 2,
-            title: "JavaScript Advanced",
-            date: "2025-01-06",
-            startTime: "14:00",
-            endTime: "15:30",
-            type: "live",
-            course: "Web Development",
-            students: 32,
-            location: "Zoom",
-            color: "green",
-        },
-        {
-            id: 3,
-            title: "CSS Grid Workshop",
-            date: "2025-01-08",
-            startTime: "09:00",
-            endTime: "10:30",
-            type: "workshop",
-            course: "Frontend Design",
-            students: 28,
-            location: "Room 101",
-            color: "purple",
-        },
-        {
-            id: 4,
-            title: "Project Review",
-            date: "2025-01-10",
-            startTime: "15:00",
-            endTime: "17:00",
-            type: "review",
-            course: "Full Stack Development",
-            students: 20,
-            location: "Online",
-            color: "orange",
-        },
-        {
-            id: 5,
-            title: "Node.js Fundamentals",
-            date: "2025-01-12",
-            startTime: "11:00",
-            endTime: "12:30",
-            type: "live",
-            course: "Backend Development",
-            students: 38,
-            location: "Google Meet",
-            color: "blue",
-        },
-        {
-            id: 6,
-            title: "Database Design",
-            date: "2025-01-15",
-            startTime: "13:00",
-            endTime: "14:30",
-            type: "lecture",
-            course: "Backend Development",
-            students: 35,
-            location: "Room 202",
-            color: "red",
-        },
-        {
-            id: 7,
-            title: "Team Standup",
-            date: "2025-01-05",
-            startTime: "09:00",
-            endTime: "09:30",
-            type: "meeting",
-            course: "Staff",
-            students: 8,
-            location: "Conference Room",
-            color: "gray",
-        },
-    ]
+  const [view, setView] = useState('month'); // 'month', 'list'
+  const [showSidebar, setShowSidebar] = useState(true);
 
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear()
-        const month = date.getMonth()
-        const firstDay = new Date(year, month, 1)
-        const lastDay = new Date(year, month + 1, 0)
-        const daysInMonth = lastDay.getDate()
-        const startingDayOfWeek = firstDay.getDay()
-        return { daysInMonth, startingDayOfWeek, year, month }
+  const selectedDateEvents = getEventsForDate(selectedDate);
+  
+  // Safe array access
+  const upcomingEvents = Array.isArray(getUpcomingEvents(5)) ? getUpcomingEvents(5) : [];
+  const pendingTasks = Array.isArray(getPendingTasks(5)) ? getPendingTasks(5) : [];
+
+  const holidays = useMemo(() => {
+    return getHolidaysForMonth(
+      selectedCountry,
+      currentDate.getFullYear(),
+      currentDate.getMonth()
+    );
+  }, [selectedCountry, currentDate]);
+
+  const navigateMonth = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + direction);
+      return newDate;
+    });
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(today);
+  };
+
+  const handleDateClick = (date) => {
+    setSelectedDate(date);
+  };
+
+  const tileClassName = ({ date }) => {
+    const classes = ['cal-day'];
+    
+    if (isToday(date)) {
+      classes.push('cal-today');
     }
-
-    const changeMonth = (direction) => {
-        const newDate = new Date(currentDate)
-        newDate.setMonth(newDate.getMonth() + direction)
-        setCurrentDate(newDate)
+    
+    if (isSameDay(date, selectedDate)) {
+      classes.push('cal-selected');
     }
-
-    const getEventsForDate = (date) => {
-        const dateStr = date.toISOString().split('T')[0]
-        return events.filter(e => e.date === dateStr)
+    
+    // Check for holidays
+    const holiday = isHoliday(date, selectedCountry);
+    if (holiday) {
+      classes.push('has-holiday');
     }
+    
+    return classes.join(' ');
+  };
 
-    const handleDateClick = (day) => {
-        const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-        setSelectedDate(clickedDate)
-        const dayEvents = getEventsForDate(clickedDate)
-        if (dayEvents.length > 0) {
-            toast.info(`📅 ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''} on this day`, {
-                position: "top-center",
-                autoClose: 2000,
-            })
-        }
-    }
-
-    const handleEventClick = (event) => {
-        setSelectedEvent(event)
-        setShowEventModal(true)
-    }
-
-    const getEventColor = (color) => {
-        const colors = {
-            blue: "bg-blue-500",
-            green: "bg-green-500",
-            purple: "bg-purple-500",
-            orange: "bg-orange-500",
-            red: "bg-red-500",
-            gray: "bg-gray-500",
-        }
-        return colors[color] || "bg-blue-500"
-    }
-
-    const getEventBgColor = (color) => {
-        const colors = {
-            blue: "bg-blue-50 border-blue-200",
-            green: "bg-green-50 border-green-200",
-            purple: "bg-purple-50 border-purple-200",
-            orange: "bg-orange-50 border-orange-200",
-            red: "bg-red-50 border-red-200",
-            gray: "bg-gray-50 border-gray-200",
-        }
-        return colors[color] || "bg-blue-50 border-blue-200"
-    }
-
-    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate)
-    const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const totalCells = Math.ceil((daysInMonth + startingDayOfWeek) / 7) * 7
-    const today = new Date().toDateString()
-
+  const tileContent = ({ date }) => {
+    const dayEvents = getEventsForDate(date);
+    const holiday = isHoliday(date, selectedCountry);
+    
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-            />
+      <div className="mt-1 flex flex-col gap-0.5 items-center">
+        {dayEvents.length > 0 && (
+          <div className="flex gap-0.5 justify-center">
+            {dayEvents.slice(0, 3).map((event, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full ${
+                  event.completed 
+                    ? 'bg-gray-400' 
+                    : event.type === 'exam' 
+                      ? 'bg-red-500' 
+                      : event.type === 'meeting'
+                        ? 'bg-green-500'
+                        : event.type === 'class'
+                          ? 'bg-purple-500'
+                          : 'bg-blue-500'
+                }`}
+              />
+            ))}
+            {dayEvents.length > 3 && (
+              <span className="text-[8px] text-gray-500">+{dayEvents.length - 3}</span>
+            )}
+          </div>
+        )}
+        {holiday && (
+          <div className={`w-1.5 h-1.5 rounded-full ${getHolidayColor(holiday.type).split(' ')[0].replace('bg-', 'bg-')}`} />
+        )}
+      </div>
+    );
+  };
 
-            {/* Header */}
-            <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="bg-white/90 backdrop-blur-lg shadow-lg sticky top-0 z-40 border-b border-purple-100"
-            >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <motion.button
-                                whileHover={{ scale: 1.1, x: -3 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => window.history.back()}
-                                className="p-2 hover:bg-purple-50 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft size={24} />
-                            </motion.button>
-                            <div className="min-w-0 flex-1">
-                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                    <Calendar className="text-indigo-600 flex-shrink-0" size={28} />
-                                    <span className="truncate">Calendar</span>
-                                </h1>
-                                <p className="text-xs sm:text-sm text-gray-600 mt-1 hidden sm:block">
-                                    Manage class schedules
-                                </p>
-                            </div>
-                        </div>
+  // Teacher-specific event type colors
+  const getEventTypeIcon = (type) => {
+    switch(type) {
+      case 'class':
+        return <BookOpen className="w-4 h-4" />;
+      case 'meeting':
+        return <Users className="w-4 h-4" />;
+      case 'live':
+        return <Video className="w-4 h-4" />;
+      default:
+        return <CalendarIcon className="w-4 h-4" />;
+    }
+  };
 
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => toast.info("📅 Add event coming soon!")}
-                            className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium shadow-lg whitespace-nowrap"
-                        >
-                            <Plus size={20} /> <span className="hidden sm:inline">Add</span>
-                        </motion.button>
-                    </div>
-                </div>
-            </motion.div>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-50"
+    >
+      {/* Toast Notifications */}
+      <NotificationToast />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-                {/* Calendar */}
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="bg-white rounded-xl lg:rounded-2xl shadow-lg p-4 sm:p-6 mb-6"
-                >
-                    <div className="flex items-center justify-between mb-6">
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => changeMonth(-1)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <ChevronLeft size={24} />
-                        </motion.button>
+      {/* Event Modal */}
+      <EventModal />
 
-                        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{monthName}</h2>
+      {/* Main Content */}
+      <div className="p-4 lg:p-6 space-y-4">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+              <CalendarIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Teacher Calendar</h1>
+              <p className="text-sm text-gray-500">
+                {formatDate(currentDate, 'long')}
+              </p>
+            </div>
+          </div>
 
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => changeMonth(1)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <ChevronRight size={24} />
-                        </motion.button>
-                    </div>
-
-                    {/* Weekdays */}
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
-                        {weekDays.map(day => (
-                            <div key={day} className="text-center font-semibold text-xs sm:text-sm text-gray-600 py-2">
-                                <span className="hidden sm:inline">{day}</span>
-                                <span className="sm:hidden">{day.charAt(0)}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                        {Array.from({ length: totalCells }, (_, index) => {
-                            const day = index - startingDayOfWeek + 1
-                            const isValidDay = day > 0 && day <= daysInMonth
-                            const date = isValidDay ? new Date(year, month, day) : null
-                            const isToday = date && date.toDateString() === today
-                            const isSelected = selectedDate && date && date.toDateString() === selectedDate.toDateString()
-                            const dayEvents = date ? getEventsForDate(date) : []
-
-                            return (
-                                <motion.div
-                                    key={index}
-                                    whileHover={isValidDay ? { scale: 1.05 } : {}}
-                                    whileTap={isValidDay ? { scale: 0.95 } : {}}
-                                    onClick={() => isValidDay && handleDateClick(day)}
-                                    className={`aspect-square border rounded-lg p-1 sm:p-2 cursor-pointer transition-all ${!isValidDay
-                                            ? 'bg-gray-50 cursor-default'
-                                            : isToday
-                                                ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white border-indigo-600'
-                                                : isSelected
-                                                    ? 'bg-indigo-100 border-indigo-400'
-                                                    : 'bg-white hover:bg-gray-50 border-gray-200'
-                                        }`}
-                                >
-                                    {isValidDay && (
-                                        <>
-                                            <div className={`text-xs sm:text-sm font-semibold mb-1 ${isToday ? 'text-white' : ''}`}>
-                                                {day}
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                {dayEvents.slice(0, 2).map(event => (
-                                                    <div
-                                                        key={event.id}
-                                                        className={`${getEventColor(event.color)} h-1 sm:h-1.5 rounded-full`}
-                                                    />
-                                                ))}
-                                                {dayEvents.length > 2 && (
-                                                    <div className={`text-xs ${isToday ? 'text-white' : 'text-gray-600'}`}>
-                                                        +{dayEvents.length - 2}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-                                </motion.div>
-                            )
-                        })}
-                    </div>
-
-                    {/* Today Button */}
-                    <div className="mt-4 flex justify-center">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                setCurrentDate(new Date())
-                                setSelectedDate(new Date())
-                            }}
-                            className="px-6 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
-                        >
-                            Today
-                        </motion.button>
-                    </div>
-                </motion.div>
-
-                {/* Events List */}
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-                        <BookOpen className="text-indigo-600" size={24} />
-                        {selectedDate
-                            ? `Events on ${selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`
-                            : 'Upcoming Events'
-                        }
-                    </h3>
-
-                    <div className="space-y-3 sm:space-y-4">
-                        {(selectedDate ? getEventsForDate(selectedDate) : events.slice(0, 5)).map((event, idx) => (
-                            <motion.div
-                                key={event.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                whileHover={{ scale: 1.02 }}
-                                onClick={() => handleEventClick(event)}
-                                className={`${getEventBgColor(event.color)} border-2 rounded-xl lg:rounded-2xl p-4 sm:p-6 cursor-pointer shadow-md hover:shadow-lg transition-all`}
-                            >
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                                    <div className={`${getEventColor(event.color)} w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-white flex-shrink-0`}>
-                                        <Video size={24} />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-base sm:text-lg mb-1">{event.title}</h4>
-                                        <p className="text-sm text-gray-600 mb-2">{event.course}</p>
-
-                                        <div className="flex flex-wrap gap-3 text-xs sm:text-sm text-gray-700">
-                                            <span className="flex items-center gap-1">
-                                                <Clock size={14} />
-                                                {event.startTime} - {event.endTime}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Users size={14} />
-                                                {event.students}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <MapPin size={14} />
-                                                {event.location}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex sm:flex-col gap-2">
-                                        <span className={`px-3 py-1 ${getEventBgColor(event.color)} border rounded-full text-xs font-semibold capitalize`}>
-                                            {event.type}
-                                        </span>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleEventClick(event)
-                                            }}
-                                            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                                        >
-                                            <Eye size={18} />
-                                        </motion.button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    {((selectedDate && getEventsForDate(selectedDate).length === 0) || (!selectedDate && events.length === 0)) && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-center py-16 bg-white rounded-2xl shadow-lg"
-                        >
-                            <Calendar size={64} className="mx-auto text-gray-400 mb-4" />
-                            <p className="text-xl font-semibold text-gray-600 mb-2">No events scheduled</p>
-                            <p className="text-gray-500">Add your first event to get started</p>
-                        </motion.div>
-                    )}
-                </motion.div>
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-xl p-1">
+              <button
+                onClick={() => setView('month')}
+                className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  view === 'month' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+                <span className="hidden sm:inline">Month</span>
+              </button>
+              <button
+                onClick={() => setView('list')}
+                className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  view === 'list' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
             </div>
 
-            {/* Event Modal */}
-            {showEventModal && selectedEvent && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setShowEventModal(false)}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                    />
-                    <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl"
-                        >
-                            <div className={`${getEventBgColor(selectedEvent.color)} border-b-2 p-6 rounded-t-2xl`}>
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`${getEventColor(selectedEvent.color)} w-16 h-16 rounded-xl flex items-center justify-center text-white`}>
-                                            <Video size={32} />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl sm:text-2xl font-bold mb-1">{selectedEvent.title}</h2>
-                                            <p className="text-gray-600">{selectedEvent.course}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setShowEventModal(false)}>
-                                        <X size={24} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                <div className="grid sm:grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                            <Calendar size={18} />
-                                            <span className="text-sm font-medium">Date</span>
-                                        </div>
-                                        <p className="font-bold">
-                                            {new Date(selectedEvent.date).toLocaleDateString('en-US', {
-                                                weekday: 'long',
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                            <Clock size={18} />
-                                            <span className="text-sm font-medium">Time</span>
-                                        </div>
-                                        <p className="font-bold">
-                                            {selectedEvent.startTime} - {selectedEvent.endTime}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                            <Users size={18} />
-                                            <span className="text-sm font-medium">Students</span>
-                                        </div>
-                                        <p className="font-bold">{selectedEvent.students} enrolled</p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                            <MapPin size={18} />
-                                            <span className="text-sm font-medium">Location</span>
-                                        </div>
-                                        <p className="font-bold">{selectedEvent.location}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => toast.success("🎥 Starting class...")}
-                                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium"
-                                    >
-                                        Start Class
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setShowEventModal(false)}
-                                        className="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium"
-                                    >
-                                        Close
-                                    </motion.button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                </>
-            )}
-
-            {/* Mobile FAB */}
-            <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => toast.info("📅 Add event coming soon!")}
-                className="fixed bottom-6 right-6 lg:hidden bg-gradient-to-r from-indigo-600 to-purple-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
+            {/* Sidebar Toggle */}
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className={`p-2 rounded-xl transition-all ${
+                showSidebar 
+                  ? 'bg-purple-100 text-purple-600' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
             >
-                <Plus size={28} />
-            </motion.button>
-        </div>
-    )
-}
+              <Settings className="w-5 h-5" />
+            </button>
 
-export default TeacherCalendar
+            {/* Add Event Button */}
+            <button
+              onClick={() => openNewEventModal(selectedDate)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/30"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Event</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar & Sidebar Layout */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Main Calendar Area */}
+          <motion.div
+            layout
+            className={`flex-1 ${showSidebar ? 'lg:w-2/3' : 'lg:w-full'}`}
+          >
+            {/* Calendar Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Calendar Navigation */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigateMonth(-1)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h2 className="text-lg font-semibold text-gray-900 min-w-[160px] text-center">
+                    {formatDate(currentDate, 'long').split(',')[0]} {currentDate.getFullYear()}
+                  </h2>
+                  <button
+                    onClick={() => navigateMonth(1)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={goToToday}
+                    className="px-3 py-1.5 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  >
+                    Today
+                  </button>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div className="p-4">
+                <Calendar
+                  onChange={handleDateClick}
+                  value={selectedDate}
+                  prevLabel={<ChevronLeft className="w-5 h-5" />}
+                  nextLabel={<ChevronRight className="w-5 h-5" />}
+                  prev2Label={null}
+                  next2Label={null}
+                  formatShortWeekday={(locale, d) =>
+                    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]
+                  }
+                  formatMonthYear={(locale, date) =>
+                    date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  }
+                  className="w-full"
+                  tileClassName={tileClassName}
+                  tileContent={tileContent}
+                  showNeighboringMonth={true}
+                />
+              </div>
+            </div>
+
+            {/* Selected Date Events (Mobile) */}
+            <div className="lg:hidden mt-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900">
+                    {formatDate(selectedDate, 'long')}
+                  </h3>
+                  <button
+                    onClick={() => openNewEventModal(selectedDate)}
+                    className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+                <EventList
+                  date={selectedDate}
+                  onEdit={openEditModal}
+                  onDelete={deleteEvent}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Sidebar */}
+          <AnimatePresence>
+            {showSidebar && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="lg:w-1/3 space-y-4"
+              >
+                {/* Selected Date Events */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-semibold text-gray-900">
+                        {formatDate(selectedDate, 'medium')}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => openNewEventModal(selectedDate)}
+                      className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <EventList
+                    date={selectedDate}
+                    onEdit={openEditModal}
+                    onDelete={deleteEvent}
+                  />
+                </div>
+
+                {/* Upcoming Events */}
+                {upcomingEvents.length > 0 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                    <h3 className="font-semibold text-gray-900 mb-4">Upcoming Events</h3>
+                    <div className="space-y-3">
+                      {upcomingEvents.map((event, index) => (
+                        <motion.div
+                          key={event.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                          onClick={() => openEditModal(event)}
+                        >
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            event.type === 'exam' 
+                              ? 'bg-red-100 text-red-600' 
+                              : event.type === 'meeting'
+                                ? 'bg-green-100 text-green-600'
+                                : event.type === 'class'
+                                  ? 'bg-purple-100 text-purple-600'
+                                  : 'bg-blue-100 text-blue-600'
+                          }`}>
+                            {getEventTypeIcon(event.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{event.title}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(event.date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })} at {event.time}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending Tasks */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <TaskList tasks={pendingTasks} />
+                </div>
+
+                {/* Holidays */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <HolidayList compact />
+                </div>
+
+                {/* Notification Settings */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      <p className="text-sm text-gray-500">
+                        {notificationPermission === 'granted' 
+                          ? 'Enabled' 
+                          : notificationPermission === 'denied' 
+                            ? 'Blocked' 
+                            : 'Enable for reminders'}
+                      </p>
+                    </div>
+                    {notificationPermission !== 'granted' && (
+                      <button
+                        onClick={requestPerm}
+                        className="px-3 py-1.5 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      >
+                        Enable
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Internal Styles */}
+      <style>{`
+        /* Calendar Styles */
+        .react-calendar {
+          width: 100%;
+          border: none !important;
+          background: transparent;
+          font-family: inherit;
+        }
+
+        .react-calendar__navigation {
+          border: none !important;
+          margin-bottom: 0.5rem;
+          display: flex;
+          align-items: center;
+          height: auto;
+          gap: 0.5rem;
+        }
+
+        .react-calendar__navigation button {
+          background: none;
+          border: none;
+          border-radius: 0.5rem;
+          min-width: 36px;
+          height: 36px;
+          color: #374151;
+          font-weight: 600;
+          font-size: 0.875rem;
+          transition: all 0.2s;
+        }
+
+        .react-calendar__navigation button:hover:not(:disabled) {
+          background: #f3f4f6;
+        }
+
+        .react-calendar__navigation button:disabled {
+          opacity: 0.3;
+        }
+
+        .react-calendar__navigation__label {
+          font-size: 1rem;
+          font-weight: 700;
+          flex: 1;
+          text-align: center;
+        }
+
+        .react-calendar__month-view {
+          border: none !important;
+        }
+
+        .react-calendar__month-view__weekdays {
+          border-bottom: none;
+          text-align: center;
+          font-size: 0.625rem;
+          color: #9ca3af;
+          text-transform: uppercase;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+
+        .react-calendar__month-view__weekdays abbr {
+          text-decoration: none;
+        }
+
+        .react-calendar__tile {
+          border: none !important;
+          padding: 0.75rem 0.5rem;
+          border-radius: 0.625rem;
+          transition: all 0.2s ease;
+          font-size: 0.875rem;
+          color: #1f2937;
+          position: relative;
+          min-height: 60px;
+        }
+
+        .react-calendar__tile:hover:not(:disabled) {
+          background: #f9fafb;
+        }
+
+        .react-calendar__tile--now {
+          background: transparent;
+        }
+
+        .react-calendar__tile--active {
+          background: transparent;
+        }
+
+        /* Today */
+        .cal-today {
+          background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%) !important;
+          color: #6b21a8 !important;
+          font-weight: 600;
+        }
+
+        .cal-today:hover {
+          background: linear-gradient(135deg, #d8b4fe 0%, #c4b5fd 100%) !important;
+        }
+
+        /* Selected */
+        .cal-selected {
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+          color: white !important;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .cal-selected:hover {
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+        }
+
+        /* Neighbor months */
+        .react-calendar__month-view__days__day--neighboringMonth {
+          color: #d1d5db;
+        }
+
+        /* Disabled */
+        .react-calendar__tile:disabled {
+          background: transparent;
+          color: #e5e7eb;
+        }
+
+        /* Hover effect for tiles */
+        .cal-day:hover {
+          background: #f3f4f6;
+        }
+
+        .cal-today:hover {
+          background: linear-gradient(135deg, #d8b4fe 0%, #c4b5fd 100%) !important;
+        }
+
+        .cal-selected:hover {
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+        }
+      `}</style>
+    </motion.div>
+  );
+};
+
+export default TeacherCalendar;
+

@@ -1,12 +1,13 @@
-import React from 'react'
-import TeacherCalendar from './TeacherCalendar'
+import React from 'react';
+import { CalendarProvider } from '../../../../context/CalendarContext';
+import TeacherCalendar from './TeacherCalendar';
 
 const ReturnTeacherCalendar = () => {
   return (
-    <div>
-        <TeacherCalendar />
-    </div>
-  )
-}
+    <CalendarProvider>
+      <TeacherCalendar />
+    </CalendarProvider>
+  );
+};
 
-export default ReturnTeacherCalendar
+export default ReturnTeacherCalendar;
