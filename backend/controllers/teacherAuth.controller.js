@@ -261,13 +261,18 @@ export const getTeacherDashboardStats = async (req, res) => {
       paymentStatus: "PAID",
     }).populate("student", "_id");
 
-    const uniqueStudentIds = new Set(
-      enrollments.map((e) => e.student._id.toString())
-    );
+    // Safe extraction of unique student IDs - filter out null/undefined students
+    const uniqueStudentIds = new Set();
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student && enrollment.student._id) {
+        uniqueStudentIds.add(enrollment.student._id.toString());
+      }
+    });
     const totalStudents = uniqueStudentIds.size;
 
     // 4. Calculate Earnings (sum of course prices from PAID enrollments)
     const earnings = enrollments.reduce((sum, enrollment) => {
+      if (!enrollment.course) return sum;
       const course = courses.find(
         (c) => c._id.toString() === enrollment.course.toString()
       );
@@ -275,9 +280,11 @@ export const getTeacherDashboardStats = async (req, res) => {
     }, 0);
 
     // 5. Calculate Live Classes (lessons scheduled for teacher's courses)
-    const liveClasses = await Lesson.countDocuments({
-      course: { $in: courseIds },
-    });
+    const liveClasses = courseIds.length > 0 
+      ? await Lesson.countDocuments({
+          course: { $in: courseIds },
+        })
+      : 0;
 
     res.json({
       success: true,
@@ -820,6 +827,11 @@ export const getStudentPerformanceAnalytics = async (req, res) => {
       return res.json({
         success: true,
         data: getEmptyDataByRange(range),
+        summary: {
+          totalStudents: 0,
+          totalEnrollments: 0,
+          averageAttendance: 0,
+        },
       });
     }
 
@@ -855,14 +867,19 @@ export const getStudentPerformanceAnalytics = async (req, res) => {
     }).populate("student", "_id");
 
     const totalEnrollments = enrollments.length;
-    const uniqueStudents = new Set(
-      enrollments.map((e) => e.student._id.toString())
-    ).size;
+    
+    // Safe extraction of unique students - filter out null/undefined students
+    const uniqueStudents = new Set();
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student && enrollment.student._id) {
+        uniqueStudents.add(enrollment.student._id.toString());
+      }
+    });
 
     // 5. Calculate performance data based on range
     const performanceData = calculatePerformanceData(
       attendanceRecords,
-      uniqueStudents,
+      uniqueStudents.size,
       range,
       now
     );
@@ -871,7 +888,7 @@ export const getStudentPerformanceAnalytics = async (req, res) => {
       success: true,
       data: performanceData,
       summary: {
-        totalStudents: uniqueStudents,
+        totalStudents: uniqueStudents.size,
         totalEnrollments,
         averageAttendance: calculateAverageAttendance(attendanceRecords),
       },
@@ -921,18 +938,31 @@ function calculatePerformanceData(attendanceRecords, totalStudents, range, now) 
 
   attendanceRecords.forEach((record) => {
     const dateKey = new Date(record.date).toISOString().split("T")[0];
-    const totalPresent = record.records.filter(
-      (r) => r.status === "PRESENT" || r.status === "LATE"
-    ).length;
-    const attendanceRate = totalStudents > 0 
-      ? Math.round((totalPresent / totalStudents) * 100) 
+    
+    // Safe count of present students - filter out null/undefined students
+    let totalPresent = 0;
+    let validRecords = 0;
+    
+    if (record.records && Array.isArray(record.records)) {
+      record.records.forEach((r) => {
+        if (r && r.student && (r.status === "PRESENT" || r.status === "LATE")) {
+          totalPresent++;
+        }
+        if (r && r.student) {
+          validRecords++;
+        }
+      });
+    }
+    
+    const attendanceRate = validRecords > 0 
+      ? Math.round((totalPresent / validRecords) * 100) 
       : 0;
 
     if (!attendanceByDate.has(dateKey)) {
       attendanceByDate.set(dateKey, {
         date: dateKey,
         present: totalPresent,
-        total: totalStudents,
+        total: validRecords,
         rate: attendanceRate,
       });
     }
@@ -1036,18 +1066,29 @@ function calculatePerformanceData(attendanceRecords, totalStudents, range, now) 
 }
 
 function calculateAverageAttendance(attendanceRecords) {
-  if (attendanceRecords.length === 0) return 0;
+  if (!attendanceRecords || attendanceRecords.length === 0) return 0;
 
   let totalRate = 0;
   let count = 0;
 
   attendanceRecords.forEach((record) => {
-    const totalPresent = record.records.filter(
-      (r) => r.status === "PRESENT" || r.status === "LATE"
-    ).length;
-    if (record.records.length > 0) {
-      totalRate += (totalPresent / record.records.length) * 100;
-      count++;
+    if (record.records && Array.isArray(record.records)) {
+      let validCount = 0;
+      let presentCount = 0;
+      
+      record.records.forEach((r) => {
+        if (r && r.student) {
+          validCount++;
+          if (r.status === "PRESENT" || r.status === "LATE") {
+            presentCount++;
+          }
+        }
+      });
+      
+      if (validCount > 0) {
+        totalRate += (presentCount / validCount) * 100;
+        count++;
+      }
     }
   });
 
@@ -1237,9 +1278,13 @@ export const getTeacherPerformanceMetrics = async (req, res) => {
       paymentStatus: "PAID",
     }).populate("student", "_id");
 
-    const uniqueStudents = new Set(
-      enrollments.map((e) => e.student._id.toString())
-    );
+    // Safe extraction of unique students - filter out null/undefined students
+    const uniqueStudents = new Set();
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student && enrollment.student._id) {
+        uniqueStudents.add(enrollment.student._id.toString());
+      }
+    });
     const totalStudents = uniqueStudents.size;
 
     if (totalStudents === 0) {
@@ -1263,18 +1308,22 @@ export const getTeacherPerformanceMetrics = async (req, res) => {
       studentAttendanceMap.set(studentId, { present: 0, total: 0 });
     });
 
-    // Count attendance for each student
+    // Count attendance for each student - safely handle null students
     attendanceRecords.forEach((record) => {
-      record.records.forEach((r) => {
-        const studentId = r.student.toString();
-        if (studentAttendanceMap.has(studentId)) {
-          const studentData = studentAttendanceMap.get(studentId);
-          studentData.total++;
-          if (r.status === "PRESENT" || r.status === "LATE") {
-            studentData.present++;
+      if (record.records && Array.isArray(record.records)) {
+        record.records.forEach((r) => {
+          if (r && r.student) {
+            const studentId = r.student.toString();
+            if (studentAttendanceMap.has(studentId)) {
+              const studentData = studentAttendanceMap.get(studentId);
+              studentData.total++;
+              if (r.status === "PRESENT" || r.status === "LATE") {
+                studentData.present++;
+              }
+            }
           }
-        }
-      });
+        });
+      }
     });
 
     // 5. Categorize students
