@@ -60,10 +60,7 @@ export const downloadResource = async (resourceId) => {
 // Get teacher's own resources
 export const getTeacherResources = async () => {
     try {
-        const token = localStorage.getItem('token');
-        // Decode token to get teacher ID
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const response = await api.get(`/teacher/me?teacherId=${payload.id}`);
+        const response = await api.get('/teacher/me');
         return response.data;
     } catch (error) {
         return handleError(error);
