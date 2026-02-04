@@ -2,6 +2,13 @@ import mongoose from "mongoose";
 
 const resourceSchema = new mongoose.Schema(
     {
+        /* ================= UPLOADED BY TYPE ================= */
+        uploadedBy: {
+            type: String,
+            enum: ["teacher", "admin"],
+            required: true,
+        },
+
         /* ================= RESOURCE INFO ================= */
         title: {
             type: String,
@@ -26,31 +33,71 @@ const resourceSchema = new mongoose.Schema(
             maxlength: 150,
         },
 
-        /* ================= TEACHER (TEXT ONLY) ================= */
+        /* ================= TEACHER INFO ================= */
         teacherName: {
             type: String,
-            required: [true, "Teacher name is required"],
             trim: true,
             maxlength: 100,
         },
 
-        /* ================= THUMBNAIL IMAGE ================= */
-        // ✅ Cloudinary image data
-        thumbnail: {
+        teacherId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Teacher",
+        },
+
+        teacherEmail: {
+            type: String,
+            trim: true,
+            lowercase: true,
+        },
+
+        teacherProfileImage: {
+            public_id: String,
+            url: String,
+        },
+
+        /* ================= ADMIN INFO ================= */
+        adminName: {
+            type: String,
+            trim: true,
+            maxlength: 100,
+        },
+
+        adminId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Admin",
+        },
+
+        adminEmail: {
+            type: String,
+            trim: true,
+            lowercase: true,
+        },
+
+        /* ================= FILE UPLOAD ================= */
+        file: {
             public_id: {
                 type: String,
-                required: true,
+                required: function() { return !this.driveLink; }
             },
             url: {
                 type: String,
-                required: true,
+                required: function() { return !this.driveLink; }
             },
+            format: String,
+            size: Number,
         },
 
-        /* ================= DRIVE LINK ================= */
+        /* ================= FILE TYPE ================= */
+        fileType: {
+            type: String,
+            enum: ["pdf", "video", "zip", "image", "document", "other"],
+            default: "other",
+        },
+
+        /* ================= DRIVE LINK (OPTIONAL) ================= */
         driveLink: {
             type: String,
-            required: [true, "Drive link is required"],
             trim: true,
             match: [
                 /^(https?:\/\/)(www\.)?.+/,
@@ -58,12 +105,15 @@ const resourceSchema = new mongoose.Schema(
             ],
         },
 
-
-        /* ================= RESOURCE TYPE ================= */
-        resourceType: {
-            type: String,
-            enum: ["pdf", "video", "slides", "assignment", "notes", "other"],
-            default: "other",
+        /* ================= THUMBNAIL IMAGE ================= */
+        // ✅ Cloudinary image data
+        thumbnail: {
+            public_id: {
+                type: String,
+            },
+            url: {
+                type: String,
+            },
         },
     },
     {
