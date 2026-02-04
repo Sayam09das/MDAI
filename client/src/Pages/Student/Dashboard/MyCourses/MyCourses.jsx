@@ -1,56 +1,109 @@
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { BookOpen, CheckCircle, Clock, AlertCircle, Play, Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
+  const [progressData, setProgressData] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchMyCourses = async () => {
-      if (!token) {
-        setError("Please login to view your courses");
-        setLoading(false);
-        return;
-      }
+  // Fetch enrollments
+  const fetchEnrollments = async () => {
+    if (!token) {
+      setError("Please login to view your courses");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const res = await fetch(
-          `${BACKEND_URL}/api/enroll/my-courses`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Unauthorized or session expired");
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/enroll/my-courses`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-        const validEnrollments = (data.enrollments || []).filter(
-          (e) => e.course !== null
-        );
+      const data = await res.json();
 
-        setEnrollments(validEnrollments);
-        setError("");
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(data.message || "Unauthorized or session expired");
       }
-    };
 
-    fetchMyCourses();
+      const validEnrollments = (data.enrollments || []).filter(
+        (e) => e.course !== null
+      );
+
+      setEnrollments(validEnrollments);
+      
+      // Fetch progress for each enrollment
+      if (validEnrollments.length > 0) {
+        await fetchProgressForCourses(validEnrollments);
+      }
+      
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch progress for all courses
+  const fetchProgressForCourses = async (enrollments) => {
+    try {
+      const progressPromises = enrollments.map(async (enrollment) => {
+        if (!enrollment.course?._id) return null;
+        
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/api/student/course-progress/${enrollment.course._id}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (res.ok) {
+            const data = await res.json();
+            return { courseId: enrollment.course._id, progress: data.progress };
+          }
+        } catch (err) {
+          console.error("Error fetching progress:", err);
+        }
+        return null;
+      });
+
+      const results = await Promise.all(progressPromises);
+      const progressMap = {};
+      
+      results.forEach((result) => {
+        if (result) {
+          progressMap[result.courseId] = result.progress;
+        }
+      });
+
+      setProgressData(progressMap);
+    } catch (err) {
+      console.error("Error fetching progress data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnrollments();
   }, [token]);
 
   const containerVariants = {
@@ -70,6 +123,13 @@ export default function MyCourses() {
       y: 0,
       transition: { duration: 0.4 }
     }
+  };
+
+  const getProgressColor = (progress) => {
+    if (progress >= 80) return "bg-green-500";
+    if (progress >= 50) return "bg-blue-500";
+    if (progress >= 25) return "bg-yellow-500";
+    return "bg-orange-500";
   };
 
   if (loading) {
@@ -147,69 +207,129 @@ export default function MyCourses() {
           animate="visible"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {enrollments.map((e) => (
-            <motion.div
-              key={e._id}
-              variants={itemVariants}
-              whileHover={{ y: -4 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-            >
-              {/* Thumbnail */}
-              <div className="relative h-48 bg-gray-200 overflow-hidden">
-                <img
-                  src={e.course.thumbnail?.url}
-                  alt={e.course.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 right-3">
-                  <span
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white ${e.paymentStatus === "PAID"
-                        ? "bg-green-600"
-                        : e.paymentStatus === "LATER"
-                          ? "bg-red-600"
-                          : "bg-yellow-600"
+          {enrollments.map((e) => {
+            const courseId = e.course?._id;
+            const progress = progressData[courseId] || e.progress || 0;
+            const isCompleted = progress >= 100;
+            
+            return (
+              <motion.div
+                key={e._id}
+                variants={itemVariants}
+                whileHover={{ y: -4 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              >
+                {/* Thumbnail */}
+                <div className="relative h-48 bg-gray-200 overflow-hidden">
+                  <img
+                    src={e.course.thumbnail?.url}
+                    alt={e.course.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white ${
+                        e.paymentStatus === "PAID"
+                          ? "bg-green-600"
+                          : e.paymentStatus === "LATER"
+                            ? "bg-red-600"
+                            : "bg-yellow-600"
                       }`}
-                  >
-                    {e.paymentStatus === "PAID" && <CheckCircle className="w-3 h-3" />}
-                    {e.paymentStatus === "LATER" && <Clock className="w-3 h-3" />}
-                    {e.paymentStatus}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 line-clamp-2">
-                  {e.course.title}
-                </h2>
-
-                {/* Action Button */}
-                {e.paymentStatus === "PAID" ? (
-                  <a
-                    href={`/student-dashboard/course/${e.course._id}`}
-                    className="block"
-                  >
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors"
                     >
-                      View Course
-                    </motion.button>
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className="w-full bg-gray-300 text-gray-600 font-semibold py-2.5 rounded-lg cursor-not-allowed"
-                  >
-                    Payment Required
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                      {e.paymentStatus === "PAID" && <CheckCircle className="w-3 h-3" />}
+                      {e.paymentStatus === "LATER" && <Clock className="w-3 h-3" />}
+                      {e.paymentStatus}
+                    </span>
+                  </div>
+                  {isCompleted && (
+                    <div className="absolute top-3 left-3">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500 text-white">
+                        <Trophy className="w-3 h-3" />
+                        Completed
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-5">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 line-clamp-2">
+                    {e.course.title}
+                  </h2>
+
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Progress</span>
+                      <span className="text-sm font-semibold text-gray-900">{progress}%</span>
+                    </div>
+                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className={`absolute h-full rounded-full ${getProgressColor(progress)}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <BookOpen className="w-4 h-4" />
+                      <span>{e.course.duration || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "N/A"}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {e.paymentStatus === "PAID" ? (
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/student-dashboard/course/${e.course._id}`}
+                        className="flex-1"
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          {isCompleted ? "Review" : "Continue"}
+                        </motion.button>
+                      </Link>
+                      <Link
+                        to={`/student-dashboard/course-progress`}
+                        className="flex-none"
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                          title="View Progress"
+                        >
+                          <Trophy className="w-5 h-5" />
+                        </motion.button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full bg-gray-300 text-gray-600 font-semibold py-2.5 rounded-lg cursor-not-allowed"
+                    >
+                      Payment Required
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </div>
   );
 }
+

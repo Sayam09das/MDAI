@@ -76,6 +76,40 @@ export const getStudentDashboardStats = () => {
   );
 };
 
+/* ================= COURSE PROGRESS APIs ================= */
+
+export const getStudentCourseProgress = () => {
+  return fetchAPI("/api/student/course-progress");
+};
+
+export const getCourseProgress = (courseId) => {
+  return fetchAPI(`/api/student/course-progress/${courseId}`);
+};
+
+export const markLessonComplete = (courseId, lessonId, timeSpent = 0) => {
+  return fetchAPI(`/api/student/course-progress/${courseId}/complete-lesson/${lessonId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ timeSpent }),
+  });
+};
+
+export const unmarkLessonComplete = (courseId, lessonId) => {
+  return fetchAPI(`/api/student/course-progress/${courseId}/uncomplete-lesson/${lessonId}`, {
+    method: "PATCH",
+  });
+};
+
+export const updateCourseStatus = (courseId, status) => {
+  return fetchAPI(`/api/student/course-progress/${courseId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+};
+
+export const getCourseStats = () => {
+  return fetchAPI("/api/student/course-stats");
+};
+
 /* ================= CALENDAR/EVENT APIs ================= */
 
 export const createEvent = (eventData) => {

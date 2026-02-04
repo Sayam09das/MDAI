@@ -1,93 +1,70 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, Circle, Lock, Play, Clock, Award, BookOpen, 
   TrendingUp, Target, Calendar, ChevronDown, ChevronUp, Filter,
   Download, Share2, BarChart3, Zap, Trophy, Star, Video,
-  FileText, Code, Headphones, Eye, X, Menu, ArrowLeft
+  FileText, Code, Headphones, Eye, X, Menu, ArrowLeft,
+  AlertCircle, RefreshCw
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import {
+  getStudentCourseProgress,
+  getCourseProgress,
+  markLessonComplete
+} from '../../../../lib/api/studentApi.js';
 
 const CourseProgress = () => {
+  const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [courseDetail, setCourseDetail] = useState(null);
   const [expandedModule, setExpandedModule] = useState(0);
   const [filterStatus, setFilterStatus] = useState('all');
   const [showSidebar, setShowSidebar] = useState(false);
-  const [viewMode, setViewMode] = useState('modules');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [completingLesson, setCompletingLesson] = useState(null);
 
-  const courses = [
-    {
-      id: 1,
-      title: "Advanced React & Next.js Masterclass",
-      instructor: "Sarah Johnson",
-      thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop",
-      totalLessons: 48,
-      completedLessons: 32,
-      progress: 67,
-      estimatedTime: "12h 30m",
-      deadline: "Mar 15, 2026",
-      modules: [
-        {
-          id: 1,
-          title: "React Fundamentals",
-          lessons: [
-            { id: 1, title: "Introduction to React 18", duration: "15m", type: "video", status: "completed", rating: 5 },
-            { id: 2, title: "JSX and Components", duration: "20m", type: "video", status: "completed", rating: 5 },
-            { id: 3, title: "Props and State", duration: "25m", type: "video", status: "completed", rating: 4 },
-            { id: 4, title: "Hooks Deep Dive", duration: "30m", type: "video", status: "completed", rating: 5 }
-          ]
-        },
-        {
-          id: 2,
-          title: "Advanced Patterns",
-          lessons: [
-            { id: 5, title: "Custom Hooks", duration: "22m", type: "video", status: "completed", rating: 5 },
-            { id: 6, title: "Context API Mastery", duration: "28m", type: "video", status: "completed", rating: 4 },
-            { id: 7, title: "Performance Optimization", duration: "35m", type: "video", status: "in-progress", rating: 0 },
-            { id: 8, title: "Code Splitting Techniques", duration: "18m", type: "reading", status: "pending", rating: 0 }
-          ]
-        },
-        {
-          id: 3,
-          title: "Next.js Framework",
-          lessons: [
-            { id: 9, title: "Next.js Setup", duration: "15m", type: "video", status: "pending", rating: 0 },
-            { id: 10, title: "Server Components", duration: "40m", type: "video", status: "locked", rating: 0 },
-            { id: 11, title: "API Routes", duration: "25m", type: "coding", status: "locked", rating: 0 },
-            { id: 12, title: "Deployment Strategies", duration: "20m", type: "video", status: "locked", rating: 0 }
-          ]
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  // Fetch all courses progress
+  const fetchCoursesProgress = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getStudentCourseProgress();
+      if (response.success) {
+        setCourses(response.courses || []);
+        if (response.courses && response.courses.length > 0 && !selectedCourse) {
+          setSelectedCourse(response.courses[0]);
         }
-      ]
-    },
-    {
-      id: 2,
-      title: "Machine Learning & AI Fundamentals",
-      instructor: "Dr. Michael Chen",
-      thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop",
-      totalLessons: 56,
-      completedLessons: 25,
-      progress: 45,
-      estimatedTime: "18h 45m",
-      deadline: "Apr 20, 2026",
-      modules: [
-        {
-          id: 1,
-          title: "ML Basics",
-          lessons: [
-            { id: 1, title: "Introduction to Machine Learning", duration: "20m", type: "video", status: "completed", rating: 5 },
-            { id: 2, title: "Python for Data Science", duration: "35m", type: "coding", status: "completed", rating: 4 },
-            { id: 3, title: "NumPy Essentials", duration: "25m", type: "video", status: "in-progress", rating: 0 }
-          ]
-        }
-      ]
+      }
+    } catch (err) {
+      console.error("Fetch courses error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, [selectedCourse]);
 
-  const [courseData, setCourseData] = useState(courses);
+  // Fetch specific course detail
+  const fetchCourseDetail = useCallback(async (courseId) => {
+    try {
+      const response = await getCourseProgress(courseId);
+      if (response.success) {
+        setCourseDetail(response);
+      }
+    } catch (err) {
+      console.error("Fetch course detail error:", err);
+    }
+  }, []);
 
+  // Initial data fetch
   useEffect(() => {
-    setSelectedCourse(courseData[0]);
+    fetchCoursesProgress();
+    
     toast.info(
       <div className="flex items-center gap-2">
         <BookOpen className="w-5 h-5" />
@@ -98,26 +75,77 @@ const CourseProgress = () => {
         autoClose: 3000,
       }
     );
-  }, []);
+  }, [fetchCoursesProgress]);
 
-  const handleLessonClick = (lesson, moduleId) => {
-    if (lesson.status === 'locked') {
-      toast.warning(
+  // Fetch course detail when selected course changes
+  useEffect(() => {
+    if (selectedCourse?.courseId) {
+      fetchCourseDetail(selectedCourse.courseId);
+    }
+  }, [selectedCourse, fetchCourseDetail]);
+
+  // Handle lesson completion
+  const handleMarkComplete = async (lessonId) => {
+    if (!selectedCourse?.courseId || !lessonId) return;
+
+    try {
+      setCompletingLesson(lessonId);
+      const response = await markLessonComplete(selectedCourse.courseId, lessonId);
+      
+      if (response.success) {
+        toast.success(
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <div>
+              <div className="font-semibold">Lesson Completed! 🎉</div>
+              <div className="text-sm opacity-90">Progress: {response.progress}%</div>
+            </div>
+          </div>,
+          {
+            position: window.innerWidth < 768 ? "top-center" : "top-right",
+          }
+        );
+
+        if (response.isCompleted) {
+          setTimeout(() => {
+            toast.success(
+              <div className="flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-yellow-500" />
+                <div>
+                  <div className="font-bold">Course Completed! 🏆</div>
+                  <div className="text-sm">Amazing achievement!</div>
+                </div>
+              </div>,
+              {
+                position: "top-center",
+                autoClose: 5000,
+              }
+            );
+          }, 1000);
+        }
+
+        // Refresh data
+        await fetchCoursesProgress();
+        await fetchCourseDetail(selectedCourse.courseId);
+      }
+    } catch (err) {
+      console.error("Mark lesson complete error:", err);
+      toast.error(
         <div className="flex items-center gap-2">
-          <Lock className="w-5 h-5" />
-          <div>
-            <div className="font-semibold">Lesson Locked</div>
-            <div className="text-sm opacity-90">Complete previous lessons to unlock</div>
-          </div>
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <span>{err.message || "Failed to mark lesson as complete"}</span>
         </div>,
         {
           position: window.innerWidth < 768 ? "top-center" : "top-right",
         }
       );
-      return;
+    } finally {
+      setCompletingLesson(null);
     }
+  };
 
-    if (lesson.status === 'completed') {
+  const handleLessonClick = (lesson) => {
+    if (lesson.isCompleted) {
       toast.info(
         <div className="flex items-center gap-2">
           <Eye className="w-5 h-5" />
@@ -145,88 +173,14 @@ const CourseProgress = () => {
     }
   };
 
-  const handleMarkComplete = (lessonId, moduleIndex) => {
-    const updatedCourses = courseData.map(course => {
-      if (course.id === selectedCourse.id) {
-        const updatedModules = course.modules.map((module, idx) => {
-          if (idx === moduleIndex) {
-            const updatedLessons = module.lessons.map(lesson => {
-              if (lesson.id === lessonId && lesson.status !== 'completed') {
-                return { ...lesson, status: 'completed', rating: 5 };
-              }
-              return lesson;
-            });
-            return { ...module, lessons: updatedLessons };
-          }
-          return module;
-        });
-
-        const totalCompleted = updatedModules.reduce(
-          (acc, mod) => acc + mod.lessons.filter(l => l.status === 'completed').length,
-          0
-        );
-        const newProgress = Math.round((totalCompleted / course.totalLessons) * 100);
-
-        toast.success(
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
-            <div>
-              <div className="font-semibold">Lesson Completed! 🎉</div>
-              <div className="text-sm opacity-90">Progress: {newProgress}%</div>
-            </div>
-          </div>,
-          {
-            position: window.innerWidth < 768 ? "top-center" : "top-right",
-          }
-        );
-
-        if (newProgress === 100) {
-          setTimeout(() => {
-            toast.success(
-              <div className="flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <div className="font-bold">Course Completed! 🏆</div>
-                  <div className="text-sm">Amazing achievement!</div>
-                </div>
-              </div>,
-              {
-                position: "top-center",
-                autoClose: 5000,
-              }
-            );
-          }, 1000);
-        }
-
-        return {
-          ...course,
-          modules: updatedModules,
-          completedLessons: totalCompleted,
-          progress: newProgress
-        };
-      }
-      return course;
-    });
-
-    setCourseData(updatedCourses);
-    setSelectedCourse(updatedCourses.find(c => c.id === selectedCourse.id));
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'in-progress':
-        return <Play className="w-5 h-5 text-blue-500" />;
-      case 'locked':
-        return <Lock className="w-5 h-5 text-gray-400" />;
-      default:
-        return <Circle className="w-5 h-5 text-gray-300" />;
-    }
+  const getStatusIcon = (isCompleted, isCurrent) => {
+    if (isCompleted) return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+    if (isCurrent) return <Play className="w-5 h-5 text-blue-500" />;
+    return <Circle className="w-5 h-5 text-gray-300" />;
   };
 
   const getTypeIcon = (type) => {
-    switch (type) {
+    switch (type?.toLowerCase()) {
       case 'video':
         return <Video className="w-4 h-4" />;
       case 'reading':
@@ -240,34 +194,127 @@ const CourseProgress = () => {
     }
   };
 
-  const filteredModules = selectedCourse?.modules.map(module => ({
-    ...module,
-    lessons: module.lessons.filter(lesson => {
-      if (filterStatus === 'all') return true;
-      return lesson.status === filterStatus;
-    })
-  })).filter(module => module.lessons.length > 0);
+  // Calculate stats from course detail
+  const calculateStats = () => {
+    if (!courseDetail?.lessons) return { completed: 0, pending: 0 };
+    const lessons = courseDetail.lessons;
+    return {
+      completed: lessons.filter(l => l.isCompleted).length,
+      inProgress: lessons.filter(l => l.isCurrent && !l.isCompleted).length,
+      pending: lessons.filter(l => !l.isCompleted && !l.isCurrent).length,
+      locked: 0
+    };
+  };
 
-  const stats = selectedCourse ? {
-    completed: selectedCourse.modules.reduce(
-      (acc, mod) => acc + mod.lessons.filter(l => l.status === 'completed').length,
-      0
-    ),
-    inProgress: selectedCourse.modules.reduce(
-      (acc, mod) => acc + mod.lessons.filter(l => l.status === 'in-progress').length,
-      0
-    ),
-    pending: selectedCourse.modules.reduce(
-      (acc, mod) => acc + mod.lessons.filter(l => l.status === 'pending').length,
-      0
-    ),
-    locked: selectedCourse.modules.reduce(
-      (acc, mod) => acc + mod.lessons.filter(l => l.status === 'locked').length,
-      0
-    )
-  } : {};
+  // Get lessons organized by date for display
+  const getOrganizedLessons = () => {
+    if (!courseDetail?.lessons) return [];
+    const lessons = courseDetail.lessons;
+    
+    // Group lessons by date
+    const grouped = {};
+    lessons.forEach(lesson => {
+      const date = lesson.date || 'No Date';
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(lesson);
+    });
 
-  if (!selectedCourse) return null;
+    return Object.entries(grouped).map(([date, lessons]) => ({
+      id: date,
+      title: date,
+      lessons: lessons.sort((a, b) => {
+        const timeA = a.time || '';
+        const timeB = b.time || '';
+        return timeA.localeCompare(timeB);
+      })
+    }));
+  };
+
+  // Filter lessons
+  const getFilteredLessons = () => {
+    const modules = getOrganizedLessons();
+    return modules.map(module => ({
+      ...module,
+      lessons: module.lessons.filter(lesson => {
+        if (filterStatus === 'all') return true;
+        if (filterStatus === 'completed') return lesson.isCompleted;
+        if (filterStatus === 'in-progress') return lesson.isCurrent && !lesson.isCompleted;
+        if (filterStatus === 'pending') return !lesson.isCompleted && !lesson.isCurrent;
+        return true;
+      })
+    })).filter(module => module.lessons.length > 0);
+  };
+
+  const stats = calculateStats();
+  const filteredModules = getFilteredLessons();
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-gray-700 font-medium">Loading your progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && courses.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-red-50 border border-red-200 rounded-xl p-6"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 mb-1">Error Loading Progress</h3>
+              <p className="text-red-700 mb-4">{error}</p>
+              <button
+                onClick={fetchCoursesProgress}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (courses.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center"
+        >
+          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-8 h-8 text-indigo-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Courses Yet</h3>
+          <p className="text-gray-600">Enroll in a course to start tracking your progress</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const progress = selectedCourse?.progress || 0;
+  const thumbnail = courseDetail?.course?.thumbnail?.url || selectedCourse?.thumbnail?.url || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
@@ -295,7 +342,7 @@ const CourseProgress = () => {
             <Menu className="w-6 h-6" />
           </button>
           <h1 className="text-lg font-bold text-gray-900 truncate">
-            {selectedCourse.title}
+            {selectedCourse?.title || 'Course Progress'}
           </h1>
           <div className="w-10" />
         </div>
@@ -323,9 +370,9 @@ const CourseProgress = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {courseData.map((course) => (
+                  {courses.map((course) => (
                     <motion.button
-                      key={course.id}
+                      key={course.enrollmentId || course.courseId}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
@@ -333,7 +380,7 @@ const CourseProgress = () => {
                         setShowSidebar(false);
                       }}
                       className={`w-full text-left p-4 rounded-xl transition-all ${
-                        selectedCourse.id === course.id
+                        selectedCourse?.courseId === course.courseId
                           ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                           : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
                       }`}
@@ -341,11 +388,11 @@ const CourseProgress = () => {
                       <h3 className="font-semibold mb-2 line-clamp-2">{course.title}</h3>
                       <div className="flex items-center gap-2 text-sm opacity-90 mb-2">
                         <BookOpen className="w-4 h-4" />
-                        <span>{course.instructor}</span>
+                        <span>{course.completedLessons}/{course.totalLessons} lessons</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                        <span className="font-bold">{course.progress}%</span>
+                        <span>{course.progress}%</span>
+                        <span className="font-bold">{course.status}</span>
                       </div>
                       <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
                         <div
@@ -379,20 +426,22 @@ const CourseProgress = () => {
 
               {/* Course Header Card */}
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-                <div className="relative h-32 sm:h-40 overflow-hidden">
-                  <img
-                    src={selectedCourse.thumbnail}
-                    alt={selectedCourse.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 line-clamp-2">
-                      {selectedCourse.title}
-                    </h2>
-                    <p className="text-white/90 text-sm">{selectedCourse.instructor}</p>
+                {thumbnail && (
+                  <div className="relative h-32 sm:h-40 overflow-hidden">
+                    <img
+                      src={thumbnail}
+                      alt={selectedCourse?.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 line-clamp-2">
+                        {selectedCourse?.title}
+                      </h2>
+                      <p className="text-white/90 text-sm">{courseDetail?.course?.description}</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="p-4 sm:p-6">
                   {/* Progress Bar */}
@@ -402,60 +451,95 @@ const CourseProgress = () => {
                         Overall Progress
                       </span>
                       <span className="text-2xl font-bold text-blue-600">
-                        {selectedCourse.progress}%
+                        {progress}%
                       </span>
                     </div>
                     <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${selectedCourse.progress}%` }}
+                        animate={{ width: `${progress}%` }}
                         transition={{ duration: 1 }}
                         className="absolute h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
                       />
                     </div>
                     <div className="flex justify-between mt-2 text-xs text-gray-600">
-                      <span>{selectedCourse.completedLessons} completed</span>
-                      <span>{selectedCourse.totalLessons} total lessons</span>
+                      <span>{selectedCourse?.completedLessons || 0} completed</span>
+                      <span>{selectedCourse?.totalLessons || 0} total lessons</span>
                     </div>
                   </div>
 
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    {[
-                      { icon: CheckCircle2, label: 'Completed', value: stats.completed, color: 'green' },
-                      { icon: Play, label: 'In Progress', value: stats.inProgress, color: 'blue' },
-                      { icon: Circle, label: 'Pending', value: stats.pending, color: 'orange' },
-                      { icon: Lock, label: 'Locked', value: stats.locked, color: 'gray' }
-                    ].map((stat, idx) => (
-                      <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4"
-                      >
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-${stat.color}-100 rounded-lg flex items-center justify-center mb-2`}>
-                          <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 text-${stat.color}-600`} />
-                        </div>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</p>
-                        <p className="text-xs sm:text-sm text-gray-600">{stat.label}</p>
-                      </motion.div>
-                    ))}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                      </div>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.completed}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Completed</p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                        <Play className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                      </div>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">In Progress</p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 sm:p-4"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
+                        <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+                      </div>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pending}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Pending</p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                      </div>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {Math.round((selectedCourse?.totalTimeSpent || 0) / 60)}h
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-600">Time Spent</p>
+                    </motion.div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3 mt-6">
-                    <button className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg flex items-center justify-center gap-2">
-                      <Download className="w-4 h-4" />
-                      <span>Certificate</span>
-                    </button>
+                    {progress === 100 && (
+                      <button className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg flex items-center justify-center gap-2">
+                        <Award className="w-4 h-4" />
+                        <span>Certificate</span>
+                      </button>
+                    )}
                     <button className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
                       <Share2 className="w-4 h-4" />
                       <span>Share</span>
                     </button>
-                    <button className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Analytics</span>
+                    <button 
+                      onClick={fetchCoursesProgress}
+                      className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Refresh</span>
                     </button>
                   </div>
                 </div>
@@ -509,7 +593,7 @@ const CourseProgress = () => {
                           {module.title}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {module.lessons.filter(l => l.status === 'completed').length}/{module.lessons.length} lessons
+                          {module.lessons.filter(l => l.isCompleted).length}/{module.lessons.length} lessons
                         </p>
                       </div>
                     </div>
@@ -531,54 +615,61 @@ const CourseProgress = () => {
                         <div className="px-4 sm:px-6 pb-4 space-y-2">
                           {module.lessons.map((lesson, lessonIndex) => (
                             <motion.div
-                              key={lesson.id}
+                              key={lesson.lessonId}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: lessonIndex * 0.05 }}
                               className={`p-4 rounded-xl transition-all ${
-                                lesson.status === 'locked'
-                                  ? 'bg-gray-100 opacity-60'
+                                lesson.isCompleted
+                                  ? 'bg-green-50'
                                   : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:shadow-md cursor-pointer'
                               }`}
-                              onClick={() => handleLessonClick(lesson, moduleIndex)}
+                              onClick={() => handleLessonClick(lesson)}
                             >
                               <div className="flex items-center gap-3 sm:gap-4">
                                 <div className="flex-shrink-0">
-                                  {getStatusIcon(lesson.status)}
+                                  {getStatusIcon(lesson.isCompleted, lesson.isCurrent)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h4 className="font-semibold text-gray-900 truncate">
-                                      {lesson.title}
-                                    </h4>
-                                    {lesson.rating > 0 && (
-                                      <div className="flex items-center gap-1">
-                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                        <span className="text-xs text-gray-600">{lesson.rating}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                      {getTypeIcon(lesson.type)}
-                                      <span className="capitalize">{lesson.type}</span>
-                                    </div>
+                                  <h4 className="font-semibold text-gray-900 truncate">
+                                    {lesson.title}
+                                  </h4>
+                                  <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
                                     <div className="flex items-center gap-1">
                                       <Clock className="w-4 h-4" />
-                                      <span>{lesson.duration}</span>
+                                      <span>{lesson.time} ({lesson.duration}min)</span>
                                     </div>
                                   </div>
                                 </div>
-                                {lesson.status === 'in-progress' && (
+                                {!lesson.isCompleted && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleMarkComplete(lesson.id, moduleIndex);
+                                      handleMarkComplete(lesson.lessonId);
                                     }}
-                                    className="flex-shrink-0 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                                    disabled={completingLesson === lesson.lessonId}
+                                    className="flex-shrink-0 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1"
                                   >
-                                    Complete
+                                    {completingLesson === lesson.lessonId ? (
+                                      <>
+                                        <motion.div
+                                          animate={{ rotate: 360 }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                                        />
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Complete
+                                      </>
+                                    )}
                                   </button>
+                                )}
+                                {lesson.isCompleted && (
+                                  <span className="flex-shrink-0 px-3 py-1.5 bg-green-100 text-green-700 text-sm font-semibold rounded-lg">
+                                    Done
+                                  </span>
                                 )}
                               </div>
                             </motion.div>
@@ -612,3 +703,4 @@ const CourseProgress = () => {
 };
 
 export default CourseProgress;
+
