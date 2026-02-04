@@ -472,27 +472,32 @@ export const getMyStudents = async (req, res) => {
       .populate("course", "title")
       .sort({ createdAt: -1 });
 
-    // 3. Extract unique students from enrollments
+    // 3. Extract unique students from enrollments - safely handle null students
     const studentMap = new Map();
     enrollments.forEach((enrollment) => {
-      if (enrollment.student && !studentMap.has(enrollment.student._id.toString())) {
-        studentMap.set(enrollment.student._id.toString(), {
-          ...enrollment.student.toObject(),
-          enrolledCourses: [],
-        });
+      if (enrollment.student && enrollment.student._id) {
+        const studentId = enrollment.student._id.toString();
+        if (!studentMap.has(studentId)) {
+          studentMap.set(studentId, {
+            ...enrollment.student.toObject(),
+            enrolledCourses: [],
+          });
+        }
       }
     });
 
     // 4. Add course information to each student
     enrollments.forEach((enrollment) => {
-      const studentId = enrollment.student._id.toString();
-      if (studentMap.has(studentId) && enrollment.course) {
-        studentMap.get(studentId).enrolledCourses.push({
-          courseId: enrollment.course._id,
-          courseTitle: enrollment.course.title,
-          enrolledAt: enrollment.createdAt,
-          paymentStatus: enrollment.paymentStatus,
-        });
+      if (enrollment.student && enrollment.student._id && enrollment.course) {
+        const studentId = enrollment.student._id.toString();
+        if (studentMap.has(studentId)) {
+          studentMap.get(studentId).enrolledCourses.push({
+            courseId: enrollment.course._id,
+            courseTitle: enrollment.course.title,
+            enrolledAt: enrollment.createdAt,
+            paymentStatus: enrollment.paymentStatus,
+          });
+        }
       }
     });
 
@@ -1509,10 +1514,12 @@ export const getTeacherStatisticsOverview = async (req, res) => {
       createdAt: { $gte: startDate, $lte: now },
     });
 
-    // 4. Group data by time period
+    // 4. Group data by time period - safely handle null courses
     const dataByPeriod = new Map();
 
     enrollments.forEach((enrollment) => {
+      if (!enrollment.course) return;
+      
       const date = new Date(enrollment.createdAt);
       let key;
 
@@ -1544,17 +1551,22 @@ export const getTeacherStatisticsOverview = async (req, res) => {
       entry.revenue += course?.price || 0;
     });
 
-    // 5. Get all-time students (for summary)
+    // 5. Get all-time students (for summary) - safely handle null students
     const allTimeEnrollments = await Enrollment.find({
       course: { $in: courseIds },
       paymentStatus: "PAID",
     });
-    const uniqueStudents = new Set(
-      allTimeEnrollments.map((e) => e.student.toString())
-    );
+    
+    const uniqueStudents = new Set();
+    allTimeEnrollments.forEach((enrollment) => {
+      if (enrollment.student) {
+        uniqueStudents.add(enrollment.student.toString());
+      }
+    });
 
     // 6. Calculate total revenue
     const totalRevenue = allTimeEnrollments.reduce((sum, enrollment) => {
+      if (!enrollment.course) return sum;
       const course = courses.find((c) => c._id.toString() === enrollment.course.toString());
       return sum + (course?.price || 0);
     }, 0);
@@ -1638,12 +1650,19 @@ export const getStudentPerformanceTrends = async (req, res) => {
     // 4. Calculate average attendance percentage per month
     const monthlyData = new Map();
 
-    // Get unique students count
+    // Get unique students count - safely handle null students
     const enrollments = await Enrollment.find({
       course: { $in: courseIds },
       paymentStatus: "PAID",
     });
-    const totalStudents = enrollments.length;
+    
+    const uniqueStudents = new Set();
+    enrollments.forEach((enrollment) => {
+      if (enrollment.student) {
+        uniqueStudents.add(enrollment.student.toString());
+      }
+    });
+    const totalStudents = uniqueStudents.size;
 
     // Initialize monthly data
     const months = [
@@ -1662,7 +1681,7 @@ export const getStudentPerformanceTrends = async (req, res) => {
       monthlyData.set(key, { totalPresent: 0, totalDays: 0, count: 0 });
     }
 
-    // Calculate attendance for each record
+    // Calculate attendance for each record - safely handle null students
     attendanceRecords.forEach((record) => {
       const recordDate = new Date(record.date);
       const monthIndex = recordDate.getMonth();
@@ -1670,12 +1689,23 @@ export const getStudentPerformanceTrends = async (req, res) => {
       const key = `${months[monthIndex]} ${year}`;
 
       if (monthlyData.has(key)) {
-        const present = record.records.filter(
-          (r) => r.status === "PRESENT" || r.status === "LATE"
-        ).length;
+        let present = 0;
+        let validDays = 0;
+        
+        if (record.records && Array.isArray(record.records)) {
+          record.records.forEach((r) => {
+            if (r && r.student) {
+              validDays++;
+              if (r.status === "PRESENT" || r.status === "LATE") {
+                present++;
+              }
+            }
+          });
+        }
+        
         const entry = monthlyData.get(key);
         entry.totalPresent += present;
-        entry.totalDays += record.records.length;
+        entry.totalDays += validDays;
         entry.count++;
       }
     });
