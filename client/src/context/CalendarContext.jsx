@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { showBrowserNotification, requestNotificationPermission, checkNotificationPermission } from '../utils/notifications';
 import { 
   createEvent as apiCreateEvent,
@@ -6,8 +6,6 @@ import {
   updateEvent as apiUpdateEvent,
   deleteEvent as apiDeleteEvent,
   toggleEventCompletion as apiToggleEventCompletion,
-  getUpcomingEvents as apiGetUpcomingEvents,
-  getPendingTasks as apiGetPendingTasks,
 } from '../lib/api/studentApi';
 
 const CalendarContext = createContext();
@@ -21,32 +19,23 @@ export const useCalendar = () => {
 };
 
 export const CalendarProvider = ({ children }) => {
-  // Events state
+  // Refs for values that don't need re-renders
+  const addToastRef = useRef(null);
+
+  // State
   const [events, setEvents] = useState([]);
-  
-  // Selected date
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // Current month/year for calendar view
   const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Selected country for holidays
   const [selectedCountry, setSelectedCountry] = useState(() => {
-    const saved = localStorage.getItem('calendar_country');
-    return saved || 'US';
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('calendar_country') || 'US';
+    }
+    return 'US';
   });
-
-  // Notification permission
   const [notificationPermission, setNotificationPermission] = useState('default');
-
-  // Toast notifications
   const [toasts, setToasts] = useState([]);
-
-  // Modal state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-
-  // Loading states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -64,25 +53,35 @@ export const CalendarProvider = ({ children }) => {
   useEffect(() => {
     const requestPerm = async () => {
       if (notificationPermission === 'default') {
-        await requestNotificationPermission();
+        const granted = await requestNotificationPermission();
         setNotificationPermission(checkNotificationPermission());
       }
     };
     requestPerm();
+  }, [notificationPermission]);
+
+  // Add toast helper - defined early to avoid dependency issues
+  const addToast = useCallback((message, type = 'info') => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3000);
   }, []);
 
+  addToastRef.current = addToast;
+
   // Fetch events from API
-  const fetchEvents = useCallback(async (params = {}) => {
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiGetEvents(params);
-      // Ensure events is always an array
+      const data = await apiGetEvents({});
       setEvents(Array.isArray(data.events) ? data.events : []);
     } catch (err) {
       console.error('Failed to fetch events:', err);
       setError(err.message);
-      // Set empty events on error
       setEvents([]);
     } finally {
       setLoading(false);
@@ -125,15 +124,12 @@ export const CalendarProvider = ({ children }) => {
     try {
       const data = await apiCreateEvent(eventData);
       setEvents((prev) => [...prev, data.event]);
-      
-      // Show toast
-      addToast('Event created successfully!', 'success');
-      
+      addToastRef.current?.('Event created successfully!', 'success');
       return data.event;
     } catch (err) {
       console.error('Failed to create event:', err);
       setError(err.message);
-      addToast('Failed to create event', 'error');
+      addToastRef.current?.('Failed to create event', 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -146,18 +142,17 @@ export const CalendarProvider = ({ children }) => {
     setError(null);
     try {
       const data = await apiUpdateEvent(id, updates);
-      setEvents((prev) =>
-        prev.map((event) =>
+      setEvents((prev) => 
+        Array.isArray(prev) ? prev.map((event) =>
           event.id === id ? { ...event, ...data.event } : event
-        )
+        ) : []
       );
-      
-      addToast('Event updated successfully!', 'success');
+      addToastRef.current?.('Event updated successfully!', 'success');
       return data.event;
     } catch (err) {
       console.error('Failed to update event:', err);
       setError(err.message);
-      addToast('Failed to update event', 'error');
+      addToastRef.current?.('Failed to update event', 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -170,12 +165,14 @@ export const CalendarProvider = ({ children }) => {
     setError(null);
     try {
       await apiDeleteEvent(id);
-      setEvents((prev) => prev.filter((event) => event.id !== id));
-      addToast('Event deleted!', 'info');
+      setEvents((prev) => 
+        Array.isArray(prev) ? prev.filter((event) => event.id !== id) : []
+      );
+      addToastRef.current?.('Event deleted!', 'info');
     } catch (err) {
       console.error('Failed to delete event:', err);
       setError(err.message);
-      addToast('Failed to delete event', 'error');
+      addToastRef.current?.('Failed to delete event', 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -188,29 +185,22 @@ export const CalendarProvider = ({ children }) => {
     setError(null);
     try {
       const data = await apiToggleEventCompletion(id);
-      setEvents((prev) => {
-        if (!Array.isArray(prev)) return [];
-        return prev.map((event) =>
+      setEvents((prev) => 
+        Array.isArray(prev) ? prev.map((event) =>
           event.id === id ? { ...event, ...data.event } : event
-        );
-      });
-      
-      // Find the event to check its previous state
-      const currentEvent = events.find(e => e.id === id);
-      addToast(
-        currentEvent && currentEvent.completed ? 'Event marked as incomplete' : 'Event marked as complete!',
-        'success'
+        ) : []
       );
+      addToastRef.current?.('Event updated!', 'success');
       return data.event;
     } catch (err) {
       console.error('Failed to toggle event:', err);
       setError(err.message);
-      addToast('Failed to update event', 'error');
+      addToastRef.current?.('Failed to update event', 'error');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [events, addToast]);
+  }, []);
 
   // Get events for a specific date
   const getEventsForDate = useCallback((date) => {
@@ -221,12 +211,11 @@ export const CalendarProvider = ({ children }) => {
 
   // Get all events
   const getAllEvents = useCallback(() => {
-    if (!Array.isArray(events)) return [];
-    return events;
+    return Array.isArray(events) ? events : [];
   }, [events]);
 
-  // Get upcoming events (synchronous - using local state)
-  const getUpcomingEventsSync = useCallback((limit = 5) => {
+  // Get upcoming events
+  const getUpcomingEvents = useCallback((limit = 5) => {
     if (!Array.isArray(events)) return [];
     const now = new Date();
     return events
@@ -244,13 +233,12 @@ export const CalendarProvider = ({ children }) => {
     return events.filter((event) => event.type === 'task');
   }, [events]);
 
-  // Get pending tasks (synchronous - using local state)
-  const getPendingTasksSync = useCallback((limit = 10) => {
+  // Get pending tasks
+  const getPendingTasks = useCallback((limit = 10) => {
     if (!Array.isArray(events)) return [];
     return events
       .filter((event) => event.type === 'task' && !event.completed)
       .sort((a, b) => {
-        // Sort by priority first (high first), then by date
         const priorityOrder = { high: 0, medium: 1, low: 2 };
         const priorityDiff = (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
         if (priorityDiff !== 0) return priorityDiff;
@@ -258,17 +246,6 @@ export const CalendarProvider = ({ children }) => {
       })
       .slice(0, limit);
   }, [events]);
-
-  // Add toast notification
-  const addToast = useCallback((message, type = 'info') => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 3000);
-  }, []);
 
   // Remove toast
   const removeToast = useCallback((id) => {
@@ -280,11 +257,11 @@ export const CalendarProvider = ({ children }) => {
     const granted = await requestNotificationPermission();
     setNotificationPermission(checkNotificationPermission());
     if (granted) {
-      addToast('Notifications enabled!', 'success');
+      addToastRef.current?.('Notifications enabled!', 'success');
     } else {
-      addToast('Notifications denied. Please enable in browser settings.', 'error');
+      addToastRef.current?.('Notifications denied. Please enable in browser settings.', 'error');
     }
-  }, [addToast]);
+  }, []);
 
   // Open event modal for editing
   const openEditModal = useCallback((event) => {
@@ -345,9 +322,9 @@ export const CalendarProvider = ({ children }) => {
     toggleEventCompletion,
     getEventsForDate,
     getAllEvents,
-    getUpcomingEvents: getUpcomingEventsSync,
+    getUpcomingEvents,
     getTasks,
-    getPendingTasks: getPendingTasksSync,
+    getPendingTasks,
     
     // Modal actions
     openEditModal,

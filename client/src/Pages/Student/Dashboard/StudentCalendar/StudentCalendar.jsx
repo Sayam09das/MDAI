@@ -46,21 +46,9 @@ const StudentCalendar = () => {
   const [view, setView] = useState('month'); // 'month', 'list'
   const [showSidebar, setShowSidebar] = useState(true);
 
-  // Show loading state
-  if (loading && events.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading events...</p>
-        </div>
-      </div>
-    );
-  }
-
   const selectedDateEvents = getEventsForDate(selectedDate);
   
-  // Ensure upcomingEvents and pendingTasks are always arrays
+  // Safe array access
   const upcomingEvents = Array.isArray(getUpcomingEvents(5)) ? getUpcomingEvents(5) : [];
   const pendingTasks = Array.isArray(getPendingTasks(5)) ? getPendingTasks(5) : [];
 
