@@ -45,10 +45,12 @@ const StudentLibrary = () => {
         try {
             setLoading(true);
             const data = await getAllResources({ fileType: filterType, search: searchQuery });
-            setResources(data);
+            // Ensure data is always an array
+            setResources(Array.isArray(data) ? data : []);
         } catch (error) {
             toast.error('Failed to load resources');
             console.error('Error fetching resources:', error);
+            setResources([]);
         } finally {
             setLoading(false);
         }
