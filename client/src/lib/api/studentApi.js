@@ -76,6 +76,63 @@ export const getStudentDashboardStats = () => {
   );
 };
 
+/* ================= CALENDAR/EVENT APIs ================= */
+
+export const createEvent = (eventData) => {
+  return fetchAPI("/api/events", {
+    method: "POST",
+    body: JSON.stringify(eventData),
+  });
+};
+
+export const getEvents = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchAPI(
+    `/api/events${query ? `?${query}` : ""}`
+  );
+};
+
+export const getEventById = (id) => {
+  return fetchAPI(`/api/events/${id}`);
+};
+
+export const getEventsByDate = (date) => {
+  return fetchAPI(`/api/events/date/${date}`);
+};
+
+export const updateEvent = (id, eventData) => {
+  return fetchAPI(`/api/events/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(eventData),
+  });
+};
+
+export const deleteEvent = (id) => {
+  return fetchAPI(`/api/events/${id}`, {
+    method: "DELETE",
+  });
+};
+
+export const toggleEventCompletion = (id) => {
+  return fetchAPI(`/api/events/${id}/toggle`, {
+    method: "PATCH",
+  });
+};
+
+export const getUpcomingEvents = (limit = 5) => {
+  return fetchAPI(`/api/events/upcoming?limit=${limit}`);
+};
+
+export const getPendingTasks = (limit = 10) => {
+  return fetchAPI(`/api/events/tasks/pending?limit=${limit}`);
+};
+
+export const deleteAllEvents = () => {
+  return fetchAPI("/api/events", {
+    method: "DELETE",
+  });
+};
+
 /* ================= TEACHER APIs ================= */
 
 export const getTeacherDashboardStats = () => {

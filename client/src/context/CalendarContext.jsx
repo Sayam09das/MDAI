@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { showBrowserNotification, requestNotificationPermission, checkNotificationPermission } from '../utils/notifications';
-import { COUNTRIES } from '../utils/holidays';
+import { 
+  createEvent as apiCreateEvent,
+  getEvents as apiGetEvents,
+  updateEvent as apiUpdateEvent,
+  deleteEvent as apiDeleteEvent,
+  toggleEventCompletion as apiToggleEventCompletion,
+  getUpcomingEvents as apiGetUpcomingEvents,
+  getPendingTasks as apiGetPendingTasks,
+} from '../lib/api/studentApi';
 
 const CalendarContext = createContext();
 
@@ -12,56 +20,10 @@ export const useCalendar = () => {
   return context;
 };
 
-// Generate unique ID
-const generateId = () => `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-// Initial demo events
-const initialEvents = [
-  {
-    id: generateId(),
-    title: 'Math Assignment Due',
-    description: 'Complete Chapter 5 exercises',
-    date: new Date().toISOString().split('T')[0],
-    time: '10:00',
-    type: 'task',
-    priority: 'high',
-    completed: false,
-    reminder: true,
-    reminderTime: 30,
-  },
-  {
-    id: generateId(),
-    title: 'Science Project',
-    description: 'Submit final project report',
-    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    time: '14:00',
-    type: 'task',
-    priority: 'medium',
-    completed: false,
-    reminder: true,
-    reminderTime: 60,
-  },
-  {
-    id: generateId(),
-    title: 'History Quiz',
-    description: 'Study World War II chapter',
-    date: new Date(Date.now() + 172800000).toISOString().split('T')[0],
-    time: '09:00',
-    type: 'exam',
-    priority: 'high',
-    completed: false,
-    reminder: true,
-    reminderTime: 1440,
-  },
-];
-
 export const CalendarProvider = ({ children }) => {
   // Events state
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem('calendar_events');
-    return saved ? JSON.parse(saved) : initialEvents;
-  });
-
+  const [events, setEvents] = useState([]);
+  
   // Selected date
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -84,15 +46,14 @@ export const CalendarProvider = ({ children }) => {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
 
+  // Loading states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   // Initialize notification permission
   useEffect(() => {
     setNotificationPermission(checkNotificationPermission());
   }, []);
-
-  // Persist events to localStorage
-  useEffect(() => {
-    localStorage.setItem('calendar_events', JSON.stringify(events));
-  }, [events]);
 
   // Persist country to localStorage
   useEffect(() => {
@@ -109,6 +70,28 @@ export const CalendarProvider = ({ children }) => {
     };
     requestPerm();
   }, []);
+
+  // Fetch events from API
+  const fetchEvents = useCallback(async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGetEvents(params);
+      setEvents(data.events || []);
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
+      setError(err.message);
+      // Set empty events on error
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Check for event reminders every minute
   useEffect(() => {
@@ -135,45 +118,96 @@ export const CalendarProvider = ({ children }) => {
   }, [events]);
 
   // Add event
-  const addEvent = useCallback((eventData) => {
-    const newEvent = {
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      ...eventData,
-    };
-    setEvents((prev) => [...prev, newEvent]);
-    
-    // Show toast
-    addToast('Event created successfully!', 'success');
-    
-    return newEvent;
+  const addEvent = useCallback(async (eventData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiCreateEvent(eventData);
+      setEvents((prev) => [...prev, data.event]);
+      
+      // Show toast
+      addToast('Event created successfully!', 'success');
+      
+      return data.event;
+    } catch (err) {
+      console.error('Failed to create event:', err);
+      setError(err.message);
+      addToast('Failed to create event', 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Update event
-  const updateEvent = useCallback((id, updates) => {
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === id ? { ...event, updatedAt: new Date().toISOString(), ...updates } : event
-      )
-    );
-    
-    addToast('Event updated successfully!', 'success');
+  const updateEvent = useCallback(async (id, updates) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiUpdateEvent(id, updates);
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === id ? { ...event, ...data.event } : event
+        )
+      );
+      
+      addToast('Event updated successfully!', 'success');
+      return data.event;
+    } catch (err) {
+      console.error('Failed to update event:', err);
+      setError(err.message);
+      addToast('Failed to update event', 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Delete event
-  const deleteEvent = useCallback((id) => {
-    setEvents((prev) => prev.filter((event) => event.id !== id));
-    addToast('Event deleted!', 'info');
+  const deleteEvent = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiDeleteEvent(id);
+      setEvents((prev) => prev.filter((event) => event.id !== id));
+      addToast('Event deleted!', 'info');
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      setError(err.message);
+      addToast('Failed to delete event', 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Toggle event completion
-  const toggleEventCompletion = useCallback((id) => {
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === id ? { ...event, completed: !event.completed, completedAt: !event.completed ? new Date().toISOString() : null } : event
-      )
-    );
-  }, []);
+  const toggleEventCompletion = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiToggleEventCompletion(id);
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === id ? { ...event, ...data.event } : event
+        )
+      );
+      
+      const event = events.find(e => e.id === id);
+      addToast(
+        event && event.completed ? 'Event marked as incomplete' : 'Event marked as complete!',
+        'success'
+      );
+      return data.event;
+    } catch (err) {
+      console.error('Failed to toggle event:', err);
+      setError(err.message);
+      addToast('Failed to update event', 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [events]);
 
   // Get events for a specific date
   const getEventsForDate = useCallback((date) => {
@@ -187,15 +221,22 @@ export const CalendarProvider = ({ children }) => {
   }, [events]);
 
   // Get upcoming events
-  const getUpcomingEvents = useCallback((limit = 5) => {
-    const now = new Date();
-    return events
-      .filter((event) => {
-        const eventDate = new Date(`${event.date}T${event.time}`);
-        return eventDate >= now && !event.completed;
-      })
-      .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
-      .slice(0, limit);
+  const getUpcomingEvents = useCallback(async (limit = 5) => {
+    try {
+      const data = await apiGetUpcomingEvents(limit);
+      return data.events || [];
+    } catch (err) {
+      console.error('Failed to fetch upcoming events:', err);
+      // Fallback to local events
+      const now = new Date();
+      return events
+        .filter((event) => {
+          const eventDate = new Date(`${event.date}T${event.time}`);
+          return eventDate >= now && !event.completed;
+        })
+        .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
+        .slice(0, limit);
+    }
   }, [events]);
 
   // Get tasks (events with type 'task')
@@ -204,8 +245,15 @@ export const CalendarProvider = ({ children }) => {
   }, [events]);
 
   // Get pending tasks
-  const getPendingTasks = useCallback(() => {
-    return events.filter((event) => event.type === 'task' && !event.completed);
+  const getPendingTasks = useCallback(async (limit = 10) => {
+    try {
+      const data = await apiGetPendingTasks(limit);
+      return data.tasks || [];
+    } catch (err) {
+      console.error('Failed to fetch pending tasks:', err);
+      // Fallback to local events
+      return events.filter((event) => event.type === 'task' && !event.completed).slice(0, limit);
+    }
   }, [events]);
 
   // Add toast notification
@@ -258,6 +306,16 @@ export const CalendarProvider = ({ children }) => {
 
   // Get country name
   const getCountryName = useCallback(() => {
+    const COUNTRIES = {
+      US: { name: 'United States' },
+      UK: { name: 'United Kingdom' },
+      IN: { name: 'India' },
+      CA: { name: 'Canada' },
+      AU: { name: 'Australia' },
+      DE: { name: 'Germany' },
+      FR: { name: 'France' },
+      JP: { name: 'Japan' },
+    };
     return COUNTRIES[selectedCountry]?.name || 'United States';
   }, [selectedCountry]);
 
@@ -274,6 +332,8 @@ export const CalendarProvider = ({ children }) => {
     toasts,
     isEventModalOpen,
     editingEvent,
+    loading,
+    error,
     
     // Event actions
     addEvent,
@@ -298,6 +358,7 @@ export const CalendarProvider = ({ children }) => {
     
     // Helper functions
     getCountryName,
+    refreshEvents: fetchEvents,
   };
 
   return (
