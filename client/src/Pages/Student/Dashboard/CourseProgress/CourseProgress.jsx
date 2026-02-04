@@ -54,7 +54,16 @@ const CourseProgress = () => {
     try {
       const response = await getCourseProgress(courseId);
       if (response.success) {
-        setCourseDetail(response);
+        // Extract progress properties from the nested object
+        const progressData = response.progress || {};
+        const formattedResponse = {
+          ...response,
+          progress: progressData.percentage || 0,
+          completedLessons: progressData.completedLessons || 0,
+          totalLessons: progressData.totalLessons || 0,
+          remainingLessons: progressData.remainingLessons || 0,
+        };
+        setCourseDetail(formattedResponse);
       }
     } catch (err) {
       console.error("Fetch course detail error:", err);
