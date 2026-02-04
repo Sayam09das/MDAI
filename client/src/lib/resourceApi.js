@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const API_URL = '/api/resource';
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Create axios instance
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: `${API_URL}/api/resource`,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -28,39 +28,17 @@ const handleError = (error) => {
     return Promise.reject(new Error(message));
 };
 
-/* ==================== STUDENT API ==================== */
-
-// Get all resources (for students - shows all teacher uploads)
-export const getAllResources = async (params = {}) => {
-    try {
-        const { fileType, search } = params;
-        const queryParams = new URLSearchParams();
-        if (fileType && fileType !== 'all') queryParams.append('fileType', fileType);
-        if (search) queryParams.append('search', search);
-
-        const response = await api.get(`/?${queryParams.toString()}`);
-        return response.data;
-    } catch (error) {
-        return handleError(error);
-    }
-};
-
-// Download resource file
-export const downloadResource = async (resourceId) => {
-    try {
-        const response = await api.get(`/${resourceId}`);
-        return response.data;
-    } catch (error) {
-        return handleError(error);
-    }
-};
-
 /* ==================== TEACHER API ==================== */
 
 // Get teacher's own resources
-export const getTeacherResources = async () => {
+export const getTeacherResources = async (params = {}) => {
     try {
-        const response = await api.get('/teacher/me');
+        const { search, fileType } = params;
+        const queryParams = new URLSearchParams();
+        if (search) queryParams.append('search', search);
+        if (fileType && fileType !== 'all') queryParams.append('fileType', fileType);
+        
+        const response = await api.get(`/teacher?${queryParams.toString()}`);
         return response.data;
     } catch (error) {
         return handleError(error);
@@ -105,31 +83,11 @@ export const deleteResource = async (id) => {
     }
 };
 
-/* ==================== ADMIN API ==================== */
-
-// Get all resources (admin - shows everything)
-export const getAllResourcesAdmin = async (params = {}) => {
+// Download resource file
+export const downloadResource = async (resourceId) => {
     try {
-        const { fileType, search, uploadedBy } = params;
-        const queryParams = new URLSearchParams();
-        if (fileType && fileType !== 'all') queryParams.append('fileType', fileType);
-        if (search) queryParams.append('search', search);
-        if (uploadedBy && uploadedBy !== 'all') queryParams.append('uploadedBy', uploadedBy);
-
-        const response = await api.get(`/admin/all?${queryParams.toString()}`);
-        return response.data;
-    } catch (error) {
-        return handleError(error);
-    }
-};
-
-// Update any resource (admin)
-export const updateResourceAdmin = async (id, formData) => {
-    try {
-        const response = await api.put(`/${id}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+        const response = await api.get(`/${resourceId}/download`, {
+            responseType: 'blob'
         });
         return response.data;
     } catch (error) {
@@ -137,25 +95,11 @@ export const updateResourceAdmin = async (id, formData) => {
     }
 };
 
-// Delete any resource (admin)
-export const deleteResourceAdmin = async (id) => {
-    try {
-        const response = await api.delete(`/${id}`);
-        return response.data;
-    } catch (error) {
-        return handleError(error);
-    }
-};
-
 export default {
-    getAllResources,
-    downloadResource,
     getTeacherResources,
     createResource,
     updateResource,
     deleteResource,
-    getAllResourcesAdmin,
-    updateResourceAdmin,
-    deleteResourceAdmin,
+    downloadResource,
 };
 
