@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = '/api/resources';
+const API_URL = '/api/resource';
 
 // Create axios instance
 const api = axios.create({

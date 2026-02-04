@@ -34,7 +34,7 @@ import {
     getAllResourcesAdmin,
     updateResourceAdmin,
     deleteResourceAdmin,
-} from '../../../../client/src/lib/resourceApi';
+} from '../../lib/resourceApi';
 
 const AdminLibrary = () => {
     const [resources, setResources] = useState([]);
