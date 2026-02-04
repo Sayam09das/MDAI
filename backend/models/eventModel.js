@@ -84,12 +84,6 @@ const eventSchema = new mongoose.Schema({
   },
 });
 
-// Update the updatedAt field before saving
-eventSchema.pre("save", function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
 // Compound index for efficient queries
 eventSchema.index({ user: 1, date: 1 });
 eventSchema.index({ user: 1, completed: 1 });
