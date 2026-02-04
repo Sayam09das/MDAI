@@ -64,6 +64,14 @@ const CourseProgress = () => {
           remainingLessons: progressData.remainingLessons || 0,
         };
         setCourseDetail(formattedResponse);
+        
+        // Also update selectedCourse with the new progress data
+        setSelectedCourse(prev => ({
+          ...prev,
+          progress: progressData.percentage || prev?.progress || 0,
+          completedLessons: progressData.completedLessons || prev?.completedLessons || 0,
+          totalLessons: progressData.totalLessons || prev?.totalLessons || 0,
+        }));
       }
     } catch (err) {
       console.error("Fetch course detail error:", err);
