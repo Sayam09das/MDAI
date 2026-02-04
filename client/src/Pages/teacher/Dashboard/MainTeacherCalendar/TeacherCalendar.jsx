@@ -17,14 +17,14 @@ import {
   Video,
   Briefcase
 } from 'lucide-react';
-import { useCalendar } from '../../../context/CalendarContext';
-import { getHolidaysForMonth, isHoliday, getHolidayColor, COUNTRIES } from '../../../utils/holidays';
-import { formatDate, isToday, isSameDay } from '../../../utils/dateUtils';
-import EventModal from '../../Student/Dashboard/StudentCalendar/components/EventModal';
-import EventList from '../../Student/Dashboard/StudentCalendar/components/EventList';
-import HolidayList from '../../Student/Dashboard/StudentCalendar/components/HolidayList';
-import TaskList from '../../Student/Dashboard/StudentCalendar/components/TaskList';
-import NotificationToast from '../../Student/Dashboard/StudentCalendar/components/NotificationToast';
+import { useCalendar } from '../../../../context/CalendarContext';
+import { getHolidaysForMonth, isHoliday, getHolidayColor, COUNTRIES } from '../../../../utils/holidays';
+import { formatDate, isToday, isSameDay } from '../../../../utils/dateUtils';
+import EventModal from '../../../Student/Dashboard/StudentCalendar/components/EventModal';
+import EventList from '../../../Student/Dashboard/StudentCalendar/components/EventList';
+import HolidayList from '../../../Student/Dashboard/StudentCalendar/components/HolidayList';
+import TaskList from '../../../Student/Dashboard/StudentCalendar/components/TaskList';
+import NotificationToast from '../../../Student/Dashboard/StudentCalendar/components/NotificationToast';
 import 'react-calendar/dist/Calendar.css';
 
 const TeacherCalendar = () => {
