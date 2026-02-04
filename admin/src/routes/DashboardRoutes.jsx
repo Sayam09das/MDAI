@@ -9,7 +9,6 @@ import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 import CreateTeacher from "../Dashboard/DashboardTeacher/CreateTeacher";
 import StudentListPreview from "../Dashboard/DashboardStudent/StudentListPreview";
 import ReturnSPayment from "../Dashboard/StudentEnrollment/ReturnSPayment";
-import ReturnAdminLibrary from "../Dashboard/MainLibrary/ReturnAdminLibrary";
 
 const DashboardRoutes = () => {
     return (
@@ -24,7 +23,6 @@ const DashboardRoutes = () => {
                     <Route path="dashboard/create/teacher" element={<CreateTeacher />} />
                     <Route path="dashboard/studentlist" element={<StudentListPreview />} />
                     <Route path="dashboard/students/paymentaccess" element={<ReturnSPayment />} />
-                    <Route path="dashboard/library" element={<ReturnAdminLibrary />} />
                     <Route path="dashboard/settings" element={<div>Settings Page</div>} />
                 </Route>
             </Route>
