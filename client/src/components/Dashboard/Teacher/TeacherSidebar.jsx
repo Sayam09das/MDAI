@@ -9,13 +9,11 @@ import {
     Users,
     Calendar,
     ClipboardCheck,
-    Library,
     MessageSquare,
     Wallet,
     CreditCard,
     User,
     Settings,
-    LogOut,
     X,
 } from "lucide-react";
 

@@ -56,44 +56,6 @@ const resourceSchema = new mongoose.Schema(
             url: String,
         },
 
-        /* ================= ADMIN INFO ================= */
-        adminName: {
-            type: String,
-            trim: true,
-            maxlength: 100,
-        },
-
-        adminId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Admin",
-        },
-
-        adminEmail: {
-            type: String,
-            trim: true,
-            lowercase: true,
-        },
-
-        /* ================= FILE UPLOAD ================= */
-        file: {
-            public_id: {
-                type: String,
-                required: function() { return !this.driveLink; }
-            },
-            url: {
-                type: String,
-                required: function() { return !this.driveLink; }
-            },
-            format: String,
-            size: Number,
-        },
-
-        /* ================= FILE TYPE ================= */
-        fileType: {
-            type: String,
-            enum: ["pdf", "video", "zip", "image", "document", "other"],
-            default: "other",
-        },
 
         /* ================= DRIVE LINK (OPTIONAL) ================= */
         driveLink: {
