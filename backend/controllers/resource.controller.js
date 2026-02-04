@@ -266,7 +266,8 @@ export const getResourceById = async (req, res) => {
 ===================================================== */
 export const getTeacherResources = async (req, res) => {
     try {
-        const { teacherId } = req.query;
+        // Get teacher ID from authenticated user (auth middleware sets req.user)
+        const teacherId = req.user.id;
 
         if (!teacherId) {
             return res.status(400).json({
@@ -274,7 +275,23 @@ export const getTeacherResources = async (req, res) => {
             });
         }
 
-        const resources = await Resource.find({ teacherId }).sort({
+        const { search, fileType } = req.query;
+        
+        let query = { teacherId };
+        
+        if (fileType && fileType !== "all") {
+            query.fileType = fileType;
+        }
+        
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } },
+                { courseTitle: { $regex: search, $options: "i" } },
+            ];
+        }
+
+        const resources = await Resource.find(query).sort({
             createdAt: -1,
         });
 
