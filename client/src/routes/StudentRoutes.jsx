@@ -17,6 +17,7 @@ import CourseView from "../Pages/Student/Dashboard/MyCourses/CourseView";
 import ReturnStudentProfile from "../Pages/Student/Dashboard/StudentProfile/ReturnStudentProfile";
 import ReturnAttendence from "../Pages/Student/Dashboard/StudentAttendence/ReturnAttendence";
 import ReturnCalendar from "../Pages/Student/Dashboard/StudentCalendar/ReturnCalendar";
+import ReturnStudentLibrary from "../Pages/Student/Dashboard/MainLibrary/ReturnStudentLibrary";
 
 const StudentRoutes = () => {
     return (
