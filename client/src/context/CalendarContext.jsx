@@ -77,7 +77,8 @@ export const CalendarProvider = ({ children }) => {
     setError(null);
     try {
       const data = await apiGetEvents(params);
-      setEvents(data.events || []);
+      // Ensure events is always an array
+      setEvents(Array.isArray(data.events) ? data.events : []);
     } catch (err) {
       console.error('Failed to fetch events:', err);
       setError(err.message);
@@ -187,15 +188,17 @@ export const CalendarProvider = ({ children }) => {
     setError(null);
     try {
       const data = await apiToggleEventCompletion(id);
-      setEvents((prev) =>
-        prev.map((event) =>
+      setEvents((prev) => {
+        if (!Array.isArray(prev)) return [];
+        return prev.map((event) =>
           event.id === id ? { ...event, ...data.event } : event
-        )
-      );
+        );
+      });
       
-      const event = events.find(e => e.id === id);
+      // Find the event to check its previous state
+      const currentEvent = events.find(e => e.id === id);
       addToast(
-        event && event.completed ? 'Event marked as incomplete' : 'Event marked as complete!',
+        currentEvent && currentEvent.completed ? 'Event marked as incomplete' : 'Event marked as complete!',
         'success'
       );
       return data.event;
@@ -207,53 +210,53 @@ export const CalendarProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [events]);
+  }, [events, addToast]);
 
   // Get events for a specific date
   const getEventsForDate = useCallback((date) => {
+    if (!Array.isArray(events)) return [];
     const dateStr = date.toISOString().split('T')[0];
     return events.filter((event) => event.date === dateStr);
   }, [events]);
 
   // Get all events
   const getAllEvents = useCallback(() => {
+    if (!Array.isArray(events)) return [];
     return events;
   }, [events]);
 
-  // Get upcoming events
-  const getUpcomingEvents = useCallback(async (limit = 5) => {
-    try {
-      const data = await apiGetUpcomingEvents(limit);
-      return data.events || [];
-    } catch (err) {
-      console.error('Failed to fetch upcoming events:', err);
-      // Fallback to local events
-      const now = new Date();
-      return events
-        .filter((event) => {
-          const eventDate = new Date(`${event.date}T${event.time}`);
-          return eventDate >= now && !event.completed;
-        })
-        .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
-        .slice(0, limit);
-    }
+  // Get upcoming events (synchronous - using local state)
+  const getUpcomingEventsSync = useCallback((limit = 5) => {
+    if (!Array.isArray(events)) return [];
+    const now = new Date();
+    return events
+      .filter((event) => {
+        const eventDate = new Date(`${event.date}T${event.time}`);
+        return eventDate >= now && !event.completed;
+      })
+      .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
+      .slice(0, limit);
   }, [events]);
 
   // Get tasks (events with type 'task')
   const getTasks = useCallback(() => {
+    if (!Array.isArray(events)) return [];
     return events.filter((event) => event.type === 'task');
   }, [events]);
 
-  // Get pending tasks
-  const getPendingTasks = useCallback(async (limit = 10) => {
-    try {
-      const data = await apiGetPendingTasks(limit);
-      return data.tasks || [];
-    } catch (err) {
-      console.error('Failed to fetch pending tasks:', err);
-      // Fallback to local events
-      return events.filter((event) => event.type === 'task' && !event.completed).slice(0, limit);
-    }
+  // Get pending tasks (synchronous - using local state)
+  const getPendingTasksSync = useCallback((limit = 10) => {
+    if (!Array.isArray(events)) return [];
+    return events
+      .filter((event) => event.type === 'task' && !event.completed)
+      .sort((a, b) => {
+        // Sort by priority first (high first), then by date
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        const priorityDiff = (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
+        if (priorityDiff !== 0) return priorityDiff;
+        return new Date(a.date) - new Date(b.date);
+      })
+      .slice(0, limit);
   }, [events]);
 
   // Add toast notification
@@ -342,9 +345,9 @@ export const CalendarProvider = ({ children }) => {
     toggleEventCompletion,
     getEventsForDate,
     getAllEvents,
-    getUpcomingEvents,
+    getUpcomingEvents: getUpcomingEventsSync,
     getTasks,
-    getPendingTasks,
+    getPendingTasks: getPendingTasksSync,
     
     // Modal actions
     openEditModal,

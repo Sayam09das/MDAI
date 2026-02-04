@@ -123,12 +123,12 @@ const TaskItem = ({ task, onToggle, onClick }) => {
 };
 
 const TaskList = ({ tasks = [], onTaskToggle, onTaskClick }) => {
-  const { getPendingTasks } = useCalendar();
+  const { getPendingTasks: getPendingTasksFromContext } = useCalendar();
   
-  // If no tasks prop provided, get from context
-  const displayTasks = tasks.length > 0 ? tasks : getPendingTasks();
+  // If no tasks prop provided, get from context synchronously
+  const displayTasks = tasks.length > 0 ? tasks : getPendingTasksFromContext(5);
 
-  if (displayTasks.length === 0) {
+  if (!displayTasks || displayTasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
