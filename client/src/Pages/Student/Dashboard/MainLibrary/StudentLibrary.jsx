@@ -25,7 +25,7 @@ import {
     Play,
     ExternalLink,
 } from 'lucide-react';
-import { getAllResources } from '../../../lib/resourceApi';
+import { getAllResources } from '../../../../lib/resourceApi';
 
 const StudentLibrary = () => {
     const [resources, setResources] = useState([]);
