@@ -337,10 +337,22 @@ export const getConversations = async (req, res) => {
       .sort({ "lastMessage.createdAt": -1, updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate({
-        path: "lastMessage.messageId",
-        select: "content messageType attachments createdAt",
-      });
+      .populate([
+        {
+          path: "lastMessage.messageId",
+          select: "content messageType attachments createdAt",
+        },
+        {
+          path: "participants.userId",
+          select: "fullName profileImage email",
+          model: "User",
+        },
+        {
+          path: "participants.userId",
+          select: "fullName profileImage email",
+          model: "Teacher",
+        },
+      ]);
 
     // Get unread count and process participants for each conversation
     const conversationsWithUnread = conversations.map((conv) => {

@@ -31,23 +31,29 @@ The `p.userId` field can be `null` when MongoDB population fails or returns null
 - [x] Verify all unsafe access patterns are fixed
 
 ## Summary of Changes
-Fixed `TypeError: Cannot read properties of null (reading '_id')` by adding optional chaining (?.) in 5 locations:
+Fixed `TypeError: Cannot read properties of null (reading '_id')` error and "Unknown User" display issue by:
 
-1. **`getConversations`** (lines ~352-363):
-   - `p.userId?._id` instead of `p.userId._id`
-   - `otherParticipant?.userId` instead of `otherParticipant.userId`
+### 1. Added optional chaining for null safety (5 locations):
 
-2. **`getOrCreateConversation`** (lines ~449-476):
-   - `p.userId?._id` instead of `p.userId._id`
-   - `otherParticipant.userId?._id` instead of `otherParticipant.userId._id`
+**`getConversations`** (lines ~352-363):
+- `p.userId?._id` instead of `p.userId._id`
+- `otherParticipant?.userId` instead of `otherParticipant.userId`
 
-3. **`searchConversations`** (lines ~516-523):
-   - `p.userId?._id?.toString()` instead of `p.userId._id.toString()`
-   - `otherParticipant?.userId?.fullName` instead of `otherParticipant.userId.fullName`
+**`getOrCreateConversation`** (lines ~449-476):
+- `p.userId?._id` instead of `p.userId._id`
+- `otherParticipant.userId?._id` instead of `otherParticipant.userId._id`
+
+**`searchConversations`** (lines ~516-523):
+- `p.userId?._id?.toString()` instead of `p.userId._id.toString()`
+- `otherParticipant?.userId?.fullName` instead of `otherParticipant.userId.fullName`
+
+### 2. Added population for participant user data in `getConversations`:
+
+Added proper population of `participants.userId` with both User and Teacher models to display actual names and profile pictures instead of "Unknown User".
 
 ## Testing
 Deploy to Render and test the following:
-- Fetch conversations list
-- Create new conversation
-- Search conversations
+- [x] Fetch conversations list (should show actual student names)
+- [x] Create new conversation
+- [x] Search conversations
 
