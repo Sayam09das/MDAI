@@ -156,27 +156,33 @@ conversationSchema.statics.findOrCreateConversation = async function (
   userId2,
   model2
 ) {
-  // Check if conversation already exists
-  const existingConversation = await this.findOne({
-    conversationType: "direct",
-    "participants.userId": { $all: [userId1, userId2] },
-    "participants.participantsModel": { $all: [model1, model2] },
-  });
+  try {
+    // Check if conversation already exists
+    // We need to check both orderings since participants array order doesn't matter
+    const existingConversation = await this.findOne({
+      conversationType: "direct",
+      "participants.userId": { $all: [new mongoose.Types.ObjectId(userId1), new mongoose.Types.ObjectId(userId2)] },
+      "participants.participantsModel": { $all: [model1, model2] },
+    });
 
-  if (existingConversation) {
-    return existingConversation;
+    if (existingConversation) {
+      return existingConversation;
+    }
+
+    // Create new conversation
+    const conversation = new this({
+      participants: [
+        { userId: new mongoose.Types.ObjectId(userId1), participantsModel: model1 },
+        { userId: new mongoose.Types.ObjectId(userId2), participantsModel: model2 },
+      ],
+      conversationType: "direct",
+    });
+
+    return await conversation.save();
+  } catch (error) {
+    console.error("Error in findOrCreateConversation:", error);
+    throw error;
   }
-
-  // Create new conversation
-  const conversation = new this({
-    participants: [
-      { userId: userId1, participantsModel: model1 },
-      { userId: userId2, participantsModel: model2 },
-    ],
-    conversationType: "direct",
-  });
-
-  return await conversation.save();
 };
 
 // Method to update last message

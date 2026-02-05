@@ -6,6 +6,14 @@ import messageApi from "../../../../lib/messageApi";
 
 /* ================= TEACHER MESSAGES PAGE ================= */
 
+/* ================= PROFILE IMAGE HELPER ================= */
+const getProfileImage = (profileImage, name) => {
+  if (profileImage) {
+    return <img src={profileImage} alt={name || "User"} className="w-full h-full rounded-full object-cover" />;
+  }
+  return <span className="text-lg">{name?.charAt(0) || "?"}</span>;
+};
+
 const TeacherMessages = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -18,6 +26,7 @@ const TeacherMessages = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [error, setError] = useState(null);
 
   const { socket, isConnected, joinConversation, leaveConversation, sendTypingStart, sendTypingStop, isUserOnline } = useSocket();
 
@@ -37,14 +46,17 @@ const TeacherMessages = () => {
     if (!socket) return;
 
     const handleReceiveMessage = (message) => {
+      console.log("📨 Received message:", message);
       if (selectedConversation && message.conversationId === selectedConversation._id) {
         setMessages((prev) => [...prev, message]);
       }
+      // Refresh conversations to update last message
       loadConversations();
       loadUnreadCount();
     };
 
     const handleNewNotification = (data) => {
+      console.log("🔔 New notification:", data);
       if (data.senderId !== currentUserId) {
         loadUnreadCount();
       }
@@ -57,19 +69,21 @@ const TeacherMessages = () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("new_message_notification", handleNewNotification);
     };
-  }, [socket, selectedConversation]);
+  }, [socket, selectedConversation, currentUserId]);
 
   /* ================= LOAD DATA ================= */
 
   const loadConversations = async () => {
     try {
+      setError(null);
       setLoading(true);
       const response = await messageApi.getConversations();
       if (response.success) {
-        setConversations(response.conversations);
+        setConversations(response.conversations || []);
       }
     } catch (error) {
       console.error("Failed to load conversations:", error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -302,11 +316,11 @@ const TeacherMessages = () => {
                   }`}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
                       {conversation.otherParticipant?.profileImage ? (
                         <img
                           src={conversation.otherParticipant.profileImage}
-                          alt={conversation.otherParticipant.fullName}
+                          alt={conversation.otherParticipant.fullName || "User"}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
@@ -321,7 +335,7 @@ const TeacherMessages = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-medium text-gray-900 truncate">
-                        {conversation.otherParticipant?.fullName || "Unknown"}
+                        {conversation.otherParticipant?.fullName || "Unknown User"}
                       </h3>
                       <span className="text-xs text-gray-500">
                         {formatLastMessageTime(conversation.lastMessage?.createdAt)}
@@ -360,11 +374,11 @@ const TeacherMessages = () => {
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div className="relative">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
                     {selectedConversation.otherParticipant?.profileImage ? (
                       <img
                         src={selectedConversation.otherParticipant.profileImage}
-                        alt={selectedConversation.otherParticipant.fullName}
+                        alt={selectedConversation.otherParticipant.fullName || "User"}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
@@ -377,7 +391,7 @@ const TeacherMessages = () => {
                 </div>
                 <div>
                   <h2 className="font-semibold text-gray-900">
-                    {selectedConversation.otherParticipant?.fullName || "Unknown"}
+                    {selectedConversation.otherParticipant?.fullName || "Unknown User"}
                   </h2>
                   <p className="text-xs text-gray-500">
                     {isUserOnline(selectedConversation.otherParticipant?.userId) ? "Online" : "Offline"}

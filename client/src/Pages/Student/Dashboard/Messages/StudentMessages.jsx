@@ -19,6 +19,7 @@ const StudentMessages = () => {
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [error, setError] = useState(null);
 
   const {
     socket,
@@ -45,6 +46,7 @@ const StudentMessages = () => {
     if (!socket) return;
 
     const handleReceiveMessage = (message) => {
+      console.log("📨 Received message:", message);
       if (selectedConversation && message.conversationId === selectedConversation._id) {
         setMessages((prev) => [...prev, message]);
       }
@@ -53,6 +55,7 @@ const StudentMessages = () => {
     };
 
     const handleNewNotification = (data) => {
+      console.log("🔔 New notification:", data);
       if (data.senderId !== currentUserId) {
         loadUnreadCount();
       }
@@ -70,13 +73,15 @@ const StudentMessages = () => {
   /* ================= LOAD DATA ================= */
   const loadConversations = async () => {
     try {
+      setError(null);
       setLoading(true);
       const response = await messageApi.getConversations();
       if (response.success) {
-        setConversations(response.conversations);
+        setConversations(response.conversations || []);
       }
     } catch (error) {
       console.error("Failed to load conversations:", error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }

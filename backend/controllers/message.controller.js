@@ -75,19 +75,23 @@ export const sendMessage = async (req, res) => {
       }
     }
 
-    // Populate sender info for response
-    await message.populate([
-      { path: "sender", select: "fullName profileImage", model: senderModel },
-    ]);
+    // Fetch the saved message with populated sender info
+    const populatedMessage = await Message.findById(message._id)
+      .populate([
+        {
+          path: "sender",
+          select: "fullName profileImage email",
+        },
+      ]);
 
     res.status(201).json({
       success: true,
-      message,
+      message: populatedMessage,
       conversationId: conversation._id,
     });
   } catch (error) {
     console.error("Send Message Error:", error);
-    res.status(500).json({ message: "Failed to send message" });
+    res.status(500).json({ message: "Failed to send message: " + error.message });
   }
 };
 
@@ -132,7 +136,6 @@ export const getMessages = async (req, res) => {
         {
           path: "sender",
           select: "fullName profileImage email",
-          model: req.user.role === "teacher" ? "Teacher" : "User",
         },
       ]);
 
@@ -157,7 +160,7 @@ export const getMessages = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Messages Error:", error);
-    res.status(500).json({ message: "Failed to fetch messages" });
+    res.status(500).json({ message: "Failed to fetch messages: " + error.message });
   }
 };
 
@@ -312,7 +315,6 @@ export const getConversations = async (req, res) => {
         {
           path: "participants.userId",
           select: "fullName profileImage email",
-          model: userModel === "Teacher" ? "Teacher" : "User",
         },
         {
           path: "lastMessage.messageId",
@@ -328,7 +330,7 @@ export const getConversations = async (req, res) => {
 
       // Get other participant info
       const otherParticipant = conv.participants.find(
-        (p) => p.userId.toString() !== userId.toString()
+        (p) => p.userId._id.toString() !== userId.toString()
       );
 
       return {
@@ -336,9 +338,9 @@ export const getConversations = async (req, res) => {
         unreadCount: unreadEntry ? unreadEntry.count : 0,
         otherParticipant: otherParticipant
           ? {
-              userId: otherParticipant.userId._id,
-              fullName: otherParticipant.userId.fullName,
-              profileImage: otherParticipant.userId.profileImage,
+              userId: otherParticipant.userId._id || otherParticipant.userId,
+              fullName: otherParticipant.userId.fullName || "Unknown",
+              profileImage: otherParticipant.userId.profileImage || null,
               model: otherParticipant.participantsModel,
             }
           : null,
@@ -362,7 +364,7 @@ export const getConversations = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Conversations Error:", error);
-    res.status(500).json({ message: "Failed to fetch conversations" });
+    res.status(500).json({ message: "Failed to fetch conversations: " + error.message });
   }
 };
 
@@ -386,34 +388,41 @@ export const getOrCreateConversation = async (req, res) => {
       recipientModel
     );
 
-    // Populate participants
-    await conversation.populate([
-      {
-        path: "participants.userId",
-        select: "fullName profileImage email",
-      },
-    ]);
+    // Re-fetch with proper population
+    const populatedConversation = await Conversation.findById(conversation._id)
+      .populate([
+        {
+          path: "participants.userId",
+          select: "fullName profileImage email",
+        },
+      ]);
+
+    if (!populatedConversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
 
     // Get other participant info
-    const otherParticipant = conversation.participants.find(
+    const otherParticipant = populatedConversation.participants.find(
       (p) => p.userId._id.toString() !== userId.toString()
     );
 
     // Get unread count
-    const unreadEntry = conversation.unreadCount.find(
+    const unreadEntry = populatedConversation.unreadCount.find(
       (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
     );
 
     res.json({
       success: true,
       conversation: {
-        ...conversation.toObject(),
+        _id: populatedConversation._id,
+        participants: populatedConversation.participants,
+        conversationType: populatedConversation.conversationType,
         unreadCount: unreadEntry ? unreadEntry.count : 0,
         otherParticipant: otherParticipant
           ? {
-              userId: otherParticipant.userId._id,
-              fullName: otherParticipant.userId.fullName,
-              profileImage: otherParticipant.userId.profileImage,
+              userId: otherParticipant.userId._id || otherParticipant.userId,
+              fullName: otherParticipant.userId.fullName || "Unknown",
+              profileImage: otherParticipant.userId.profileImage || null,
               model: otherParticipant.participantsModel,
             }
           : null,
@@ -421,7 +430,7 @@ export const getOrCreateConversation = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Or Create Conversation Error:", error);
-    res.status(500).json({ message: "Failed to get or create conversation" });
+    res.status(500).json({ message: "Failed to get or create conversation: " + error.message });
   }
 };
 
