@@ -2,6 +2,7 @@ import Message from "../models/messageModel.js";
 import Conversation from "../models/conversationModel.js";
 import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
+import mongoose from "mongoose";
 
 /* ======================================================
    SEND MESSAGE
@@ -118,6 +119,11 @@ export const getMessages = async (req, res) => {
     const { page = 1, limit = 50 } = req.query;
     const userId = req.user.id;
 
+    // Validate conversationId
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      return res.status(400).json({ message: "Invalid conversation ID" });
+    }
+
     const conversation = await Conversation.findById(conversationId);
 
     if (!conversation) {
@@ -137,15 +143,19 @@ export const getMessages = async (req, res) => {
     const userModel = req.user.role === "teacher" ? "Teacher" : "User";
     await conversation.resetUnreadCount(userId, userModel);
 
+    // Validate and sanitize pagination parameters
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+
     // Get messages with pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
     const messages = await Message.find({
       conversationId,
       isDeleted: false,
     })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(limitNum)
       .populate({
         path: "sender",
         select: "fullName profileImage email",
@@ -178,10 +188,10 @@ export const getMessages = async (req, res) => {
       success: true,
       messages: reversedMessages,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNum,
+        limit: limitNum,
         total: totalMessages,
-        pages: Math.ceil(totalMessages / parseInt(limit)),
+        pages: Math.ceil(totalMessages / limitNum),
       },
     });
   } catch (error) {
@@ -337,22 +347,14 @@ export const getConversations = async (req, res) => {
       .sort({ "lastMessage.createdAt": -1, updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate([
-        {
-          path: "lastMessage.messageId",
-          select: "content messageType attachments createdAt",
-        },
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "User",
-        },
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "Teacher",
-        },
-      ]);
+      .populate({
+        path: "lastMessage.messageId",
+        select: "content messageType attachments createdAt",
+      })
+      .populate({
+        path: "participants.userId",
+        select: "fullName profileImage email",
+      });
 
     // Get unread count and process participants for each conversation
     const conversationsWithUnread = conversations.map((conv) => {
@@ -441,20 +443,12 @@ export const getOrCreateConversation = async (req, res) => {
       recipientModel
     );
 
-    // Re-fetch with proper population - try both User and Teacher models
+    // Re-fetch with proper population
     const populatedConversation = await Conversation.findById(conversation._id)
-      .populate([
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "User",
-        },
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "Teacher",
-        },
-      ]);
+      .populate({
+        path: "participants.userId",
+        select: "fullName profileImage email",
+      });
 
     if (!populatedConversation) {
       return res.status(404).json({ message: "Conversation not found" });
@@ -513,18 +507,19 @@ export const searchConversations = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
 
+    // Sanitize the query to prevent regex injection
+    const sanitizedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     // Search in user's conversations
     const conversations = await Conversation.find({
       "participants.userId": userId,
       "participants.participantsModel": userModel,
     })
       .sort({ "lastMessage.createdAt": -1 })
-      .populate([
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-        },
-      ]);
+      .populate({
+        path: "participants.userId",
+        select: "fullName profileImage email",
+      });
 
     // Filter conversations based on participant name
     const filteredConversations = conversations.filter((conv) => {
@@ -535,28 +530,26 @@ export const searchConversations = async (req, res) => {
       if (otherParticipant?.userId?.fullName) {
         return otherParticipant.userId.fullName
           .toLowerCase()
-          .includes(query.toLowerCase());
+          .includes(sanitizedQuery.toLowerCase());
       }
       return false;
     });
 
     // Also search in messages
     const messageResults = await Message.find({
-      content: { $regex: query, $options: "i" },
+      content: { $regex: sanitizedQuery, $options: "i" },
       sender: { $ne: userId },
     })
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate([
-        {
-          path: "sender",
-          select: "fullName profileImage",
-        },
-        {
-          path: "conversationId",
-          select: "participants",
-        },
-      ]);
+      .populate({
+        path: "sender",
+        select: "fullName profileImage",
+      })
+      .populate({
+        path: "conversationId",
+        select: "participants",
+      });
 
     // Filter message results to only include conversations user is part of
     const validMessageResults = messageResults.filter((msg) => {
@@ -708,16 +701,14 @@ export const getArchivedConversations = async (req, res) => {
       .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate([
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-        },
-        {
-          path: "lastMessage.messageId",
-          select: "content createdAt",
-        },
-      ]);
+      .populate({
+        path: "participants.userId",
+        select: "fullName profileImage email",
+      })
+      .populate({
+        path: "lastMessage.messageId",
+        select: "content createdAt",
+      });
 
     const totalArchived = await Conversation.countDocuments({
       "participants.userId": userId,
