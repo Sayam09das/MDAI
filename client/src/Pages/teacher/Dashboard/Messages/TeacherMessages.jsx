@@ -48,43 +48,63 @@ const TeacherMessages = () => {
   useEffect(() => {
     const handleConversationFromParams = async () => {
       const convId = searchParams.get('conversation');
-      if (conversations.length > 0 && convId) {
-        const conv = conversations.find(c => c._id === convId);
-        if (conv) {
-          await loadMessages(conv);
-        } else {
-          // Try to fetch conversation directly if not in list
-          try {
-            const response = await messageApi.getMessages(convId);
-            if (response.success || response.messages) {
-              // Create a minimal conversation object from the messages
-              const messages = response.messages || [];
-              if (messages.length > 0) {
-                const otherParticipant = messages[0].sender?._id !== currentUserId ? messages[0].sender : messages[messages.length - 1]?.sender;
-                const minimalConv = {
-                  _id: convId,
-                  otherParticipant: {
-                    userId: otherParticipant?._id || otherParticipant,
-                    fullName: otherParticipant?.fullName || "Unknown",
-                    profileImage: otherParticipant?.profileImage || null,
-                    model: otherParticipant?.role || "User"
-                  },
-                  lastMessage: messages[0]
-                };
-                await loadMessages(minimalConv);
-              }
+      
+      // Wait for conversations to be loaded
+      if (!convId || loading) return;
+
+      // Check if conversation exists in the list
+      let conv = conversations.find(c => c._id === convId);
+      
+      if (conv) {
+        await loadMessages(conv);
+      } else {
+        // Try to fetch conversation directly using getOrCreateConversation
+        try {
+          // First try to find the conversation by getting messages
+          const response = await messageApi.getMessages(convId);
+          if (response.success || response.messages) {
+            const messages = response.messages || [];
+            if (messages.length > 0) {
+              // Find the other participant (not current user)
+              const otherMsg = messages.find(m => {
+                const senderId = m.sender?._id || m.sender;
+                return senderId !== currentUserId;
+              }) || messages[messages.length - 1];
+              
+              const sender = otherMsg?.sender || {};
+              const minimalConv = {
+                _id: convId,
+                otherParticipant: {
+                  userId: sender._id || sender,
+                  fullName: sender.fullName || "Unknown",
+                  profileImage: sender.profileImage || null,
+                  model: sender.role === "teacher" ? "Teacher" : "User"
+                },
+                lastMessage: messages[0]
+              };
+              await loadMessages(minimalConv);
             }
-          } catch (err) {
-            console.error("Failed to load conversation:", err);
+          } else {
+            // Try getOrCreateConversation as fallback
+            const createResponse = await messageApi.getOrCreateConversation(convId, "User");
+            if (createResponse.success && createResponse.conversation) {
+              await loadMessages(createResponse.conversation);
+            }
           }
+        } catch (err) {
+          console.error("Failed to load conversation:", err);
         }
-        // Clear the URL param without refreshing
+      }
+      
+      // Clear the URL param without refreshing
+      if (window.location.search.includes('conversation=')) {
         window.history.replaceState({}, '', '/teacher/messages');
       }
     };
 
+    // Run when conversations are loaded or when searchParams change
     handleConversationFromParams();
-  }, [conversations, searchParams, currentUserId]);
+  }, [conversations, searchParams, loading, currentUserId]);
 
   /* ================= SOCKET LISTENERS ================= */
   useEffect(() => {
