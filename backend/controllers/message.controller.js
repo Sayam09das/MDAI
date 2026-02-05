@@ -8,6 +8,32 @@ import mongoose from "mongoose";
    SENDER POPULATION UTILITY
    This ensures consistent sender info across all endpoints
 ====================================================== */
+
+/**
+ * Helper to safely extract image URL from various formats
+ */
+const extractImageUrl = (image) => {
+  if (!image) return null;
+  
+  // Already a string URL
+  if (typeof image === 'string') {
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return image;
+    }
+    return null;
+  }
+  
+  // It's an object (Cloudinary response)
+  if (typeof image === 'object') {
+    if (image.secure_url) return image.secure_url;
+    if (image.url) return image.url;
+    if (image.path) return image.path;
+    return null;
+  }
+  
+  return null;
+};
+
 const populateSenderInfo = async (senderId, senderModel) => {
   try {
     if (!senderId) {
@@ -39,7 +65,7 @@ const populateSenderInfo = async (senderId, senderModel) => {
       return {
         _id: senderData._id,
         fullName: senderData.fullName || `Unknown ${senderModel}`,
-        profileImage: senderData.profileImage || null,
+        profileImage: extractImageUrl(senderData.profileImage),
         role: senderModel === "User" ? "student" : "teacher",
         email: senderData.email || null
       };

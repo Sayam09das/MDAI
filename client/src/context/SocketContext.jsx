@@ -7,6 +7,32 @@ const SocketContext = createContext(null);
 
 /* ================= MESSAGE NORMALIZATION HELPER ================= */
 // Keep this in sync with utils/messageNormalization.js
+
+/**
+ * Safely extracts image URL from various formats (string, Cloudinary object)
+ */
+const extractImageUrl = (image) => {
+  if (!image) return null;
+  
+  // Already a string URL
+  if (typeof image === 'string') {
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return image;
+    }
+    return null;
+  }
+  
+  // It's an object (Cloudinary response)
+  if (typeof image === 'object') {
+    if (image.secure_url) return image.secure_url;
+    if (image.url) return image.url;
+    if (image.path) return image.path;
+    return null;
+  }
+  
+  return null;
+};
+
 const normalizeMessage = (message, currentUserId) => {
   if (!message) return null;
 
@@ -25,7 +51,7 @@ const normalizeMessage = (message, currentUserId) => {
       sender = {
         _id: message.sender._id || null,
         fullName: message.sender.fullName || `Unknown ${message.sender.role || ''}`.trim() || "Unknown User",
-        profileImage: message.sender.profileImage || null,
+        profileImage: extractImageUrl(message.sender.profileImage),
         role: message.sender.role || (message.senderModel === "Teacher" ? "teacher" : "student"),
         email: message.sender.email || null
       };

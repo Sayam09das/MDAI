@@ -4,6 +4,39 @@
 */
 
 /**
+ * Safely extracts image URL from various formats (string, Cloudinary object)
+ * @param {string|object} image - The image field from database
+ * @returns {string|null} - The extracted URL or null
+ */
+export const extractImageUrl = (image) => {
+  if (!image) return null;
+  
+  // Already a string URL
+  if (typeof image === 'string') {
+    // Check if it's a valid URL
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return image;
+    }
+    // It's a Cloudinary public_id or something else
+    return null;
+  }
+  
+  // It's an object (Cloudinary response)
+  if (typeof image === 'object') {
+    // Try secure_url first (Cloudinary standard)
+    if (image.secure_url) return image.secure_url;
+    // Try url field
+    if (image.url) return image.url;
+    // Try direct path
+    if (image.path) return image.path;
+    // Return null if no valid URL found
+    return null;
+  }
+  
+  return null;
+};
+
+/**
  * Normalizes a message object to always have proper sender info
  * Handles cases where sender might be just an ID or missing fields
  */
@@ -28,7 +61,7 @@ export const normalizeMessage = (message, currentUserId) => {
       sender = {
         _id: message.sender._id || null,
         fullName: message.sender.fullName || `Unknown ${message.sender.role || ''}`.trim() || "Unknown User",
-        profileImage: message.sender.profileImage || null,
+        profileImage: extractImageUrl(message.sender.profileImage),
         role: message.sender.role || (message.senderModel === "Teacher" ? "teacher" : "student"),
         email: message.sender.email || null
       };
@@ -89,7 +122,7 @@ export const normalizeConversation = (conversation) => {
       otherParticipant = {
         userId: conversation.otherParticipant.userId || conversation.otherParticipant._id || null,
         fullName: conversation.otherParticipant.fullName || "Unknown User",
-        profileImage: conversation.otherParticipant.profileImage || null,
+        profileImage: extractImageUrl(conversation.otherParticipant.profileImage),
         model: conversation.otherParticipant.model || conversation.otherParticipant.participantsModel || "unknown"
       };
     } else {
@@ -169,6 +202,7 @@ export default {
   normalizeConversations,
   getUserDisplayName,
   getUserAvatar,
-  formatSenderName
+  formatSenderName,
+  extractImageUrl
 };
 
