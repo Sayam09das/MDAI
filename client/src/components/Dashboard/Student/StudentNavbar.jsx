@@ -7,6 +7,7 @@ import {
     Settings,
     Search,
     MessageSquare,
+    X,
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -25,6 +26,7 @@ const StudentNavbar = ({ onMenuClick }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [time, setTime] = useState(new Date());
+    const [searchQuery, setSearchQuery] = useState("");
 
     /* Notifications state */
     const [notifications, setNotifications] = useState([
@@ -108,6 +110,29 @@ const StudentNavbar = ({ onMenuClick }) => {
         return () => clearInterval(timer);
     }, []);
 
+    /* Search handlers */
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
+    const handleSearchSubmit = (e) => {
+        if (e.key === 'Enter' && searchQuery.trim()) {
+            navigate(`/student-dashboard/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchQuery('');
+        }
+    };
+
+    const handleSearchClick = () => {
+        if (searchQuery.trim()) {
+            navigate(`/student-dashboard/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchQuery('');
+        }
+    };
+
+    const clearSearch = () => {
+        setSearchQuery('');
+    };
+
     return (
         <>
             {/* NAVBAR */}
@@ -146,8 +171,19 @@ const StudentNavbar = ({ onMenuClick }) => {
                             <input
                                 type="text"
                                 placeholder="Search courses, students..."
-                                className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white border border-gray-200 outline-none hover:border-gray-300 focus:border-gray-400"
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                onKeyDown={handleSearchSubmit}
+                                className="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white border border-gray-200 outline-none hover:border-gray-300 focus:border-gray-400"
                             />
+                            {searchQuery && (
+                                <button
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Time */}
