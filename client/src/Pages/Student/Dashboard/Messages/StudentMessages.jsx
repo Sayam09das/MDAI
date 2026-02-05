@@ -60,16 +60,45 @@ const StudentMessages = () => {
 
   /* ================= HANDLE CONVERSATION FROM URL PARAMS ================= */
   useEffect(() => {
-    if (conversations.length > 0 && searchParams.get('conversation')) {
+    const handleConversationFromParams = async () => {
       const convId = searchParams.get('conversation');
-      const conv = conversations.find(c => c._id === convId);
-      if (conv) {
-        loadMessages(conv);
+      if (conversations.length > 0 && convId) {
+        const conv = conversations.find(c => c._id === convId);
+        if (conv) {
+          await loadMessages(conv);
+        } else {
+          // Try to fetch conversation directly if not in list
+          try {
+            const response = await messageApi.getMessages(convId);
+            if (response.success || response.messages) {
+              // Create a minimal conversation object from the messages
+              const messages = response.messages || [];
+              if (messages.length > 0) {
+                const otherParticipant = messages[0].sender?._id !== currentUserId ? messages[0].sender : messages[messages.length - 1]?.sender;
+                const minimalConv = {
+                  _id: convId,
+                  otherParticipant: {
+                    userId: otherParticipant?._id || otherParticipant,
+                    fullName: otherParticipant?.fullName || "Unknown",
+                    profileImage: otherParticipant?.profileImage || null,
+                    model: otherParticipant?.role || "Teacher"
+                  },
+                  lastMessage: messages[0]
+                };
+                await loadMessages(minimalConv);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to load conversation:", err);
+          }
+        }
         // Clear the URL param without refreshing
         window.history.replaceState({}, '', '/student-dashboard/messages');
       }
-    }
-  }, [conversations, searchParams]);
+    };
+
+    handleConversationFromParams();
+  }, [conversations, searchParams, currentUserId]);
 
   /* ================= SOCKET LISTENERS ================= */
   useEffect(() => {
