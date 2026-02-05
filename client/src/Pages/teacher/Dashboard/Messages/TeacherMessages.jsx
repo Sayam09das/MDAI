@@ -4,10 +4,12 @@ import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
 import { normalizeMessage, normalizeMessages, normalizeConversation, normalizeConversations } from "../../../../utils/messageNormalization";
+import { useSearchParams } from "react-router-dom";
 
 /* ================= TEACHER MESSAGES PAGE - WHATSAPP STYLE ================= */
 
 const TeacherMessages = () => {
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -41,6 +43,48 @@ const TeacherMessages = () => {
     loadConversations();
     loadUnreadCount();
   }, []);
+
+  /* ================= HANDLE CONVERSATION FROM URL PARAMS ================= */
+  useEffect(() => {
+    const handleConversationFromParams = async () => {
+      const convId = searchParams.get('conversation');
+      if (conversations.length > 0 && convId) {
+        const conv = conversations.find(c => c._id === convId);
+        if (conv) {
+          await loadMessages(conv);
+        } else {
+          // Try to fetch conversation directly if not in list
+          try {
+            const response = await messageApi.getMessages(convId);
+            if (response.success || response.messages) {
+              // Create a minimal conversation object from the messages
+              const messages = response.messages || [];
+              if (messages.length > 0) {
+                const otherParticipant = messages[0].sender?._id !== currentUserId ? messages[0].sender : messages[messages.length - 1]?.sender;
+                const minimalConv = {
+                  _id: convId,
+                  otherParticipant: {
+                    userId: otherParticipant?._id || otherParticipant,
+                    fullName: otherParticipant?.fullName || "Unknown",
+                    profileImage: otherParticipant?.profileImage || null,
+                    model: otherParticipant?.role || "User"
+                  },
+                  lastMessage: messages[0]
+                };
+                await loadMessages(minimalConv);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to load conversation:", err);
+          }
+        }
+        // Clear the URL param without refreshing
+        window.history.replaceState({}, '', '/teacher/messages');
+      }
+    };
+
+    handleConversationFromParams();
+  }, [conversations, searchParams, currentUserId]);
 
   /* ================= SOCKET LISTENERS ================= */
   useEffect(() => {

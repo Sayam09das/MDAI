@@ -4,10 +4,12 @@ import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
 import { normalizeMessage, normalizeMessages, normalizeConversation, normalizeConversations } from "../../../../utils/messageNormalization";
+import { useSearchParams } from "react-router-dom";
 
 /* ================= STUDENT MESSAGES PAGE - WHATSAPP STYLE ================= */
 
 const StudentMessages = () => {
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -55,6 +57,19 @@ const StudentMessages = () => {
     loadConversations();
     loadUnreadCount();
   }, []);
+
+  /* ================= HANDLE CONVERSATION FROM URL PARAMS ================= */
+  useEffect(() => {
+    if (conversations.length > 0 && searchParams.get('conversation')) {
+      const convId = searchParams.get('conversation');
+      const conv = conversations.find(c => c._id === convId);
+      if (conv) {
+        loadMessages(conv);
+        // Clear the URL param without refreshing
+        window.history.replaceState({}, '', '/student-dashboard/messages');
+      }
+    }
+  }, [conversations, searchParams]);
 
   /* ================= SOCKET LISTENERS ================= */
   useEffect(() => {
