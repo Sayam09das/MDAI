@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 /* ======================================================
    SOCKET.IO SETUP FOR REAL-TIME MESSAGING
@@ -134,21 +135,63 @@ const setupSocket = (httpServer) => {
     });
 
     /* ======================================================
-       NEW MESSAGE (Real-time)
+       NEW MESSAGE (Real-time) - WITH POPULATED SENDER INFO
     ====================================================== */
     socket.on("new_message", async (data) => {
       const { message, conversationId, recipientId } = data;
 
-      // Emit to conversation room
-      io.to(`conversation_${conversationId}`).emit("receive_message", message);
+      try {
+        // Import Message model dynamically to avoid circular dependency
+        const Message = (await import("../models/messageModel.js")).default;
 
-      // Emit notification to recipient
-      if (recipientId) {
-        io.to(`user_${recipientId}`).emit("new_message_notification", {
-          conversationId,
-          message,
-          senderId: socket.user.id,
-        });
+        // Fetch the message with populated sender information
+        const populatedMessage = await Message.findById(message._id || message.messageId)
+          .populate([
+            {
+              path: "sender",
+              select: "fullName profileImage email",
+            },
+          ]);
+
+        if (populatedMessage) {
+          // Convert to plain object with populated sender
+          const messageWithSender = populatedMessage.toObject();
+
+          // Emit to conversation room with full sender info
+          io.to(`conversation_${conversationId}`).emit("receive_message", messageWithSender);
+
+          // Emit notification to recipient
+          if (recipientId) {
+            io.to(`user_${recipientId}`).emit("new_message_notification", {
+              conversationId,
+              message: messageWithSender,
+              senderId: socket.user.id,
+            });
+          }
+        } else {
+          // Fallback to original message if not found
+          io.to(`conversation_${conversationId}`).emit("receive_message", message);
+
+          if (recipientId) {
+            io.to(`user_${recipientId}`).emit("new_message_notification", {
+              conversationId,
+              message,
+              senderId: socket.user.id,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error in new_message socket handler:", error);
+        // Fallback: emit original message
+        io.to(`conversation_${conversationId}`).emit("receive_message", message);
+
+        if (recipientId) {
+          io.to(`user_${recipientId}`).emit("new_message_notification", {
+            conversationId,
+            message,
+            senderId: socket.user.id,
+          });
+        }
       }
     });
 

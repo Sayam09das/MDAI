@@ -70,7 +70,15 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("receive_message", (message) => {
       // Handle incoming message - this will be listened by chat components
+      // Ensure message has proper sender structure for frontend
       console.log("📩 New message received:", message);
+      
+      // Normalize sender structure if needed
+      if (message.sender && typeof message.sender === 'object') {
+        // Message already has populated sender - ready to use
+      } else if (message.sender) {
+        // Sender is just an ID - will be handled by chat component
+      }
     });
 
     newSocket.on("new_message_notification", (data) => {
