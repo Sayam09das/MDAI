@@ -10,10 +10,11 @@ import ContactRoutes from "./routes/ContactRoutes"
 import TeacherRoutes from "./routes/TeacherRoutes"
 import StudentRoutes from "./routes/StudentRoutes"
 import PaymentRoutes from "./routes/PaymentRoutes"
+import { SocketProvider } from "./context/SocketContext"
 
 const App = () => {
   return (
-    <>
+    <SocketProvider>
       <ToastContainer />
       <MainRoutes />
       <CourseRoutes />
@@ -23,7 +24,7 @@ const App = () => {
       <TeacherRoutes />
       <StudentRoutes />
       <PaymentRoutes />
-    </>
+    </SocketProvider>
   )
 }
 

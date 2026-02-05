@@ -14,6 +14,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 import database from "./database/db.js";
 
 dotenv.config();
@@ -60,6 +61,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/resource", resourceRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/messages", messageRoutes);
 
 
 app.get("/ping", (req, res) => {
