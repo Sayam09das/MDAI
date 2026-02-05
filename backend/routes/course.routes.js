@@ -43,10 +43,11 @@ router.patch(
   publishCourse
 );
 
-router.get("/:id", getCourseById);
-
-// Global search for courses
+// Global search for courses - MUST be before /:id route
 router.get("/search", searchCourses);
+
+// GET SINGLE COURSE BY ID - Must be after /search
+router.get("/:id", getCourseById);
 
 
 export default router;
