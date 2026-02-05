@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Search, BookOpen, Users, FileText, Calendar, X, ArrowRight } from "lucide-react";
+import { Search, BookOpen, FileText, X, ArrowRight, Loader2 } from "lucide-react";
+import { searchCourses, searchResources } from "../../../../lib/api";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -9,13 +10,11 @@ const SearchPage = () => {
     const navigate = useNavigate();
     const query = searchParams.get("q") || "";
 
-    const [results, setResults] = useState({
-        courses: [],
-        students: [],
-        resources: []
-    });
+    const [courses, setCourses] = useState([]);
+    const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("all");
+    const [localQuery, setLocalQuery] = useState(query);
 
     useEffect(() => {
         if (query) {
@@ -24,22 +23,21 @@ const SearchPage = () => {
     }, [query]);
 
     const performSearch = async (searchQuery) => {
+        if (!searchQuery.trim()) return;
+
         setLoading(true);
         try {
-            // For now, we'll show a message that search is being implemented
-            // In a real app, you'd make API calls to search courses, students, etc.
-            console.log("Searching for:", searchQuery);
-            
-            // Simulated results for demo purposes
-            setResults({
-                courses: [
-                    { id: 1, title: "Introduction to Python", category: "Programming" },
-                    { id: 2, title: "Advanced JavaScript", category: "Programming" },
-                    { id: 3, title: "Data Science Fundamentals", category: "Data Science" },
-                ],
-                students: [],
-                resources: []
-            });
+            // Search courses
+            const coursesResult = await searchCourses(searchQuery, 20);
+            if (coursesResult.success) {
+                setCourses(coursesResult.courses || []);
+            }
+
+            // Search resources
+            const resourcesResult = await searchResources(searchQuery, 20);
+            if (Array.isArray(resourcesResult)) {
+                setResources(resourcesResult);
+            }
         } catch (error) {
             console.error("Search error:", error);
         } finally {
@@ -47,39 +45,75 @@ const SearchPage = () => {
         }
     };
 
+    const handleSearchSubmit = (e) => {
+        e?.preventDefault();
+        if (localQuery.trim()) {
+            navigate(`/student-dashboard/search?q=${encodeURIComponent(localQuery.trim())}`);
+        }
+    };
+
     const clearSearch = () => {
+        setLocalQuery("");
         navigate("/student-dashboard");
     };
 
-    const filteredResults = () => {
-        if (activeTab === "all") return results;
-        return {
-            courses: activeTab === "courses" ? results.courses : [],
-            students: activeTab === "students" ? results.students : [],
-            resources: activeTab === "resources" ? results.resources : []
-        };
+    const filteredCourses = () => {
+        if (activeTab === "all" || activeTab === "courses") return courses;
+        return [];
     };
 
-    const totalResults = results.courses.length + results.students.length + results.resources.length;
+    const filteredResources = () => {
+        if (activeTab === "all" || activeTab === "resources") return resources;
+        return [];
+    };
+
+    const totalResults = courses.length + resources.length;
 
     return (
         <div className="px-4 sm:px-5 md:px-6 lg:px-8 py-6">
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Search Results</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Search</h1>
                 <p className="text-gray-600 mt-1">
-                    {query ? `Showing results for "${query}"` : "Enter a search query"}
+                    Find courses, resources, and more
                 </p>
             </div>
 
-            {/* Search Query Display */}
+            {/* Search Input */}
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-2xl mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Search for courses, resources..."
+                    value={localQuery}
+                    onChange={(e) => setLocalQuery(e.target.value)}
+                    className="w-full pl-12 pr-12 py-3 text-base rounded-xl bg-white border border-gray-200 outline-none hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                />
+                {localQuery && (
+                    <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
+                <button
+                    type="submit"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                >
+                    <Search className="w-5 h-5" />
+                </button>
+            </form>
+
+            {/* Query Display */}
             {query && (
                 <div className="bg-blue-50 rounded-xl p-4 mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Search className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-gray-900">{query}</span>
+                        <span className="font-medium text-gray-900">"{query}"</span>
                         <span className="text-sm text-gray-500">
-                            ({totalResults} results found)
+                            ({totalResults} results)
                         </span>
                     </div>
                     <button
@@ -97,7 +131,6 @@ const SearchPage = () => {
                     {[
                         { key: "all", label: "All", icon: Search },
                         { key: "courses", label: "Courses", icon: BookOpen },
-                        { key: "students", label: "Students", icon: Users },
                         { key: "resources", label: "Resources", icon: FileText },
                     ].map((tab) => (
                         <button
@@ -111,6 +144,16 @@ const SearchPage = () => {
                         >
                             <tab.icon className="w-4 h-4" />
                             {tab.label}
+                            {tab.key === "courses" && courses.length > 0 && (
+                                <span className="ml-1 px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full">
+                                    {courses.length}
+                                </span>
+                            )}
+                            {tab.key === "resources" && resources.length > 0 && (
+                                <span className="ml-1 px-2 py-0.5 text-xs bg-green-500 text-white rounded-full">
+                                    {resources.length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -119,7 +162,7 @@ const SearchPage = () => {
             {/* Loading State */}
             {loading && (
                 <div className="flex items-center justify-center py-12">
-                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                 </div>
             )}
 
@@ -129,14 +172,16 @@ const SearchPage = () => {
                     <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
                     <p className="text-gray-500 mb-4">
-                        We couldn't find any matches for "{query}"
+                        We couldn't find anything matching "{query}"
                     </p>
-                    <button
-                        onClick={clearSearch}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        Clear Search
-                    </button>
+                    <div className="flex justify-center gap-3">
+                        <button
+                            onClick={clearSearch}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Clear Search
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -144,58 +189,60 @@ const SearchPage = () => {
             {!loading && totalResults > 0 && (
                 <div className="space-y-6">
                     {/* Courses */}
-                    {filteredResults().courses.length > 0 && (
+                    {filteredCourses().length > 0 && (
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-blue-600" />
                                 Courses
                             </h2>
-                            <div className="grid gap-3">
-                                {filteredResults().courses.map((course) => (
+                            <div className="grid gap-4">
+                                {filteredCourses().map((course) => (
                                     <div
-                                        key={course.id}
+                                        key={course._id}
                                         className="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
-                                        onClick={() => navigate(`/student-dashboard/course/${course.id}`)}
+                                        onClick={() => navigate(`/student-dashboard/course/${course._id}`)}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">{course.title}</h3>
-                                                <p className="text-sm text-gray-500">{course.category}</p>
+                                        <div className="flex items-start gap-4">
+                                            {/* Thumbnail */}
+                                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                {course.thumbnail?.url ? (
+                                                    <img
+                                                        src={course.thumbnail.url}
+                                                        alt={course.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                        <BookOpen className="w-8 h-8 text-gray-400" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Students */}
-                    {filteredResults().students.length > 0 && (
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-green-600" />
-                                Students
-                            </h2>
-                            <div className="grid gap-3">
-                                {filteredResults().students.map((student) => (
-                                    <div
-                                        key={student.id}
-                                        className="bg-white border border-gray-200 rounded-xl p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                                    <span className="text-sm font-medium">
-                                                        {student.name?.charAt(0) || "S"}
+                                            
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold text-gray-900 truncate">
+                                                    {course.title}
+                                                </h3>
+                                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                                    {course.description}
+                                                </p>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                                        {course.category}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-medium text-gray-900">{student.name}</h3>
-                                                    <p className="text-sm text-gray-500">{student.email}</p>
+                                                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded">
+                                                        {course.level}
+                                                    </span>
+                                                    {course.instructor && (
+                                                        <span className="text-xs text-gray-500">
+                                                            by {course.instructor.name || course.instructor.email}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-400" />
+
+                                            {/* Arrow */}
+                                            <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-2" />
                                         </div>
                                     </div>
                                 ))}
@@ -204,30 +251,76 @@ const SearchPage = () => {
                     )}
 
                     {/* Resources */}
-                    {filteredResults().resources.length > 0 && (
+                    {filteredResources().length > 0 && (
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-purple-600" />
+                                <FileText className="w-5 h-5 text-green-600" />
                                 Resources
                             </h2>
-                            <div className="grid gap-3">
-                                {filteredResults().resources.map((resource) => (
+                            <div className="grid gap-4">
+                                {filteredResources().map((resource) => (
                                     <div
-                                        key={resource.id}
-                                        className="bg-white border border-gray-200 rounded-xl p-4 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer"
+                                        key={resource._id}
+                                        className="bg-white border border-gray-200 rounded-xl p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
+                                        onClick={() => {
+                                            if (resource.driveLink) {
+                                                window.open(resource.driveLink, '_blank');
+                                            } else if (resource.file?.url) {
+                                                window.open(resource.file.url, '_blank');
+                                            }
+                                        }}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">{resource.title}</h3>
-                                                <p className="text-sm text-gray-500">{resource.type}</p>
+                                        <div className="flex items-start gap-4">
+                                            {/* Icon */}
+                                            <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                                                {resource.fileType === "video" ? (
+                                                    <BookOpen className="w-6 h-6 text-green-600" />
+                                                ) : resource.fileType === "pdf" ? (
+                                                    <FileText className="w-6 h-6 text-red-600" />
+                                                ) : (
+                                                    <FileText className="w-6 h-6 text-blue-600" />
+                                                )}
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-400" />
+                                            
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold text-gray-900 truncate">
+                                                    {resource.title}
+                                                </h3>
+                                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                                    {resource.description}
+                                                </p>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded uppercase">
+                                                        {resource.fileType}
+                                                    </span>
+                                                    {resource.courseTitle && (
+                                                        <span className="text-xs text-gray-500">
+                                                            Course: {resource.courseTitle}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Arrow */}
+                                            <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-2" />
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* No Query State */}
+            {!query && !loading && (
+                <div className="text-center py-12">
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Start searching</h3>
+                    <p className="text-gray-500">
+                        Enter a keyword to search for courses and resources
+                    </p>
                 </div>
             )}
         </div>

@@ -7,6 +7,7 @@ import {
     deleteResource,
     getTeacherResources,
     getAllResources,
+    searchResources,
 } from "../controllers/resource.controller.js";
 
 const router = express.Router();
@@ -29,14 +30,13 @@ router.put("/:id", upload.fields([
 // Teacher: Delete own resource | Admin: Delete any resource
 router.delete("/:id", deleteResource);
 
-
-
 // Teacher: Get own resources
 router.get("/teacher/me", getTeacherResources);
 
 // Student: Get all resources (public to authenticated users)
 router.get("/", getAllResources);
 
-
+// Global search across resources
+router.get("/search", searchResources);
 
 export default router;

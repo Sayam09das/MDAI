@@ -5,6 +5,7 @@ import {
   getAllPublishedCourses,
   publishCourse,
   getCourseById,
+  searchCourses,
 } from "../controllers/course.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -43,6 +44,9 @@ router.patch(
 );
 
 router.get("/:id", getCourseById);
+
+// Global search for courses
+router.get("/search", searchCourses);
 
 
 export default router;

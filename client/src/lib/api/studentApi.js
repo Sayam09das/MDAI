@@ -175,6 +175,18 @@ export const getTeacherDashboardStats = () => {
   );
 };
 
+/* ================= SEARCH APIs ================= */
+
+export const searchCourses = (query, limit = 10) => {
+    const encodedQuery = encodeURIComponent(query);
+    return fetchAPI(`/api/courses/search?q=${encodedQuery}&limit=${limit}`);
+};
+
+export const searchResources = (query, limit = 10) => {
+    const encodedQuery = encodeURIComponent(query);
+    return fetchAPI(`/api/resources/search?q=${encodedQuery}&limit=${limit}`);
+};
+
 /* ================= EXPORT ================= */
 
 export default {
@@ -184,4 +196,6 @@ export default {
   getStudentActivityHours,
   getStudentDashboardStats,
   getTeacherDashboardStats,
+  searchCourses,
+  searchResources,
 };

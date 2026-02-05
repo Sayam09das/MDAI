@@ -114,3 +114,38 @@ export const getCourseById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/* =====================================================
+   GLOBAL SEARCH FOR COURSES
+===================================================== */
+export const searchCourses = async (req, res) => {
+    try {
+        const { q, limit = 10 } = req.query;
+        
+        if (!q || q.trim() === "") {
+            return res.json([]);
+        }
+
+        const searchQuery = {
+            isPublished: true,
+            $or: [
+                { title: { $regex: q, $options: "i" } },
+                { description: { $regex: q, $options: "i" } },
+                { category: { $regex: q, $options: "i" } },
+                { level: { $regex: q, $options: "i" } },
+            ],
+        };
+
+        const courses = await Course.find(searchQuery)
+            .populate("instructor", "name email")
+            .limit(parseInt(limit))
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            courses,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

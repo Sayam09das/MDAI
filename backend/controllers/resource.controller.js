@@ -380,3 +380,37 @@ export const getAllResourcesAdmin = async (req, res) => {
     }
 };
 
+/* =====================================================
+   GLOBAL SEARCH FOR RESOURCES (STUDENT/TEACHER)
+===================================================== */
+export const searchResources = async (req, res) => {
+    try {
+        const { q, limit = 10 } = req.query;
+        
+        if (!q || q.trim() === "") {
+            return res.json([]);
+        }
+
+        const searchQuery = {
+            $or: [
+                { title: { $regex: q, $options: "i" } },
+                { description: { $regex: q, $options: "i" } },
+                { courseTitle: { $regex: q, $options: "i" } },
+                { teacherName: { $regex: q, $options: "i" } },
+            ],
+        };
+
+        const resources = await Resource.find(searchQuery)
+            .limit(parseInt(limit))
+            .sort({ createdAt: -1 });
+
+        res.json(resources);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Failed to search resources",
+            error: error.message,
+        });
+    }
+};
+
