@@ -45,14 +45,35 @@ const clearSearch = () => {
 - Add clear button when searchQuery has text
 
 ## Progress
-- [ ] Edit StudentNavbar.jsx
-- [ ] Edit TeacherNavbar.jsx
-- [ ] Test search functionality
+- [x] Edit StudentNavbar.jsx
+- [x] Edit TeacherNavbar.jsx
+- [x] Create Student Search Page
+- [x] Create Teacher Search Page
+- [x] Add Routes for Search Pages
+
+## Files Created
+- `client/src/Pages/Student/Dashboard/Search/Search.jsx`
+- `client/src/Pages/Student/Dashboard/Search/ReturnSearch.jsx`
+- `client/src/Pages/teacher/Dashboard/MainSearch/Search.jsx`
+- `client/src/Pages/teacher/Dashboard/MainSearch/ReturnSearch.jsx`
+
+## Routes Added
+- `/student-dashboard/search`
+- `/teacher-dashboard/search`
+
+## Features Implemented
+1. **Real-time search input** - Text updates as you type
+2. **Keyboard support** - Press Enter to search
+3. **Clear button** - X button to clear search
+4. **URL navigation** - Search queries are passed via URL parameters
+5. **Search results page** - Dedicated page to display results
+6. **Tab filtering** - Filter by All, Courses, Students, Resources
 
 ## Notes
 Based on existing search patterns in:
 - `EnrolledStudents.jsx` - uses filtered array approach
 - `TeacherTasks.jsx` - uses filtered array approach
 
-We'll implement URL-based search to support page navigation.
+URL-based search is implemented for page navigation support.
+The search results page shows simulated data and can be connected to real API endpoints.
 
