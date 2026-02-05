@@ -77,27 +77,25 @@ export const sendMessage = async (req, res) => {
     }
 
     // Fetch the saved message with populated sender info
-    let populatedMessage = await Message.findById(message._id)
-      .populate({
-        path: "sender",
-        select: "fullName profileImage email",
-      });
-
-    // Create sender fallback data
-    const senderData = {
-      _id: senderId,
-      fullName: req.user.fullName || (senderModel === "Teacher" ? "Unknown Teacher" : "Unknown Student"),
-      profileImage: null,
-    };
-
-    // If sender is not populated or is null, use fallback
-    if (!populatedMessage.sender) {
-      populatedMessage = populatedMessage.toObject();
-      populatedMessage.sender = senderData;
-    } else if (typeof populatedMessage.sender === 'string') {
-      // If populated with just ID, use fallback name
-      populatedMessage.sender = senderData;
+    let senderData = null;
+    try {
+      if (senderModel === "User") {
+        senderData = await User.findById(senderId).select("fullName profileImage email");
+      } else if (senderModel === "Teacher") {
+        senderData = await Teacher.findById(senderId).select("fullName profileImage email");
+      }
+    } catch (error) {
+      console.error("Error populating sender:", error);
     }
+
+    const populatedMessage = {
+      ...message.toObject(),
+      sender: senderData || {
+        _id: senderId,
+        fullName: req.user.fullName || `Unknown ${senderModel}`,
+        profileImage: null,
+      },
+    };
 
     res.status(201).json({
       success: true,
@@ -155,25 +153,38 @@ export const getMessages = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limitNum)
-      .populate({
-        path: "sender",
-        select: "fullName profileImage email",
-      });
+      .limit(limitNum);
 
-    // Process messages to ensure sender is properly populated
-    const processedMessages = messages.map((msg) => {
-      const messageObj = msg.toObject();
-      // If sender is null, undefined, or a string (not populated), use fallback
-      if (!msg.sender || typeof msg.sender === 'string') {
-        messageObj.sender = {
-          _id: msg.sender || msg.senderModel,
-          fullName: msg.senderModel === "Teacher" ? "Unknown Teacher" : "Unknown Student",
-          profileImage: null,
-        };
-      }
-      return messageObj;
-    });
+    // Manually populate sender information
+    const processedMessages = await Promise.all(
+      messages.map(async (msg) => {
+        const messageObj = msg.toObject();
+        
+        try {
+          let senderData = null;
+          if (msg.senderModel === "User") {
+            senderData = await User.findById(msg.sender).select("fullName profileImage email");
+          } else if (msg.senderModel === "Teacher") {
+            senderData = await Teacher.findById(msg.sender).select("fullName profileImage email");
+          }
+          
+          messageObj.sender = senderData || {
+            _id: msg.sender,
+            fullName: `Unknown ${msg.senderModel}`,
+            profileImage: null,
+          };
+        } catch (error) {
+          console.error("Error populating sender:", error);
+          messageObj.sender = {
+            _id: msg.sender,
+            fullName: `Unknown ${msg.senderModel}`,
+            profileImage: null,
+          };
+        }
+        
+        return messageObj;
+      })
+    );
 
     // Reverse for chronological order
     const reversedMessages = processedMessages.reverse();
@@ -339,6 +350,7 @@ export const getConversations = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Get conversations without population first
     const conversations = await Conversation.find({
       "participants.userId": userId,
       "participants.participantsModel": userModel,
@@ -350,57 +362,48 @@ export const getConversations = async (req, res) => {
       .populate({
         path: "lastMessage.messageId",
         select: "content messageType attachments createdAt",
-      })
-      .populate({
-        path: "participants.userId",
-        select: "fullName profileImage email",
       });
 
-    // Get unread count and process participants for each conversation
-    const conversationsWithUnread = conversations.map((conv) => {
-      const unreadEntry = conv.unreadCount.find(
-        (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
-      );
+    // Manually populate participants based on their model
+    const conversationsWithUnread = await Promise.all(
+      conversations.map(async (conv) => {
+        const unreadEntry = conv.unreadCount.find(
+          (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
+        );
 
-      // Find the other participant (not the current user)
-      // Handle case where userId might be null/undefined
-      const otherParticipant = conv.participants.find((p) => {
-        const participantId = p.userId?._id || p.userId;
-        return participantId?.toString() !== userId.toString();
-      });
+        // Find the other participant (not the current user)
+        const otherParticipant = conv.participants.find((p) => {
+          return p.userId.toString() !== userId.toString();
+        });
 
-      // Get user data from populated field or use participant data
-      let fullName = "Unknown User";
-      let profileImage = null;
-      let userIdValue = null;
-
-      if (otherParticipant?.userId) {
-        userIdValue = otherParticipant.userId?._id || otherParticipant.userId;
-        
-        // If userId is populated with user data
-        if (typeof otherParticipant.userId === 'object') {
-          fullName = otherParticipant.userId.fullName || "Unknown User";
-          profileImage = otherParticipant.userId.profileImage || null;
-        } else {
-          // UserId is just an ObjectId, we'll need to fetch the user data
-          // For now, use model-specific fallback
-          fullName = otherParticipant.participantsModel === "Teacher" ? "Unknown Teacher" : "Unknown Student";
-        }
-      }
-
-      return {
-        ...conv.toObject(),
-        unreadCount: unreadEntry ? unreadEntry.count : 0,
-        otherParticipant: otherParticipant
-          ? {
-              userId: userIdValue,
-              fullName: fullName,
-              profileImage: profileImage,
-              model: otherParticipant.participantsModel,
+        let userData = null;
+        if (otherParticipant) {
+          try {
+            // Manually populate based on model type
+            if (otherParticipant.participantsModel === "User") {
+              userData = await User.findById(otherParticipant.userId).select("fullName profileImage email");
+            } else if (otherParticipant.participantsModel === "Teacher") {
+              userData = await Teacher.findById(otherParticipant.userId).select("fullName profileImage email");
             }
-          : null,
-      };
-    });
+          } catch (error) {
+            console.error("Error populating participant:", error);
+          }
+        }
+
+        return {
+          ...conv.toObject(),
+          unreadCount: unreadEntry ? unreadEntry.count : 0,
+          otherParticipant: otherParticipant
+            ? {
+                userId: otherParticipant.userId,
+                fullName: userData?.fullName || `Unknown ${otherParticipant.participantsModel}`,
+                profileImage: userData?.profileImage || null,
+                model: otherParticipant.participantsModel,
+              }
+            : null,
+        };
+      })
+    );
 
     const totalConversations = await Conversation.countDocuments({
       "participants.userId": userId,
@@ -443,45 +446,48 @@ export const getOrCreateConversation = async (req, res) => {
       recipientModel
     );
 
-    // Re-fetch with proper population
-    const populatedConversation = await Conversation.findById(conversation._id)
-      .populate({
-        path: "participants.userId",
-        select: "fullName profileImage email",
-      });
+    // Get the conversation without population first
+    const foundConversation = await Conversation.findById(conversation._id);
 
-    if (!populatedConversation) {
+    if (!foundConversation) {
       return res.status(404).json({ message: "Conversation not found" });
     }
 
-    // Get other participant info - handle populated vs unpopulated
-    const otherParticipant = populatedConversation.participants.find((p) => {
-      const participantUserId = p.userId?._id || p.userId;
-      return participantUserId?.toString() !== userId.toString();
+    // Find the other participant
+    const otherParticipant = foundConversation.participants.find((p) => {
+      return p.userId.toString() !== userId.toString();
     });
 
+    // Manually populate the other participant
+    let userData = null;
+    if (otherParticipant) {
+      try {
+        if (otherParticipant.participantsModel === "User") {
+          userData = await User.findById(otherParticipant.userId).select("fullName profileImage email");
+        } else if (otherParticipant.participantsModel === "Teacher") {
+          userData = await Teacher.findById(otherParticipant.userId).select("fullName profileImage email");
+        }
+      } catch (error) {
+        console.error("Error populating participant:", error);
+      }
+    }
+
     // Get unread count
-    const unreadEntry = populatedConversation.unreadCount.find(
+    const unreadEntry = foundConversation.unreadCount.find(
       (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
     );
-
-    // Get user data if populated
-    let userData = null;
-    if (otherParticipant?.userId && typeof otherParticipant.userId === 'object') {
-      userData = otherParticipant.userId;
-    }
 
     res.json({
       success: true,
       conversation: {
-        _id: populatedConversation._id,
-        participants: populatedConversation.participants,
-        conversationType: populatedConversation.conversationType,
+        _id: foundConversation._id,
+        participants: foundConversation.participants,
+        conversationType: foundConversation.conversationType,
         unreadCount: unreadEntry ? unreadEntry.count : 0,
         otherParticipant: otherParticipant
           ? {
-              userId: (otherParticipant.userId?._id || otherParticipant.userId)?.toString(),
-              fullName: userData?.fullName || "Unknown User",
+              userId: otherParticipant.userId.toString(),
+              fullName: userData?.fullName || `Unknown ${otherParticipant.participantsModel}`,
               profileImage: userData?.profileImage || null,
               model: otherParticipant.participantsModel,
             }
@@ -515,41 +521,90 @@ export const searchConversations = async (req, res) => {
       "participants.userId": userId,
       "participants.participantsModel": userModel,
     })
-      .sort({ "lastMessage.createdAt": -1 })
-      .populate({
-        path: "participants.userId",
-        select: "fullName profileImage email",
-      });
+      .sort({ "lastMessage.createdAt": -1 });
 
-    // Filter conversations based on participant name
-    const filteredConversations = conversations.filter((conv) => {
-      const otherParticipant = conv.participants.find(
-        (p) => p.userId?._id?.toString() !== userId.toString()
-      );
+    // Manually populate and filter conversations based on participant name
+    const filteredConversations = await Promise.all(
+      conversations.map(async (conv) => {
+        const otherParticipant = conv.participants.find(
+          (p) => p.userId.toString() !== userId.toString()
+        );
 
-      if (otherParticipant?.userId?.fullName) {
-        return otherParticipant.userId.fullName
-          .toLowerCase()
-          .includes(sanitizedQuery.toLowerCase());
-      }
-      return false;
-    });
+        if (otherParticipant) {
+          try {
+            let userData = null;
+            if (otherParticipant.participantsModel === "User") {
+              userData = await User.findById(otherParticipant.userId).select("fullName profileImage email");
+            } else if (otherParticipant.participantsModel === "Teacher") {
+              userData = await Teacher.findById(otherParticipant.userId).select("fullName profileImage email");
+            }
 
-    // Also search in messages
-    const messageResults = await Message.find({
+            if (userData?.fullName && userData.fullName.toLowerCase().includes(sanitizedQuery.toLowerCase())) {
+              return {
+                ...conv.toObject(),
+                otherParticipant: {
+                  userId: otherParticipant.userId,
+                  fullName: userData.fullName,
+                  profileImage: userData.profileImage,
+                  model: otherParticipant.participantsModel,
+                },
+              };
+            }
+          } catch (error) {
+            console.error("Error populating participant:", error);
+          }
+        }
+        return null;
+      })
+    );
+
+    // Filter out null results
+    const validFilteredConversations = filteredConversations.filter(conv => conv !== null);
+
+    // Also search in messages with manual population
+    const messages = await Message.find({
       content: { $regex: sanitizedQuery, $options: "i" },
       sender: { $ne: userId },
     })
       .sort({ createdAt: -1 })
       .limit(10)
       .populate({
-        path: "sender",
-        select: "fullName profileImage",
-      })
-      .populate({
         path: "conversationId",
         select: "participants",
       });
+
+    // Manually populate sender information
+    const messageResults = await Promise.all(
+      messages.map(async (msg) => {
+        try {
+          let senderData = null;
+          if (msg.senderModel === "User") {
+            senderData = await User.findById(msg.sender).select("fullName profileImage");
+          } else if (msg.senderModel === "Teacher") {
+            senderData = await Teacher.findById(msg.sender).select("fullName profileImage");
+          }
+          
+          return {
+            ...msg.toObject(),
+            sender: senderData || {
+              _id: msg.sender,
+              fullName: `Unknown ${msg.senderModel}`,
+              profileImage: null,
+            },
+          };
+        } catch (error) {
+          console.error("Error populating message sender:", error);
+          return {
+            ...msg.toObject(),
+            sender: {
+              _id: msg.sender,
+              fullName: `Unknown ${msg.senderModel}`,
+              profileImage: null,
+            },
+          };
+        }
+      })
+    );
 
     // Filter message results to only include conversations user is part of
     const validMessageResults = messageResults.filter((msg) => {
@@ -561,7 +616,7 @@ export const searchConversations = async (req, res) => {
 
     res.json({
       success: true,
-      conversations: filteredConversations,
+      conversations: validFilteredConversations,
       messageResults: validMessageResults,
     });
   } catch (error) {
