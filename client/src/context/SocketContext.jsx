@@ -5,6 +5,51 @@ import { io } from "socket.io-client";
 
 const SocketContext = createContext(null);
 
+/* ================= MESSAGE NORMALIZATION HELPER ================= */
+// Keep this in sync with utils/messageNormalization.js
+const normalizeMessage = (message, currentUserId) => {
+  if (!message) return null;
+
+  const defaultSender = {
+    _id: null,
+    fullName: "Unknown User",
+    profileImage: null,
+    role: "unknown",
+    email: null
+  };
+
+  let sender = defaultSender;
+  
+  if (message.sender) {
+    if (typeof message.sender === 'object') {
+      sender = {
+        _id: message.sender._id || null,
+        fullName: message.sender.fullName || `Unknown ${message.sender.role || ''}`.trim() || "Unknown User",
+        profileImage: message.sender.profileImage || null,
+        role: message.sender.role || (message.senderModel === "Teacher" ? "teacher" : "student"),
+        email: message.sender.email || null
+      };
+    } else {
+      const role = message.senderModel === "Teacher" ? "teacher" : 
+                   message.senderModel === "User" ? "student" : "unknown";
+      sender = {
+        _id: message.sender,
+        fullName: `Unknown ${role.charAt(0).toUpperCase() + role.slice(1)}`,
+        profileImage: null,
+        role: role,
+        email: null
+      };
+    }
+  }
+
+  return {
+    ...message,
+    sender: sender,
+    senderModel: message.senderModel || sender.role,
+    _id: message._id || message.id
+  };
+};
+
 /* ================= SOCKET PROVIDER ================= */
 
 export const SocketProvider = ({ children }) => {
@@ -69,16 +114,17 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on("receive_message", (message) => {
-      // Handle incoming message - this will be listened by chat components
-      // Ensure message has proper sender structure for frontend
+      // Handle incoming message - normalize sender structure for frontend
       console.log("📩 New message received:", message);
       
-      // Normalize sender structure if needed
-      if (message.sender && typeof message.sender === 'object') {
-        // Message already has populated sender - ready to use
-      } else if (message.sender) {
-        // Sender is just an ID - will be handled by chat component
-      }
+      // Get current user ID for normalization
+      const currentUserId = localStorage.getItem("userId") || localStorage.getItem("teacherId");
+      
+      // Normalize the message to ensure proper sender structure
+      const normalizedMessage = normalizeMessage(message, currentUserId);
+      
+      // Emit normalized message to components
+      // The chat components will listen to this event
     });
 
     newSocket.on("new_message_notification", (data) => {

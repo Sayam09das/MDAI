@@ -3,6 +3,7 @@ import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, 
 import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
+import { normalizeMessage, normalizeMessages, normalizeConversation } from "../../../../utils/messageNormalization";
 
 /* ================= STUDENT MESSAGES PAGE - WHATSAPP STYLE ================= */
 
@@ -57,8 +58,17 @@ const StudentMessages = () => {
 
     const handleReceiveMessage = (message) => {
       console.log("📨 Received message:", message);
-      if (selectedConversation && message.conversationId === selectedConversation._id) {
-        setMessages((prev) => [...prev, message]);
+      
+      // Normalize the message to ensure sender info is properly formatted
+      const normalizedMsg = normalizeMessage(message, currentUserId);
+      
+      if (selectedConversation && normalizedMsg.conversationId === selectedConversation._id) {
+        setMessages((prev) => {
+          // Check if message already exists
+          const exists = prev.some(m => m._id === normalizedMsg._id);
+          if (exists) return prev;
+          return [...prev, normalizedMsg];
+        });
       }
       loadConversations();
       loadUnreadCount();
@@ -66,6 +76,14 @@ const StudentMessages = () => {
 
     const handleNewNotification = (data) => {
       console.log("🔔 New notification:", data);
+      
+      // Normalize the message in notification
+      if (data.message) {
+        const normalizedMsg = normalizeMessage(data.message, currentUserId);
+        // Update notification data with normalized message
+        data.normalizedMessage = normalizedMsg;
+      }
+      
       if (data.senderId !== currentUserId) {
         loadUnreadCount();
       }
@@ -94,7 +112,9 @@ const StudentMessages = () => {
       setLoading(true);
       const response = await messageApi.getConversations();
       if (response.success) {
-        setConversations(response.conversations || []);
+        // Normalize conversations
+        const normalizedConvs = normalizeConversations(response.conversations || []);
+        setConversations(normalizedConvs);
       }
     } catch (error) {
       console.error("Failed to load conversations:", error);
@@ -117,15 +137,19 @@ const StudentMessages = () => {
 
   const loadMessages = async (conversation) => {
     try {
-      setSelectedConversation(conversation);
-      joinConversation(conversation._id);
+      // Normalize conversation first
+      const normalizedConv = normalizeConversation(conversation);
+      setSelectedConversation(normalizedConv);
+      joinConversation(normalizedConv._id);
 
-      const response = await messageApi.getMessages(conversation._id);
+      const response = await messageApi.getMessages(normalizedConv._id);
       if (response.success) {
-        setMessages(response.messages);
+        // Normalize messages with current user ID
+        const normalizedMsgs = normalizeMessages(response.messages, currentUserId);
+        setMessages(normalizedMsgs);
       }
 
-      await messageApi.markConversationAsRead(conversation._id);
+      await messageApi.markConversationAsRead(normalizedConv._id);
       loadUnreadCount();
       loadConversations();
     } catch (error) {

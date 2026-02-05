@@ -5,6 +5,91 @@ import Teacher from "../models/teacherModel.js";
 import mongoose from "mongoose";
 
 /* ======================================================
+   SENDER POPULATION UTILITY
+   This ensures consistent sender info across all endpoints
+====================================================== */
+const populateSenderInfo = async (senderId, senderModel) => {
+  try {
+    if (!senderId) {
+      return {
+        _id: null,
+        fullName: "Unknown User",
+        profileImage: null,
+        role: "unknown",
+        email: null
+      };
+    }
+
+    let senderData = null;
+
+    // Try to fetch based on senderModel
+    if (senderModel === "User") {
+      senderData = await User.findById(senderId).select("fullName profileImage email");
+    } else if (senderModel === "Teacher") {
+      senderData = await Teacher.findById(senderId).select("fullName profileImage email");
+    } else {
+      // If model is unknown, try both
+      senderData = await User.findById(senderId).select("fullName profileImage email");
+      if (!senderData) {
+        senderData = await Teacher.findById(senderId).select("fullName profileImage email");
+      }
+    }
+
+    if (senderData) {
+      return {
+        _id: senderData._id,
+        fullName: senderData.fullName || `Unknown ${senderModel}`,
+        profileImage: senderData.profileImage || null,
+        role: senderModel === "User" ? "student" : "teacher",
+        email: senderData.email || null
+      };
+    }
+
+    // Fallback if user not found in either collection
+    return {
+      _id: senderId,
+      fullName: `Unknown ${senderModel}`,
+      profileImage: null,
+      role: senderModel?.toLowerCase() || "unknown",
+      email: null
+    };
+  } catch (error) {
+    console.error("Error populating sender info:", error);
+    return {
+      _id: senderId,
+      fullName: "Unknown User",
+      profileImage: null,
+      role: "unknown",
+      email: null
+    };
+  }
+};
+
+/* ======================================================
+   PROCESS MESSAGES WITH SENDER INFO
+   Normalizes messages to always have populated sender
+====================================================== */
+const processMessagesWithSender = async (messages) => {
+  return Promise.all(
+    messages.map(async (msg) => {
+      const messageObj = msg.toObject ? msg.toObject() : msg;
+      
+      // Determine sender model from the message
+      const senderModel = msg.senderModel || "User";
+      
+      // Populate sender info
+      const senderInfo = await populateSenderInfo(msg.sender, senderModel);
+      
+      return {
+        ...messageObj,
+        sender: senderInfo,
+        senderModel: senderModel
+      };
+    })
+  );
+};
+
+/* ======================================================
    SEND MESSAGE
 ====================================================== */
 export const sendMessage = async (req, res) => {
@@ -60,42 +145,36 @@ export const sendMessage = async (req, res) => {
       (p) => p.userId.toString() !== senderId.toString()
     );
 
-    if (recipientParticipant) {
-      await conversation.incrementUnreadCount(
-        recipientParticipant.userId,
-        recipientParticipant.participantsModel
-      );
+    // Populate sender info using the utility function
+    const senderInfo = await populateSenderInfo(senderId, senderModel);
 
-      // Emit socket event for real-time notification
-      const io = req.app.get("io");
-      if (io) {
-        io.to(`user_${recipientParticipant.userId}`).emit("new_message", {
-          message,
+    // Create the populated message object
+    const populatedMessage = {
+      ...message.toObject(),
+      sender: senderInfo,
+      senderModel: senderModel
+    };
+
+    // Emit socket event for real-time notification BEFORE responding
+    const io = req.app.get("io");
+    if (io) {
+      // Emit to conversation room
+      io.to(`conversation_${conversation._id}`).emit("receive_message", populatedMessage);
+
+      // Emit notification to recipient
+      if (recipientParticipant) {
+        await conversation.incrementUnreadCount(
+          recipientParticipant.userId,
+          recipientParticipant.participantsModel
+        );
+
+        io.to(`user_${recipientParticipant.userId}`).emit("new_message_notification", {
           conversationId: conversation._id,
+          message: populatedMessage,
+          senderId: senderId,
         });
       }
     }
-
-    // Fetch the saved message with populated sender info
-    let senderData = null;
-    try {
-      if (senderModel === "User") {
-        senderData = await User.findById(senderId).select("fullName profileImage email");
-      } else if (senderModel === "Teacher") {
-        senderData = await Teacher.findById(senderId).select("fullName profileImage email");
-      }
-    } catch (error) {
-      console.error("Error populating sender:", error);
-    }
-
-    const populatedMessage = {
-      ...message.toObject(),
-      sender: senderData || {
-        _id: senderId,
-        fullName: req.user.fullName || `Unknown ${senderModel}`,
-        profileImage: null,
-      },
-    };
 
     res.status(201).json({
       success: true,
@@ -155,36 +234,8 @@ export const getMessages = async (req, res) => {
       .skip(skip)
       .limit(limitNum);
 
-    // Manually populate sender information
-    const processedMessages = await Promise.all(
-      messages.map(async (msg) => {
-        const messageObj = msg.toObject();
-        
-        try {
-          let senderData = null;
-          if (msg.senderModel === "User") {
-            senderData = await User.findById(msg.sender).select("fullName profileImage email");
-          } else if (msg.senderModel === "Teacher") {
-            senderData = await Teacher.findById(msg.sender).select("fullName profileImage email");
-          }
-          
-          messageObj.sender = senderData || {
-            _id: msg.sender,
-            fullName: `Unknown ${msg.senderModel}`,
-            profileImage: null,
-          };
-        } catch (error) {
-          console.error("Error populating sender:", error);
-          messageObj.sender = {
-            _id: msg.sender,
-            fullName: `Unknown ${msg.senderModel}`,
-            profileImage: null,
-          };
-        }
-        
-        return messageObj;
-      })
-    );
+    // Process messages with sender info using utility
+    const processedMessages = await processMessagesWithSender(messages);
 
     // Reverse for chronological order
     const reversedMessages = processedMessages.reverse();

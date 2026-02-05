@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import User from "../models/userModel.js";
+import Teacher from "../models/teacherModel.js";
 
 /* ======================================================
    SOCKET.IO SETUP FOR REAL-TIME MESSAGING
@@ -40,6 +42,65 @@ const setupSocket = (httpServer) => {
       next(new Error("Invalid token"));
     }
   });
+
+  /* ======================================================
+     HELPER: POPULATE SENDER INFO
+     Ensures consistent sender data in socket events
+  ====================================================== */
+  const populateSenderInfo = async (senderId, senderModel) => {
+    try {
+      if (!senderId) {
+        return {
+          _id: null,
+          fullName: "Unknown User",
+          profileImage: null,
+          role: "unknown",
+          email: null
+        };
+      }
+
+      let senderData = null;
+
+      if (senderModel === "User") {
+        senderData = await User.findById(senderId).select("fullName profileImage email");
+      } else if (senderModel === "Teacher") {
+        senderData = await Teacher.findById(senderId).select("fullName profileImage email");
+      } else {
+        // Try both models
+        senderData = await User.findById(senderId).select("fullName profileImage email");
+        if (!senderData) {
+          senderData = await Teacher.findById(senderId).select("fullName profileImage email");
+        }
+      }
+
+      if (senderData) {
+        return {
+          _id: senderData._id,
+          fullName: senderData.fullName || `Unknown ${senderModel}`,
+          profileImage: senderData.profileImage || null,
+          role: senderModel === "User" ? "student" : "teacher",
+          email: senderData.email || null
+        };
+      }
+
+      return {
+        _id: senderId,
+        fullName: `Unknown ${senderModel}`,
+        profileImage: null,
+        role: senderModel?.toLowerCase() || "unknown",
+        email: null
+      };
+    } catch (error) {
+      console.error("Error populating sender info:", error);
+      return {
+        _id: senderId,
+        fullName: "Unknown User",
+        profileImage: null,
+        role: "unknown",
+        email: null
+      };
+    }
+  };
 
   io.on("connection", (socket) => {
     console.log(`✅ User connected: ${socket.user.id} (${socket.user.role})`);
@@ -138,48 +199,43 @@ const setupSocket = (httpServer) => {
        NEW MESSAGE (Real-time) - WITH POPULATED SENDER INFO
     ====================================================== */
     socket.on("new_message", async (data) => {
-      const { message, conversationId, recipientId } = data;
+      const { message, conversationId, recipientId, senderId, senderModel } = data;
 
       try {
-        // Import Message model dynamically to avoid circular dependency
-        const Message = (await import("../models/messageModel.js")).default;
+        // Determine sender model from message or socket user
+        const actualSenderModel = senderModel || (socket.user.role === "teacher" ? "Teacher" : "User");
+        const actualSenderId = senderId || message.sender || socket.user.id;
 
-        // Fetch the message with populated sender information
-        const populatedMessage = await Message.findById(message._id || message.messageId)
-          .populate([
-            {
-              path: "sender",
-              select: "fullName profileImage email",
-            },
-          ]);
+        // Populate sender info using the helper
+        const senderInfo = await populateSenderInfo(actualSenderId, actualSenderModel);
 
-        if (populatedMessage) {
-          // Convert to plain object with populated sender
-          const messageWithSender = populatedMessage.toObject();
+        // Create the normalized message object
+        const normalizedMessage = {
+          _id: message._id || message.messageId,
+          conversationId: conversationId,
+          sender: senderInfo,
+          senderModel: actualSenderModel,
+          content: message.content,
+          messageType: message.messageType || "text",
+          attachments: message.attachments || [],
+          createdAt: message.createdAt || new Date(),
+          readBy: message.readBy || [{ userId: actualSenderId, readByModel: actualSenderModel, readAt: new Date() }],
+        };
 
-          // Emit to conversation room with full sender info
-          io.to(`conversation_${conversationId}`).emit("receive_message", messageWithSender);
+        // Emit to conversation room with full sender info
+        io.to(`conversation_${conversationId}`).emit("receive_message", normalizedMessage);
 
-          // Emit notification to recipient
-          if (recipientId) {
-            io.to(`user_${recipientId}`).emit("new_message_notification", {
-              conversationId,
-              message: messageWithSender,
-              senderId: socket.user.id,
-            });
-          }
-        } else {
-          // Fallback to original message if not found
-          io.to(`conversation_${conversationId}`).emit("receive_message", message);
-
-          if (recipientId) {
-            io.to(`user_${recipientId}`).emit("new_message_notification", {
-              conversationId,
-              message,
-              senderId: socket.user.id,
-            });
-          }
+        // Emit notification to recipient
+        if (recipientId) {
+          io.to(`user_${recipientId}`).emit("new_message_notification", {
+            conversationId,
+            message: normalizedMessage,
+            senderId: actualSenderId,
+            senderInfo: senderInfo,
+          });
         }
+
+        console.log(`📨 Message sent with sender info:`, senderInfo.fullName, `(${senderInfo.role})`);
       } catch (error) {
         console.error("Error in new_message socket handler:", error);
         // Fallback: emit original message
