@@ -75,29 +75,27 @@ export const sendMessage = async (req, res) => {
       }
     }
 
-    // Fetch the saved message with populated sender info - try both models
+    // Fetch the saved message with populated sender info
     let populatedMessage = await Message.findById(message._id)
-      .populate([
-        {
-          path: "sender",
-          select: "fullName profileImage email",
-          model: "User",
-        },
-        {
-          path: "sender",
-          select: "fullName profileImage email",
-          model: "Teacher",
-        },
-      ]);
+      .populate({
+        path: "sender",
+        select: "fullName profileImage email",
+      });
 
-    // If sender still not populated, create a minimal sender object
-    if (!populatedMessage.sender || typeof populatedMessage.sender !== 'object') {
+    // Create sender fallback data
+    const senderData = {
+      _id: senderId,
+      fullName: req.user.fullName || (senderModel === "Teacher" ? "Unknown Teacher" : "Unknown Student"),
+      profileImage: null,
+    };
+
+    // If sender is not populated or is null, use fallback
+    if (!populatedMessage.sender) {
       populatedMessage = populatedMessage.toObject();
-      populatedMessage.sender = {
-        _id: senderId,
-        fullName: req.user.fullName || "Unknown User",
-        profileImage: null,
-      };
+      populatedMessage.sender = senderData;
+    } else if (typeof populatedMessage.sender === 'string') {
+      // If populated with just ID, use fallback name
+      populatedMessage.sender = senderData;
     }
 
     res.status(201).json({
@@ -148,26 +146,18 @@ export const getMessages = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate([
-        {
-          path: "sender",
-          select: "fullName profileImage email",
-          model: "User",
-        },
-        {
-          path: "sender",
-          select: "fullName profileImage email",
-          model: "Teacher",
-        },
-      ]);
+      .populate({
+        path: "sender",
+        select: "fullName profileImage email",
+      });
 
     // Process messages to ensure sender is properly populated
     const processedMessages = messages.map((msg) => {
       const messageObj = msg.toObject();
-      if (!msg.sender || typeof msg.sender !== 'object' || !msg.sender.fullName) {
-        // If sender is not properly populated, use fallback
+      // If sender is null, undefined, or a string (not populated), use fallback
+      if (!msg.sender || typeof msg.sender === 'string') {
         messageObj.sender = {
-          _id: msg.sender,
+          _id: msg.sender || msg.senderModel,
           fullName: msg.senderModel === "Teacher" ? "Unknown Teacher" : "Unknown Student",
           profileImage: null,
         };
@@ -347,58 +337,54 @@ export const getConversations = async (req, res) => {
       .sort({ "lastMessage.createdAt": -1, updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate([
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "User",
-        },
-        {
-          path: "participants.userId",
-          select: "fullName profileImage email",
-          model: "Teacher",
-        },
-        {
-          path: "lastMessage.messageId",
-          select: "content messageType attachments createdAt",
-        },
-      ]);
+      .populate({
+        path: "lastMessage.messageId",
+        select: "content messageType attachments createdAt",
+      });
 
-    // Get unread count for each conversation
+    // Get unread count and process participants for each conversation
     const conversationsWithUnread = conversations.map((conv) => {
       const unreadEntry = conv.unreadCount.find(
         (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
       );
 
-      // Get other participant info - handle populated vs unpopulated userId
+      // Find the other participant (not the current user)
+      // Handle case where userId might be null/undefined
       const otherParticipant = conv.participants.find((p) => {
-        const participantUserId = p.userId._id || p.userId;
-        return participantUserId?.toString() !== userId.toString();
+        const participantId = p.userId?._id || p.userId;
+        return participantId?.toString() !== userId.toString();
       });
 
-      if (!otherParticipant) {
-        return {
-          ...conv.toObject(),
-          unreadCount: unreadEntry ? unreadEntry.count : 0,
-          otherParticipant: null,
-        };
-      }
+      // Get user data from populated field or use participant data
+      let fullName = "Unknown User";
+      let profileImage = null;
+      let userIdValue = null;
 
-      // Get user data - check if already populated with correct model
-      let userData = null;
-      if (otherParticipant.userId && typeof otherParticipant.userId === 'object') {
-        userData = otherParticipant.userId;
+      if (otherParticipant?.userId) {
+        userIdValue = otherParticipant.userId?._id || otherParticipant.userId;
+        
+        // If userId is populated with user data
+        if (typeof otherParticipant.userId === 'object') {
+          fullName = otherParticipant.userId.fullName || "Unknown User";
+          profileImage = otherParticipant.userId.profileImage || null;
+        } else {
+          // UserId is just an ObjectId, we'll need to fetch the user data
+          // For now, use model-specific fallback
+          fullName = otherParticipant.participantsModel === "Teacher" ? "Unknown Teacher" : "Unknown Student";
+        }
       }
 
       return {
         ...conv.toObject(),
         unreadCount: unreadEntry ? unreadEntry.count : 0,
-        otherParticipant: {
-          userId: (otherParticipant.userId._id || otherParticipant.userId)?._id || otherParticipant.userId,
-          fullName: userData?.fullName || "Unknown User",
-          profileImage: userData?.profileImage || null,
-          model: otherParticipant.participantsModel,
-        },
+        otherParticipant: otherParticipant
+          ? {
+              userId: userIdValue,
+              fullName: fullName,
+              profileImage: profileImage,
+              model: otherParticipant.participantsModel,
+            }
+          : null,
       };
     });
 
@@ -464,7 +450,7 @@ export const getOrCreateConversation = async (req, res) => {
 
     // Get other participant info - handle populated vs unpopulated
     const otherParticipant = populatedConversation.participants.find((p) => {
-      const participantUserId = p.userId._id || p.userId;
+      const participantUserId = p.userId?._id || p.userId;
       return participantUserId?.toString() !== userId.toString();
     });
 
@@ -488,7 +474,7 @@ export const getOrCreateConversation = async (req, res) => {
         unreadCount: unreadEntry ? unreadEntry.count : 0,
         otherParticipant: otherParticipant
           ? {
-              userId: (otherParticipant.userId._id || otherParticipant.userId)?._id || otherParticipant.userId,
+              userId: (otherParticipant.userId?._id || otherParticipant.userId)?.toString(),
               fullName: userData?.fullName || "Unknown User",
               profileImage: userData?.profileImage || null,
               model: otherParticipant.participantsModel,
@@ -531,10 +517,10 @@ export const searchConversations = async (req, res) => {
     // Filter conversations based on participant name
     const filteredConversations = conversations.filter((conv) => {
       const otherParticipant = conv.participants.find(
-        (p) => p.userId._id.toString() !== userId.toString()
+        (p) => p.userId?._id?.toString() !== userId.toString()
       );
 
-      if (otherParticipant) {
+      if (otherParticipant?.userId?.fullName) {
         return otherParticipant.userId.fullName
           .toLowerCase()
           .includes(query.toLowerCase());
