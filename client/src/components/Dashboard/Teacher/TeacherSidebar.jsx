@@ -11,7 +11,6 @@ import {
     ClipboardCheck,
     MessageSquare,
     Wallet,
-    CreditCard,
     User,
     Settings,
     X,
@@ -32,7 +31,6 @@ const extraMenu = [
     { icon: Calendar, label: "Calendar", path: "/teacher-dashboard/calendar" },
     { icon: MessageSquare, label: "Messages", path: "/teacher-dashboard/messages" },
     { icon: Wallet, label: "Finance", path: "/teacher-dashboard/finance" },
-    { icon: CreditCard, label: "Payments", path: "/teacher-dashboard/payments" },
 ];
 
 const otherMenu = [
