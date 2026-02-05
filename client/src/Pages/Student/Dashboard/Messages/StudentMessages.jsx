@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, CheckCheck, Image, Smile, AtSign, X, Camera, Mic } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, ArrowLeft, Check, CheckCheck, Image, Smile, X, Camera, Mic } from "lucide-react";
 import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
@@ -18,10 +18,14 @@ const StudentMessages = () => {
   const [contacts, setContacts] = useState([]);
   const [showNewChat, setShowNewChat] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState({});
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [error, setError] = useState(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const {
     socket,
@@ -58,13 +62,11 @@ const StudentMessages = () => {
 
     const handleReceiveMessage = (message) => {
       console.log("📨 Received message:", message);
-      
-      // Normalize the message to ensure sender info is properly formatted
+
       const normalizedMsg = normalizeMessage(message, currentUserId);
-      
+
       if (selectedConversation && normalizedMsg.conversationId === selectedConversation._id) {
         setMessages((prev) => {
-          // Check if message already exists
           const exists = prev.some(m => m._id === normalizedMsg._id);
           if (exists) return prev;
           return [...prev, normalizedMsg];
@@ -76,25 +78,49 @@ const StudentMessages = () => {
 
     const handleNewNotification = (data) => {
       console.log("🔔 New notification:", data);
-      
-      // Normalize the message in notification
+
       if (data.message) {
         const normalizedMsg = normalizeMessage(data.message, currentUserId);
-        // Update notification data with normalized message
         data.normalizedMessage = normalizedMsg;
       }
-      
+
       if (data.senderId !== currentUserId) {
         loadUnreadCount();
       }
     };
 
+    const handleTypingStart = (data) => {
+      console.log("✍️ User typing:", data);
+      if (data.conversationId === selectedConversation?._id) {
+        setTypingUsers(prev => ({
+          ...prev,
+          [data.userId]: {
+            fullName: data.fullName || "Someone",
+            timestamp: Date.now()
+          }
+        }));
+      }
+    };
+
+    const handleTypingStop = (data) => {
+      console.log("🛑 User stopped typing:", data);
+      setTypingUsers(prev => {
+        const updated = { ...prev };
+        delete updated[data.userId];
+        return updated;
+      });
+    };
+
     socket.on("receive_message", handleReceiveMessage);
     socket.on("new_message_notification", handleNewNotification);
+    socket.on("typing_start", handleTypingStart);
+    socket.on("typing_stop", handleTypingStop);
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("new_message_notification", handleNewNotification);
+      socket.off("typing_start", handleTypingStart);
+      socket.off("typing_stop", handleTypingStop);
     };
   }, [socket, selectedConversation, currentUserId]);
 
@@ -112,7 +138,6 @@ const StudentMessages = () => {
       setLoading(true);
       const response = await messageApi.getConversations();
       if (response.success) {
-        // Normalize conversations
         const normalizedConvs = normalizeConversations(response.conversations || []);
         setConversations(normalizedConvs);
       }
@@ -137,14 +162,12 @@ const StudentMessages = () => {
 
   const loadMessages = async (conversation) => {
     try {
-      // Normalize conversation first
       const normalizedConv = normalizeConversation(conversation);
       setSelectedConversation(normalizedConv);
       joinConversation(normalizedConv._id);
 
       const response = await messageApi.getMessages(normalizedConv._id);
       if (response.success) {
-        // Normalize messages with current user ID
         const normalizedMsgs = normalizeMessages(response.messages, currentUserId);
         setMessages(normalizedMsgs);
       }
@@ -187,7 +210,8 @@ const StudentMessages = () => {
       const response = await messageApi.sendMessage(messageData);
 
       if (response.success) {
-        setMessages((prev) => [...prev, response.message]);
+        const normalizedMsg = normalizeMessage(response.message, currentUserId);
+        setMessages((prev) => [...prev, normalizedMsg]);
         setNewMessage("");
         loadConversations();
       }
@@ -195,6 +219,43 @@ const StudentMessages = () => {
       console.error("Failed to send message:", error);
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  /* ================= HANDLE IMAGE UPLOAD ================= */
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedConversation) return;
+
+    // Check if file is image
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      alert('Please select only images or videos');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('conversationId', selectedConversation._id);
+      formData.append('recipientId', selectedConversation.otherParticipant.userId);
+      formData.append('recipientModel', selectedConversation.otherParticipant.model);
+      formData.append('messageType', file.type.startsWith('image/') ? 'image' : 'video');
+
+      const response = await messageApi.sendMediaMessage(formData);
+
+      if (response.success) {
+        const normalizedMsg = normalizeMessage(response.message, currentUserId);
+        setMessages((prev) => [...prev, normalizedMsg]);
+        loadConversations();
+      }
+    } catch (error) {
+      console.error("Failed to send media:", error);
+      alert('Failed to send media. Please try again.');
+    } finally {
+      setSendingMessage(false);
+      e.target.value = '';
     }
   };
 
@@ -235,9 +296,17 @@ const StudentMessages = () => {
           selectedConversation.otherParticipant.userId
         );
       }, 2000);
-      
+
       setTypingTimeout(timeout);
     }
+  };
+
+  /* ================= EMOJI PICKER ================= */
+  const emojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🙏', '👏', '😍', '🥰', '😎', '🤔', '😢', '😭', '😡', '🤗', '🙌', '💪'];
+
+  const addEmoji = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
   };
 
   /* ================= FORMATTING ================= */
@@ -269,6 +338,39 @@ const StudentMessages = () => {
     }
   };
 
+  /* ================= TYPING INDICATOR COMPONENT ================= */
+  const TypingIndicator = () => {
+    const typingUsersList = Object.values(typingUsers);
+    if (typingUsersList.length === 0) return null;
+
+    return (
+      <div className="px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-2">
+        <div className="flex items-center gap-2">
+          <div className="bg-white rounded-lg px-3 py-2 shadow-sm rounded-tl-none">
+            <div className="flex items-center gap-1">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </div>
+              <span className="text-xs text-gray-500 ml-2">
+                {typingUsersList[0].fullName} is typing...
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ================= GET TYPING STATUS FOR CONVERSATION LIST ================= */
+  const getTypingStatus = (conversationId) => {
+    const typingInConv = Object.entries(typingUsers).find(
+      ([userId, data]) => conversations.find(c => c._id === conversationId)
+    );
+    return typingInConv ? `${typingInConv[1].fullName} is typing...` : null;
+  };
+
   /* ================= FILTER ================= */
   const filteredConversations = conversations.filter((conv) =>
     conv.otherParticipant?.fullName
@@ -280,9 +382,8 @@ const StudentMessages = () => {
     <div className="flex h-screen bg-[#f0f2f5] overflow-hidden">
       {/* ================= CONVERSATION LIST (LEFT SIDEBAR) ================= */}
       <div
-        className={`${
-          selectedConversation ? "hidden lg:flex" : "flex"
-        } w-full lg:w-[420px] xl:w-[480px] bg-white border-r border-gray-200 flex-col`}
+        className={`${selectedConversation ? "hidden lg:flex" : "flex"
+          } w-full lg:w-[420px] xl:w-[480px] bg-white border-r border-gray-200 flex-col`}
       >
         {/* HEADER */}
         <div className="bg-[#f0f2f5] px-4 py-3">
@@ -303,7 +404,7 @@ const StudentMessages = () => {
                 title="New chat"
               >
                 <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19.005 3.175H4.674C3.642 3.175 3 3.789 3 4.821V21.02l3.544-3.514h12.461c1.033 0 2.064-1.06 2.064-2.093V4.821c-.001-1.032-1.032-1.646-2.064-1.646zm-4.989 9.869H7.041V11.1h6.975v1.944zm3-4H7.041V7.1h9.975v1.944z"/>
+                  <path d="M19.005 3.175H4.674C3.642 3.175 3 3.789 3 4.821V21.02l3.544-3.514h12.461c1.033 0 2.064-1.06 2.064-2.093V4.821c-.001-1.032-1.032-1.646-2.064-1.646zm-4.989 9.869H7.041V11.1h6.975v1.944zm3-4H7.041V7.1h9.975v1.944z" />
                 </svg>
               </button>
               <button className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -401,53 +502,62 @@ const StudentMessages = () => {
               </button>
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <button
-                key={conversation._id}
-                onClick={() => loadMessages(conversation)}
-                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f6f6] transition-colors ${
-                  selectedConversation?._id === conversation._id ? "bg-[#f0f2f5]" : ""
-                }`}
-              >
-                <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
-                    {conversation.otherParticipant?.profileImage ? (
-                      <img
-                        src={conversation.otherParticipant.profileImage}
-                        alt={conversation.otherParticipant.fullName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      conversation.otherParticipant?.fullName?.charAt(0).toUpperCase() || "?"
-                    )}
-                  </div>
-                  {isUserOnline(conversation.otherParticipant?.userId) && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#25d366] rounded-full border-2 border-white"></div>
-                  )}
-                </div>
+            filteredConversations.map((conversation) => {
+              const typingStatus = getTypingStatus(conversation._id);
 
-                <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-medium text-gray-900 truncate pr-2">
-                      {conversation.otherParticipant?.fullName || "Unknown"}
-                    </h3>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
-                      {formatLastMessageTime(conversation.lastMessage?.createdAt)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-gray-600 truncate flex-1">
-                      {conversation.lastMessage?.content || "No messages yet"}
-                    </p>
-                    {conversation.unreadCount > 0 && (
-                      <span className="w-5 h-5 bg-[#25d366] text-white text-xs rounded-full flex items-center justify-center font-medium flex-shrink-0">
-                        {conversation.unreadCount}
-                      </span>
+              return (
+                <button
+                  key={conversation._id}
+                  onClick={() => loadMessages(conversation)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f6f6] transition-colors ${selectedConversation?._id === conversation._id ? "bg-[#f0f2f5]" : ""
+                    }`}
+                >
+                  <div className="relative flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                      {conversation.otherParticipant?.profileImage ? (
+                        <img
+                          src={conversation.otherParticipant.profileImage}
+                          alt={conversation.otherParticipant.fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        conversation.otherParticipant?.fullName?.charAt(0).toUpperCase() || "?"
+                      )}
+                    </div>
+                    {isUserOnline(conversation.otherParticipant?.userId) && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#25d366] rounded-full border-2 border-white"></div>
                     )}
                   </div>
-                </div>
-              </button>
-            ))
+
+                  <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-medium text-gray-900 truncate pr-2">
+                        {conversation.otherParticipant?.fullName || "Unknown"}
+                      </h3>
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {formatLastMessageTime(conversation.lastMessage?.createdAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      {typingStatus ? (
+                        <p className="text-sm text-blue-600 italic truncate flex-1">
+                          {typingStatus}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-600 truncate flex-1">
+                          {conversation.lastMessage?.content || "No messages yet"}
+                        </p>
+                      )}
+                      {conversation.unreadCount > 0 && (
+                        <span className="w-5 h-5 bg-[#25d366] text-white text-xs rounded-full flex items-center justify-center font-medium flex-shrink-0">
+                          {conversation.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -456,8 +566,8 @@ const StudentMessages = () => {
       {selectedConversation ? (
         <div className="flex-1 flex flex-col bg-[#efeae2] relative">
           {/* CHAT BACKGROUND PATTERN */}
-          <div 
-            className="absolute inset-0 opacity-[0.06]" 
+          <div
+            className="absolute inset-0 opacity-[0.06]"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
             }}
@@ -498,7 +608,12 @@ const StudentMessages = () => {
                   {selectedConversation.otherParticipant?.fullName || "Unknown"}
                 </h2>
                 <p className="text-xs text-gray-500">
-                  {isUserOnline(selectedConversation.otherParticipant?.userId) ? "online" : "offline"}
+                  {Object.keys(typingUsers).length > 0
+                    ? "typing..."
+                    : isUserOnline(selectedConversation.otherParticipant?.userId)
+                      ? "online"
+                      : "offline"
+                  }
                 </p>
               </div>
             </div>
@@ -506,12 +621,6 @@ const StudentMessages = () => {
             <div className="flex items-center gap-2">
               <button className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                 <Search className="w-5 h-5 text-gray-600" />
-              </button>
-              <button className="hidden sm:block p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <Phone className="w-5 h-5 text-gray-600" />
-              </button>
-              <button className="hidden sm:block p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <Video className="w-5 h-5 text-gray-600" />
               </button>
               <button className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                 <MoreVertical className="w-5 h-5 text-gray-600" />
@@ -522,14 +631,14 @@ const StudentMessages = () => {
           {/* MESSAGES */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-4 relative z-10">
             {messages.map((message, index) => {
-              const isOwn =
-                message.sender?._id === currentUserId ||
-                message.sender === currentUserId;
+              // FIX: Check multiple sender ID formats
+              const senderId = message.sender?._id || message.sender || message.senderId;
+              const isOwn = senderId === currentUserId;
 
               const showDate =
                 index === 0 ||
                 new Date(message.createdAt).toDateString() !==
-                  new Date(messages[index - 1].createdAt).toDateString();
+                new Date(messages[index - 1].createdAt).toDateString();
 
               return (
                 <React.Fragment key={message._id || index}>
@@ -544,20 +653,44 @@ const StudentMessages = () => {
                   <div className={`flex mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
                     <div className={`relative max-w-[85%] sm:max-w-[75%] md:max-w-[65%]`}>
                       <div
-                        className={`rounded-lg px-3 py-2 shadow-sm ${
-                          isOwn
+                        className={`rounded-lg px-3 py-2 shadow-sm ${isOwn
                             ? "bg-[#d9fdd3] rounded-tr-none"
                             : "bg-white rounded-tl-none"
-                        }`}
+                          }`}
                       >
                         {!isOwn && (
                           <p className="text-xs font-semibold text-blue-600 mb-1">
                             {message.sender?.fullName || "Unknown"}
                           </p>
                         )}
-                        <p className="text-sm text-gray-900 break-words whitespace-pre-wrap">
-                          {message.content}
-                        </p>
+
+                        {/* IMAGE/VIDEO MESSAGE */}
+                        {(message.messageType === 'image' || message.messageType === 'video') && message.mediaUrl && (
+                          <div className="mb-1">
+                            {message.messageType === 'image' ? (
+                              <img
+                                src={message.mediaUrl}
+                                alt="Shared image"
+                                className="rounded-lg max-w-full h-auto max-h-64 object-cover cursor-pointer"
+                                onClick={() => window.open(message.mediaUrl, '_blank')}
+                              />
+                            ) : (
+                              <video
+                                src={message.mediaUrl}
+                                controls
+                                className="rounded-lg max-w-full h-auto max-h-64"
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* TEXT MESSAGE */}
+                        {message.content && (
+                          <p className="text-sm text-gray-900 break-words whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        )}
+
                         <div className="flex items-center justify-end gap-1 mt-1">
                           <span className="text-[10px] text-gray-500">
                             {formatTime(message.createdAt)}
@@ -573,36 +706,63 @@ const StudentMessages = () => {
                       </div>
                       {/* Message tail */}
                       <div
-                        className={`absolute top-0 w-0 h-0 ${
-                          isOwn
+                        className={`absolute top-0 w-0 h-0 ${isOwn
                             ? "right-0 border-l-[8px] border-l-transparent border-t-[8px] border-t-[#d9fdd3]"
                             : "left-0 border-r-[8px] border-r-transparent border-t-[8px] border-t-white"
-                        }`}
+                          }`}
                       />
                     </div>
                   </div>
                 </React.Fragment>
               );
             })}
+
+            {/* TYPING INDICATOR */}
+            <TypingIndicator />
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* MESSAGE INPUT */}
           <div className="bg-[#f0f2f5] px-3 py-2 relative z-10">
+            {/* EMOJI PICKER */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-16 left-4 bg-white rounded-lg shadow-lg p-3 grid grid-cols-10 gap-2 max-w-md">
+                {emojis.map((emoji, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addEmoji(emoji)}
+                    className="text-2xl hover:bg-gray-100 rounded p-1 transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <form onSubmit={handleSendMessage} className="flex items-end gap-2">
               <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
                 >
                   <Smile className="w-6 h-6" />
                 </button>
                 <button
                   type="button"
+                  onClick={() => imageInputRef.current?.click()}
                   className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
                 >
-                  <Paperclip className="w-6 h-6" />
+                  <Image className="w-6 h-6" />
                 </button>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </div>
 
               <div className="flex-1 bg-white rounded-lg flex items-end">
