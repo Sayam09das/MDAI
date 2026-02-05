@@ -514,9 +514,9 @@ const TeacherMessages = () => {
           </div>
         )}
       </div>
-    </div>
   );
 };
 
 export default TeacherMessages;
+
 
