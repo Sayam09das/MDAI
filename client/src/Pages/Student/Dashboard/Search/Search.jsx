@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search, BookOpen, FileText, X, ArrowRight, Loader2 } from "lucide-react";
-import { searchCourses, searchResources } from "../../../lib/api/studentApi";
+import { searchCourses, searchResources } from "../../../../lib/api/studentApi";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
