@@ -3,7 +3,7 @@ import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, 
 import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
-import { normalizeMessage, normalizeMessages, normalizeConversation } from "../../../../utils/messageNormalization";
+import { normalizeMessage, normalizeMessages, normalizeConversation, normalizeConversations } from "../../../../utils/messageNormalization";
 
 /* ================= TEACHER MESSAGES PAGE - WHATSAPP STYLE ================= */
 
