@@ -3,7 +3,6 @@ import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, 
 import { format } from "date-fns";
 import { useSocket } from "../../../../context/SocketContext";
 import messageApi from "../../../../lib/messageApi";
-import StudentLayout from "../../../../components/Dashboard/Student/StudentLayout";
 
 /* ================= STUDENT MESSAGES PAGE ================= */
 
@@ -218,8 +217,7 @@ const StudentMessages = () => {
   );
 
   return (
-    <StudentLayout>
-      <div className="flex h-[calc(100vh-4rem)] bg-gray-100">
+    <div className="flex h-[calc(100vh-4rem)] bg-gray-100">
         {/* ================= CONVERSATION LIST ================= */}
         <div
           className={`w-full md:w-80 bg-white border-r border-gray-200 flex flex-col ${
@@ -524,7 +522,7 @@ const StudentMessages = () => {
           </div>
         )}
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 
