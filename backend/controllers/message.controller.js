@@ -75,14 +75,30 @@ export const sendMessage = async (req, res) => {
       }
     }
 
-    // Fetch the saved message with populated sender info
-    const populatedMessage = await Message.findById(message._id)
+    // Fetch the saved message with populated sender info - try both models
+    let populatedMessage = await Message.findById(message._id)
       .populate([
         {
           path: "sender",
           select: "fullName profileImage email",
+          model: "User",
+        },
+        {
+          path: "sender",
+          select: "fullName profileImage email",
+          model: "Teacher",
         },
       ]);
+
+    // If sender still not populated, create a minimal sender object
+    if (!populatedMessage.sender || typeof populatedMessage.sender !== 'object') {
+      populatedMessage = populatedMessage.toObject();
+      populatedMessage.sender = {
+        _id: senderId,
+        fullName: req.user.fullName || "Unknown User",
+        profileImage: null,
+      };
+    }
 
     res.status(201).json({
       success: true,
@@ -136,11 +152,31 @@ export const getMessages = async (req, res) => {
         {
           path: "sender",
           select: "fullName profileImage email",
+          model: "User",
+        },
+        {
+          path: "sender",
+          select: "fullName profileImage email",
+          model: "Teacher",
         },
       ]);
 
+    // Process messages to ensure sender is properly populated
+    const processedMessages = messages.map((msg) => {
+      const messageObj = msg.toObject();
+      if (!msg.sender || typeof msg.sender !== 'object' || !msg.sender.fullName) {
+        // If sender is not properly populated, use fallback
+        messageObj.sender = {
+          _id: msg.sender,
+          fullName: msg.senderModel === "Teacher" ? "Unknown Teacher" : "Unknown Student",
+          profileImage: null,
+        };
+      }
+      return messageObj;
+    });
+
     // Reverse for chronological order
-    const reversedMessages = messages.reverse();
+    const reversedMessages = processedMessages.reverse();
 
     // Get total count
     const totalMessages = await Message.countDocuments({
@@ -315,6 +351,12 @@ export const getConversations = async (req, res) => {
         {
           path: "participants.userId",
           select: "fullName profileImage email",
+          model: "User",
+        },
+        {
+          path: "participants.userId",
+          select: "fullName profileImage email",
+          model: "Teacher",
         },
         {
           path: "lastMessage.messageId",
@@ -328,22 +370,35 @@ export const getConversations = async (req, res) => {
         (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
       );
 
-      // Get other participant info
-      const otherParticipant = conv.participants.find(
-        (p) => p.userId._id.toString() !== userId.toString()
-      );
+      // Get other participant info - handle populated vs unpopulated userId
+      const otherParticipant = conv.participants.find((p) => {
+        const participantUserId = p.userId._id || p.userId;
+        return participantUserId?.toString() !== userId.toString();
+      });
+
+      if (!otherParticipant) {
+        return {
+          ...conv.toObject(),
+          unreadCount: unreadEntry ? unreadEntry.count : 0,
+          otherParticipant: null,
+        };
+      }
+
+      // Get user data - check if already populated with correct model
+      let userData = null;
+      if (otherParticipant.userId && typeof otherParticipant.userId === 'object') {
+        userData = otherParticipant.userId;
+      }
 
       return {
         ...conv.toObject(),
         unreadCount: unreadEntry ? unreadEntry.count : 0,
-        otherParticipant: otherParticipant
-          ? {
-              userId: otherParticipant.userId._id || otherParticipant.userId,
-              fullName: otherParticipant.userId.fullName || "Unknown",
-              profileImage: otherParticipant.userId.profileImage || null,
-              model: otherParticipant.participantsModel,
-            }
-          : null,
+        otherParticipant: {
+          userId: (otherParticipant.userId._id || otherParticipant.userId)?._id || otherParticipant.userId,
+          fullName: userData?.fullName || "Unknown User",
+          profileImage: userData?.profileImage || null,
+          model: otherParticipant.participantsModel,
+        },
       };
     });
 
@@ -388,12 +443,18 @@ export const getOrCreateConversation = async (req, res) => {
       recipientModel
     );
 
-    // Re-fetch with proper population
+    // Re-fetch with proper population - try both User and Teacher models
     const populatedConversation = await Conversation.findById(conversation._id)
       .populate([
         {
           path: "participants.userId",
           select: "fullName profileImage email",
+          model: "User",
+        },
+        {
+          path: "participants.userId",
+          select: "fullName profileImage email",
+          model: "Teacher",
         },
       ]);
 
@@ -401,15 +462,22 @@ export const getOrCreateConversation = async (req, res) => {
       return res.status(404).json({ message: "Conversation not found" });
     }
 
-    // Get other participant info
-    const otherParticipant = populatedConversation.participants.find(
-      (p) => p.userId._id.toString() !== userId.toString()
-    );
+    // Get other participant info - handle populated vs unpopulated
+    const otherParticipant = populatedConversation.participants.find((p) => {
+      const participantUserId = p.userId._id || p.userId;
+      return participantUserId?.toString() !== userId.toString();
+    });
 
     // Get unread count
     const unreadEntry = populatedConversation.unreadCount.find(
       (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === userModel
     );
+
+    // Get user data if populated
+    let userData = null;
+    if (otherParticipant?.userId && typeof otherParticipant.userId === 'object') {
+      userData = otherParticipant.userId;
+    }
 
     res.json({
       success: true,
@@ -420,9 +488,9 @@ export const getOrCreateConversation = async (req, res) => {
         unreadCount: unreadEntry ? unreadEntry.count : 0,
         otherParticipant: otherParticipant
           ? {
-              userId: otherParticipant.userId._id || otherParticipant.userId,
-              fullName: otherParticipant.userId.fullName || "Unknown",
-              profileImage: otherParticipant.userId.profileImage || null,
+              userId: (otherParticipant.userId._id || otherParticipant.userId)?._id || otherParticipant.userId,
+              fullName: userData?.fullName || "Unknown User",
+              profileImage: userData?.profileImage || null,
               model: otherParticipant.participantsModel,
             }
           : null,
