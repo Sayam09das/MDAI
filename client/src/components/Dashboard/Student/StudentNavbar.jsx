@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Bell,
@@ -19,6 +19,43 @@ const extractUrl = (val) => {
     return "";
 };
 
+/**
+ * Format relative time from a date
+ */
+const formatRelativeTime = (date) => {
+    const now = new Date();
+    const diff = now - new Date(date);
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (seconds < 60) return "Just now";
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    return new Date(date).toLocaleDateString();
+};
+
+/**
+ * Safely extract image URL from various formats
+ */
+const extractImageUrl = (image) => {
+    if (!image) return null;
+    if (typeof image === "string") {
+        if (image.startsWith("http://") || image.startsWith("https://")) {
+            return image;
+        }
+        return null;
+    }
+    if (typeof image === "object") {
+        if (image.secure_url) return image.secure_url;
+        if (image.url) return image.url;
+        if (image.path) return image.path;
+    }
+    return null;
+};
+
 const StudentNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
@@ -27,28 +64,104 @@ const StudentNavbar = ({ onMenuClick }) => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [time, setTime] = useState(new Date());
     const [searchQuery, setSearchQuery] = useState("");
+    const [socket, setSocket] = useState(null);
+    const [isConnected, setIsConnected] = useState(false);
 
-    /* Notifications state */
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            text: "Live class starts in 15 minutes",
-            time: "15m",
-            unread: true,
-        },
-        {
-            id: 2,
-            text: "New student enrolled",
-            time: "1h",
-            unread: true,
-        },
-        {
-            id: 3,
-            text: "You received a 5-star review",
-            time: "2h",
-            unread: false,
-        },
-    ]);
+    /* Notifications state - initialize from localStorage or empty */
+    const [notifications, setNotifications] = useState(() => {
+        const saved = localStorage.getItem("student_notifications");
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    /* Save notifications to localStorage when they change */
+    useEffect(() => {
+        localStorage.setItem("student_notifications", JSON.stringify(notifications));
+    }, [notifications]);
+
+    /* Socket connection */
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Dynamically import socket.io-client to avoid SSR issues
+        import("socket.io-client").then(({ io }) => {
+            const SOCKET_URL = BACKEND_URL || "http://localhost:3000";
+            const newSocket = io(SOCKET_URL, {
+                auth: { token },
+                transports: ["websocket", "polling"],
+            });
+
+            newSocket.on("connect", () => {
+                console.log("✅ Navbar Socket connected");
+                setIsConnected(true);
+            });
+
+            newSocket.on("disconnect", () => {
+                console.log("❌ Navbar Socket disconnected");
+                setIsConnected(false);
+            });
+
+            newSocket.on("new_message_notification", (data) => {
+                console.log("🔔 New notification received:", data);
+
+                // Normalize the notification
+                const message = data.message || {};
+                const sender = message.sender || {};
+                const senderName = sender.fullName || "Unknown User";
+                const senderImage = extractImageUrl(sender.profileImage);
+                const messageContent = message.content || "New message";
+                const conversationId = data.conversationId || message.conversationId;
+
+                const newNotification = {
+                    id: Date.now().toString(),
+                    text: `${senderName}: ${messageContent}`,
+                    time: "Just now",
+                    unread: true,
+                    senderName,
+                    senderImage,
+                    conversationId,
+                    createdAt: new Date().toISOString(),
+                };
+
+                // Add to notifications (max 20)
+                setNotifications((prev) => {
+                    const updated = [newNotification, ...prev].slice(0, 20);
+                    return updated;
+                });
+            });
+
+            setSocket(newSocket);
+
+            return () => {
+                newSocket.disconnect();
+            };
+        });
+    }, []);
+
+    /* Add new notification function */
+    const addNotification = useCallback((notification) => {
+        setNotifications((prev) => {
+            const updated = [notification, ...prev].slice(0, 20);
+            return updated;
+        });
+    }, []);
+
+    /* Mark notification as read */
+    const markAsRead = useCallback((id) => {
+        setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
+        );
+    }, []);
+
+    /* Mark all as read */
+    const markAllAsRead = useCallback(() => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    }, []);
+
+    /* Clear all notifications */
+    const clearNotifications = useCallback(() => {
+        setNotifications([]);
+    }, []);
 
 
     useEffect(() => {
@@ -280,34 +393,75 @@ const StudentNavbar = ({ onMenuClick }) => {
 
             {/* NOTIFICATION DROPDOWN */}
             {showNotifications && (
-                <div className="absolute right-6 top-16 w-80 bg-white rounded-xl shadow-lg z-50">
-                    <div className="px-4 py-3 font-medium">Notifications</div>
-
-                    {notifications.map(n => (
-                        <div
-                            key={n.id}
-                            onClick={() =>
-                                setNotifications(prev =>
-                                    prev.map(item =>
-                                        item.id === n.id
-                                            ? { ...item, unread: false }
-                                            : item
-                                    )
-                                )
-                            }
-                            className="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer"
-                        >
-                            <div className="flex justify-between">
-                                <span className={n.unread ? "font-medium" : "text-gray-600"}>
-                                    {n.text}
-                                </span>
-                                {!n.unread && (
-                                    <span className="w-2 h-2 rounded-full bg-green-400 mt-1" />
-                                )}
+                <div className="absolute right-6 top-16 w-80 bg-white rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+                    <div className="px-4 py-3 font-medium flex justify-between items-center sticky top-0 bg-white">
+                        <span>Notifications</span>
+                        {notifications.length > 0 && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-indigo-600 hover:text-indigo-800"
+                                >
+                                    Mark all read
+                                </button>
+                                <button
+                                    onClick={clearNotifications}
+                                    className="text-xs text-red-500 hover:text-red-700"
+                                >
+                                    Clear
+                                </button>
                             </div>
-                            <div className="text-xs text-gray-400">{n.time}</div>
+                        )}
+                    </div>
+
+                    {notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                            <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            No notifications yet
                         </div>
-                    ))}
+                    ) : (
+                        notifications.map(n => (
+                            <div
+                                key={n.id}
+                                onClick={() => {
+                                    markAsRead(n.id);
+                                    if (n.conversationId) {
+                                        navigate(`/student-dashboard/messages?conversation=${n.conversationId}`);
+                                    }
+                                    setShowNotifications(false);
+                                }}
+                                className={`px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 ${n.unread ? 'bg-indigo-50/50' : ''}`}
+                            >
+                                <div className="flex gap-3 items-start">
+                                    {/* Sender Avatar */}
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                                        {n.senderImage ? (
+                                            <img
+                                                src={n.senderImage}
+                                                alt={n.senderName}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="text-xs font-semibold text-gray-600">
+                                                {n.senderName?.charAt(0)?.toUpperCase() || "U"}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <span className={`truncate ${n.unread ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                                                {n.text}
+                                            </span>
+                                            {n.unread && (
+                                                <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0" />
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-gray-400 mt-1">{n.time}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             )}
 
