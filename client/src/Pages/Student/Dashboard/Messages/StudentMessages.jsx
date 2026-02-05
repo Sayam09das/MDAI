@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, CheckCheck, Image, Smile, AtSign } from "lucide-react";
 import { format } from "date-fns";
-import { useSocket } from "../../context/SocketContext";
-import messageApi from "../../lib/messageApi";
-import StudentLayout from "../../components/Dashboard/Student/StudentLayout";
+import { useSocket } from "../../../../context/SocketContext";
+import messageApi from "../../../../lib/messageApi";
+import StudentLayout from "../../../../components/Dashboard/Student/StudentLayout";
 
 /* ================= STUDENT MESSAGES PAGE ================= */
 

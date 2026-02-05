@@ -1,7 +1,7 @@
 import React from "react";
 
 const ReturnTeacherMessages = () => {
-  const Messages = React.lazy(() => import("./Messages"));
+const Messages = React.lazy(() => import("./TeacherMessages"));
   
   return (
     <React.Suspense

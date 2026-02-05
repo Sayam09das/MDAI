@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 
 const ReturnStudentMessages = () => {
   // Lazy load the Messages component
-  const Messages = React.lazy(() => import("./Messages"));
+const Messages = React.lazy(() => import("./StudentMessages"));
   
   return (
     <React.Suspense
