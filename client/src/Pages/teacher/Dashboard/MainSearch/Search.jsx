@@ -29,14 +29,18 @@ const SearchPage = () => {
         try {
             // Search courses
             const coursesResult = await searchCourses(searchQuery, 20);
+            console.log("Courses result:", coursesResult);
             if (coursesResult.success) {
                 setCourses(coursesResult.courses || []);
             }
 
             // Search resources
             const resourcesResult = await searchResources(searchQuery, 20);
+            console.log("Resources result:", resourcesResult);
             if (Array.isArray(resourcesResult)) {
                 setResources(resourcesResult);
+            } else {
+                console.warn("Resources result is not an array:", resourcesResult);
             }
         } catch (error) {
             console.error("Search error:", error);

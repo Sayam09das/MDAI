@@ -184,7 +184,7 @@ export const searchCourses = (query, limit = 10) => {
 
 export const searchResources = (query, limit = 10) => {
     const encodedQuery = encodeURIComponent(query);
-    return fetchAPI(`/api/resources/search?q=${encodedQuery}&limit=${limit}`);
+    return fetchAPI(`/api/resource/search?q=${encodedQuery}&limit=${limit}`);
 };
 
 /* ================= EXPORT ================= */
