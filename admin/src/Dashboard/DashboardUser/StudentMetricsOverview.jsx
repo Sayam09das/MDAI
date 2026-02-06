@@ -58,6 +58,15 @@ const StudentMetricsOverview = () => {
         if (showRefresh) setRefreshing(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/analytics/students`, getAuthHeaders());
+
+            // Check if response is JSON
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Non-JSON response received:', text.substring(0, 200));
+                throw new Error('Server returned an invalid response. Please check if the backend is running.');
+            }
+
             const result = await res.json();
 
             if (result.success) {
@@ -69,7 +78,10 @@ const StudentMetricsOverview = () => {
             }
         } catch (error) {
             console.error('Error fetching student metrics:', error);
-            toast.error('Failed to load student metrics');
+            // Only show toast error if not already handled by another component
+            if (!error.message.includes('Server returned an invalid response')) {
+                toast.error('Failed to load student metrics');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);

@@ -78,6 +78,15 @@ const UserAnalytics = () => {
         if (showRefresh) setRefreshing(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/analytics/users`, getAuthHeaders());
+
+            // Check if response is JSON
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Non-JSON response received:', text.substring(0, 200));
+                throw new Error('Server returned an invalid response. Please check if the backend is running.');
+            }
+
             const result = await res.json();
 
             if (result.success) {
@@ -89,7 +98,10 @@ const UserAnalytics = () => {
             }
         } catch (error) {
             console.error('Error fetching user analytics:', error);
-            toast.error('Failed to load user analytics');
+            // Only show toast error if not already handled by another component
+            if (!error.message.includes('Server returned an invalid response')) {
+                toast.error('Failed to load user analytics');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);

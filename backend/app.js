@@ -70,6 +70,46 @@ app.get("/ping", (req, res) => {
 
 
 /* =====================
+   404 HANDLER - API ROUTES
+   Must be AFTER all route definitions
+===================== */
+app.use("/api", (req, res) => {
+   res.status(404).json({
+      success: false,
+      message: "API endpoint not found",
+      path: req.originalUrl
+   });
+});
+
+
+/* =====================
+   404 HANDLER - ALL OTHER ROUTES
+===================== */
+app.use((req, res) => {
+   res.status(404).json({
+      success: false,
+      message: "Route not found",
+      path: req.originalUrl
+   });
+});
+
+
+/* =====================
+   GLOBAL ERROR HANDLER
+===================== */
+app.use((err, req, res, next) => {
+   console.error("Error:", err.message);
+   console.error("Stack:", err.stack);
+   
+   res.status(err.status || 500).json({
+      success: false,
+      message: err.message || "Internal server error",
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+   });
+});
+
+
+/* =====================
    EXPORT APP
 ===================== */
 export default app;
