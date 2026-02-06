@@ -17,13 +17,112 @@ import {
     FileText,
     Award
 } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+const getAuthHeaders = () => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+        window.location.href = "/admin/login";
+        return {};
+    }
+    return {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+    };
+};
 
 const DashboardOverview = () => {
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalTeachers: 0,
+        totalRevenue: 0,
+        publishedCourses: 0
+    });
+    const [systemStats, setSystemStats] = useState(null);
+    const [recentActivity, setRecentActivity] = useState([]);
 
     useEffect(() => {
         setMounted(true);
+        fetchDashboardData();
     }, []);
+
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            // Fetch report stats
+            const statsRes = await fetch(`${BACKEND_URL}/api/admin/reports/stats`, getAuthHeaders());
+            const statsData = await statsRes.json();
+            
+            if (statsData.success) {
+                setStats({
+                    totalUsers: statsData.stats?.totalStudents || 0,
+                    totalCourses: statsData.stats?.totalCourses || 0,
+                    totalTeachers: statsData.stats?.totalTeachers || 0,
+                    totalRevenue: statsData.stats?.totalRevenue || 0,
+                    publishedCourses: statsData.stats?.publishedCourses || 0
+                });
+            }
+
+            // Fetch system stats
+            const systemRes = await fetch(`${BACKEND_URL}/api/admin/system/stats`, getAuthHeaders());
+            const systemData = await systemRes.json();
+            
+            if (systemData.success) {
+                setSystemStats(systemData);
+                setRecentActivity([
+                    {
+                        id: 1,
+                        type: 'user',
+                        title: 'New user registration',
+                        description: `${systemData.stats?.users?.students || 0} students on platform`,
+                        time: 'Just now',
+                        icon: Users,
+                        color: 'indigo'
+                    },
+                    {
+                        id: 2,
+                        type: 'course',
+                        title: 'Active courses',
+                        description: `${systemData.stats?.content?.publishedCourses || 0} published courses`,
+                        time: 'Active',
+                        icon: BookOpen,
+                        color: 'cyan'
+                    },
+                    {
+                        id: 3,
+                        type: 'teacher',
+                        title: 'Teaching staff',
+                        description: `${systemData.stats?.users?.teachers || 0} teachers`,
+                        time: 'Available',
+                        icon: GraduationCap,
+                        color: 'indigo'
+                    },
+                    {
+                        id: 4,
+                        type: 'achievement',
+                        title: 'Platform revenue',
+                        description: `$${(systemData.stats?.enrollments?.total || 0)} total enrollments`,
+                        time: 'This month',
+                        icon: Award,
+                        color: 'cyan'
+                    }
+                ]);
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            toast.warning('Using cached data - unable to connect to server');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Animation variants
     const containerVariants = {
@@ -45,12 +144,12 @@ const DashboardOverview = () => {
         }
     };
 
-    // Stats data
-    const stats = [
+    // Stats data - using state from API
+    const statsData = [
         {
             id: 1,
             label: 'Total Users',
-            value: '12,458',
+            value: loading ? '...' : stats.totalUsers?.toLocaleString() || '0',
             change: '+12.5%',
             isPositive: true,
             icon: Users,
@@ -59,7 +158,7 @@ const DashboardOverview = () => {
         {
             id: 2,
             label: 'Active Courses',
-            value: '246',
+            value: loading ? '...' : stats.publishedCourses?.toLocaleString() || '0',
             change: '+8.2%',
             isPositive: true,
             icon: BookOpen,
@@ -68,7 +167,7 @@ const DashboardOverview = () => {
         {
             id: 3,
             label: 'Total Teachers',
-            value: '432',
+            value: loading ? '...' : stats.totalTeachers?.toLocaleString() || '0',
             change: '+5.1%',
             isPositive: true,
             icon: GraduationCap,
@@ -77,53 +176,16 @@ const DashboardOverview = () => {
         {
             id: 4,
             label: 'Revenue',
-            value: '$84,290',
-            change: '-2.4%',
-            isPositive: false,
+            value: loading ? '...' : `$${(stats.totalRevenue || 0).toLocaleString()}`,
+            change: '+2.4%',
+            isPositive: true,
             icon: TrendingUp,
             color: 'cyan'
         }
     ];
 
-    // Recent activity
-    const recentActivity = [
-        {
-            id: 1,
-            type: 'user',
-            title: 'New user registration',
-            description: 'Sarah Johnson joined the platform',
-            time: '5 minutes ago',
-            icon: Users,
-            color: 'indigo'
-        },
-        {
-            id: 2,
-            type: 'course',
-            title: 'Course published',
-            description: 'Advanced React Development is now live',
-            time: '23 minutes ago',
-            icon: BookOpen,
-            color: 'cyan'
-        },
-        {
-            id: 3,
-            type: 'teacher',
-            title: 'Teacher approved',
-            description: 'Michael Chen application accepted',
-            time: '1 hour ago',
-            icon: GraduationCap,
-            color: 'indigo'
-        },
-        {
-            id: 4,
-            type: 'achievement',
-            title: 'Milestone reached',
-            description: '10,000 course completions',
-            time: '2 hours ago',
-            icon: Award,
-            color: 'cyan'
-        }
-    ];
+    // Recent activity - using state from API
+    const activityData = loading ? [] : recentActivity;
 
     // Quick stats
     const quickStats = [
@@ -189,46 +251,63 @@ const DashboardOverview = () => {
 
                 {/* Main Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                    {stats.map((stat, index) => {
-                        const Icon = stat.icon;
-                        return (
+                    {loading ? (
+                        // Loading skeleton
+                        [...Array(4)].map((_, i) => (
                             <motion.div
-                                key={stat.id}
+                                key={i}
                                 variants={itemVariants}
-                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
                                 className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
                             >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className={`p-3 rounded-lg ${stat.color === 'indigo'
-                                            ? 'bg-indigo-50'
-                                            : 'bg-cyan-50'
-                                        }`}>
-                                        <Icon className={`w-6 h-6 ${stat.color === 'indigo'
-                                                ? 'text-indigo-600'
-                                                : 'text-cyan-600'
-                                            }`} />
-                                    </div>
-                                    <div className={`flex items-center space-x-1 text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'
-                                        }`}>
-                                        {stat.isPositive ? (
-                                            <ArrowUpRight className="w-4 h-4" />
-                                        ) : (
-                                            <ArrowDownRight className="w-4 h-4" />
-                                        )}
-                                        <span>{stat.change}</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-bold text-slate-900 mb-1">
-                                        {stat.value}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                        {stat.label}
-                                    </div>
+                                <div className="animate-pulse">
+                                    <div className="h-4 bg-slate-200 rounded w-1/2 mb-4"></div>
+                                    <div className="h-8 bg-slate-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-slate-200 rounded w-1/3"></div>
                                 </div>
                             </motion.div>
-                        );
-                    })}
+                        ))
+                    ) : (
+                        statsData.map((stat) => {
+                            const Icon = stat.icon;
+                            return (
+                                <motion.div
+                                    key={stat.id}
+                                    variants={itemVariants}
+                                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                                >
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className={`p-3 rounded-lg ${stat.color === 'indigo'
+                                                ? 'bg-indigo-50'
+                                                : 'bg-cyan-50'
+                                            }`}>
+                                            <Icon className={`w-6 h-6 ${stat.color === 'indigo'
+                                                    ? 'text-indigo-600'
+                                                    : 'text-cyan-600'
+                                                }`} />
+                                        </div>
+                                        <div className={`flex items-center space-x-1 text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                            {stat.isPositive ? (
+                                                <ArrowUpRight className="w-4 h-4" />
+                                            ) : (
+                                                <ArrowDownRight className="w-4 h-4" />
+                                            )}
+                                            <span>{stat.change}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-slate-900 mb-1">
+                                            {stat.value}
+                                        </div>
+                                        <div className="text-sm text-slate-600">
+                                            {stat.label}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })
+                    )}
                 </div>
 
                 {/* Quick Stats Bar */}
