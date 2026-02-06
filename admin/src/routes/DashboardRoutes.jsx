@@ -15,10 +15,6 @@ import ReturnSettings from "../Dashboard/DashboardSettings/ReturnSettings";
 import ReturnCourses from "../Dashboard/DashboardCourses/ReturnCourses";
 import CourseEditor from "../Dashboard/DashboardCourses/CourseEditor";
 import CourseAnalytics from "../Dashboard/DashboardCourses/CourseAnalytics";
-import ReturnResources from "../Dashboard/DashboardResources/ReturnResources";
-import ResourceList from "../Dashboard/DashboardResources/ResourceList";
-import UploadResource from "../Dashboard/DashboardResources/UploadResource";
-import ResourceCategories from "../Dashboard/DashboardResources/ResourceCategories";
 import AnnouncementList from "../Dashboard/DashboardAnnouncements/AnnouncementList";
 import ReturnAnnouncements from "../Dashboard/DashboardAnnouncements/ReturnAnnouncements";
 import ReturnReports from "../Dashboard/DashboardReports/ReturnReports";
@@ -55,11 +51,6 @@ const DashboardRoutes = () => {
                     <Route path="dashboard/courses/new" element={<CourseEditor />} />
                     <Route path="dashboard/courses/:id" element={<CourseEditor />} />
                     <Route path="dashboard/courses/analytics" element={<CourseAnalytics />} />
-                    
-                    {/* Resources */}
-                    <Route path="dashboard/resources" element={<ResourceList />} />
-                    <Route path="dashboard/resources/upload" element={<UploadResource />} />
-                    <Route path="dashboard/resources/categories" element={<ResourceCategories />} />
                     
                     {/* Announcements */}
                     <Route path="dashboard/announcements" element={<AnnouncementList />} />
