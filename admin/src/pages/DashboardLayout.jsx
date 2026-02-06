@@ -372,18 +372,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard/courses/analytics",
         },
         {
-            id: "resources",
-            label: "Resources",
-            icon: FolderOpen,
-            route: "/admin/dashboard/resources",
-        },
-        {
-            id: "upload-resource",
-            label: "Upload Resource",
-            icon: FileText,
-            route: "/admin/dashboard/resources/upload",
-        },
-        {
             id: "announcements",
             label: "Announcements",
             icon: Megaphone,
@@ -573,8 +561,6 @@ const DashboardLayout = () => {
         "/admin/dashboard/teachers": "Teachers",
         "/admin/dashboard/courses": "Courses",
         "/admin/dashboard/courses/analytics": "Course Analytics",
-        "/admin/dashboard/resources": "Resources",
-        "/admin/dashboard/resources/upload": "Upload Resource",
         "/admin/dashboard/announcements": "Announcements",
         "/admin/dashboard/reports": "Reports",
         "/admin/dashboard/students/paymentaccess": "Payment Access",
