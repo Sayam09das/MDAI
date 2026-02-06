@@ -18,7 +18,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
-    LineChart,
+    LineChart as RechartsLineChart,
     Line,
     BarChart,
     Bar,
