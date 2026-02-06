@@ -3,9 +3,11 @@ import DashboardLayout from "../pages/DashboardLayout";
 import ReturnDashboard from "../Dashboard/DashboardMain/ReturnDashboard";
 import DashboardOverview from "../Dashboard/DashboardMain/DashboardOverview";
 import ActivityOverview from "../Dashboard/DashboardMain/ActivityOverview";
+import UserAnalytics from "../Dashboard/DashboardUser/UserAnalytics";
 import ReturnDashboardUser from "../Dashboard/DashboardUser/ReturnDashboardUser";
 import ProtectedRoute from "./ProtectedRoute";
 import ReturnDashboardStudent from "../Dashboard/DashboardStudent/ReturnDashboardStudent";
+import StudentAnalytics from "../Dashboard/DashboardStudent/StudentAnalytics";
 import TeacherAnalytics from "../Dashboard/DashboardTeacher/TeacherAnalytics";
 import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 import CreateTeacher from "../Dashboard/DashboardTeacher/CreateTeacher";
@@ -31,6 +33,10 @@ const DashboardRoutes = () => {
                     {/* Dashboard */}
                     <Route path="dashboard" element={<DashboardOverview />} />
                     <Route path="dashboard/activity" element={<ActivityOverview />} />
+                    
+                    {/* Analytics */}
+                    <Route path="dashboard/analytics/users" element={<UserAnalytics />} />
+                    <Route path="dashboard/analytics/students" element={<StudentAnalytics />} />
                     
                     {/* Users */}
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />

@@ -1,23 +1,20 @@
 # Admin Activity Overview Implementation Plan
 
-## Step 1: Backend - Add Activity Overview Endpoint
-- [x] Add `getActivityOverview` controller function in `admin.controller.js`
+## Completed Tasks:
+- [x] Add `getActivityOverviewAdmin` controller function in `admin.controller.js`
 - [x] Add route for activity overview in `admin.routes.js`
-
-## Step 2: Frontend - Install Required Dependencies
-- [x] Install `recharts` for charts (already installed)
-
-## Step 3: Frontend - Implement Real-Time Activity Overview
+- [x] Recharts already installed
 - [x] Replace skeleton placeholders with real charts
 - [x] Add real-time data fetching with polling (30-second auto-refresh)
-- [x] Add activity feed with recent enrollments, completions, registrations
 - [x] Add enrollment trends chart (area chart with revenue)
 - [x] Add course distribution chart (pie chart)
-- [x] Add user engagement metrics
-- [x] Add daily activity chart (bar chart)
+- [x] Add engagement metrics
 
-## Step 4: Testing
-- [ ] Test real-time data fetching
-- [ ] Test chart rendering
-- [ ] Test auto-refresh functionality
+## New Tasks - User & Student Analytics:
+- [ ] Add `getUserAnalyticsAdmin` controller for comprehensive user stats
+- [ ] Add `getStudentAnalyticsAdmin` controller for student-specific analytics
+- [ ] Add routes for user and student analytics
+- [ ] Create comprehensive UserAnalytics.jsx with real-time charts
+- [ ] Create comprehensive StudentAnalytics.jsx with real-time charts
+- [ ] Update DashboardRoutes.jsx to include new pages
 

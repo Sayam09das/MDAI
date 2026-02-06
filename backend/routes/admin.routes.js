@@ -25,6 +25,10 @@ import {
     getSystemStatsAdmin,
     // Activity overview
     getActivityOverviewAdmin,
+    // User analytics
+    getUserAnalyticsAdmin,
+    // Student analytics
+    getStudentAnalyticsAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -189,6 +193,30 @@ router.get(
     protect,
     adminOnly,
     getActivityOverviewAdmin
+);
+
+/* =====================================
+   ADMIN USER ANALYTICS
+===================================== */
+
+// Get user analytics (real-time)
+router.get(
+    "/analytics/users",
+    protect,
+    adminOnly,
+    getUserAnalyticsAdmin
+);
+
+/* =====================================
+   ADMIN STUDENT ANALYTICS
+===================================== */
+
+// Get student analytics (real-time)
+router.get(
+    "/analytics/students",
+    protect,
+    adminOnly,
+    getStudentAnalyticsAdmin
 );
 
 export default router;
