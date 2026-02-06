@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "../pages/DashboardLayout";
 import ReturnDashboard from "../Dashboard/DashboardMain/ReturnDashboard";
+import DashboardOverview from "../Dashboard/DashboardMain/DashboardOverview";
+import ActivityOverview from "../Dashboard/DashboardMain/ActivityOverview";
 import ReturnDashboardUser from "../Dashboard/DashboardUser/ReturnDashboardUser";
 import ProtectedRoute from "./ProtectedRoute";
 import ReturnDashboardStudent from "../Dashboard/DashboardStudent/ReturnDashboardStudent";
@@ -14,11 +16,15 @@ import ReturnCourses from "../Dashboard/DashboardCourses/ReturnCourses";
 import CourseEditor from "../Dashboard/DashboardCourses/CourseEditor";
 import CourseAnalytics from "../Dashboard/DashboardCourses/CourseAnalytics";
 import ReturnResources from "../Dashboard/DashboardResources/ReturnResources";
+import ResourceList from "../Dashboard/DashboardResources/ResourceList";
 import UploadResource from "../Dashboard/DashboardResources/UploadResource";
 import ResourceCategories from "../Dashboard/DashboardResources/ResourceCategories";
+import AnnouncementList from "../Dashboard/DashboardAnnouncements/AnnouncementList";
 import ReturnAnnouncements from "../Dashboard/DashboardAnnouncements/ReturnAnnouncements";
 import ReturnReports from "../Dashboard/DashboardReports/ReturnReports";
+import AuditLogList from "../Dashboard/DashboardAuditLogs/AuditLogList";
 import ReturnAuditLogs from "../Dashboard/DashboardAuditLogs/ReturnAuditLogs";
+import SystemHealth from "../Dashboard/DashboardSystem/SystemHealth";
 import ReturnSystem from "../Dashboard/DashboardSystem/ReturnSystem";
 
 const DashboardRoutes = () => {
@@ -26,14 +32,20 @@ const DashboardRoutes = () => {
         <Routes>
             <Route element={<ProtectedRoute />}>
                 <Route path="/admin" element={<DashboardLayout />}>
-                    <Route path="dashboard" element={<ReturnDashboard />} />
+                    {/* Dashboard */}
+                    <Route path="dashboard" element={<DashboardOverview />} />
+                    <Route path="dashboard/activity" element={<ActivityOverview />} />
+                    
+                    {/* Users */}
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />
                     <Route path="dashboard/students" element={<ReturnDashboardStudent />} />
+                    <Route path="dashboard/studentlist" element={<StudentListPreview />} />
+                    <Route path="dashboard/students/paymentaccess" element={<ReturnSPayment />} />
+                    
+                    {/* Teachers */}
                     <Route path="dashboard/teachers" element={<TeacherAnalytics />} />
                     <Route path="dashboard/teacherlist" element={<TeacherList />} />
                     <Route path="dashboard/create/teacher" element={<CreateTeacher />} />
-                    <Route path="dashboard/studentlist" element={<StudentListPreview />} />
-                    <Route path="dashboard/students/paymentaccess" element={<ReturnSPayment />} />
                     
                     {/* Settings */}
                     <Route path="dashboard/settings" element={<ReturnSettings />} />
@@ -45,21 +57,21 @@ const DashboardRoutes = () => {
                     <Route path="dashboard/courses/analytics" element={<CourseAnalytics />} />
                     
                     {/* Resources */}
-                    <Route path="dashboard/resources" element={<ReturnResources />} />
+                    <Route path="dashboard/resources" element={<ResourceList />} />
                     <Route path="dashboard/resources/upload" element={<UploadResource />} />
                     <Route path="dashboard/resources/categories" element={<ResourceCategories />} />
                     
                     {/* Announcements */}
-                    <Route path="dashboard/announcements" element={<ReturnAnnouncements />} />
+                    <Route path="dashboard/announcements" element={<AnnouncementList />} />
                     
                     {/* Reports */}
                     <Route path="dashboard/reports" element={<ReturnReports />} />
                     
                     {/* Audit Logs */}
-                    <Route path="dashboard/audit-logs" element={<ReturnAuditLogs />} />
+                    <Route path="dashboard/audit-logs" element={<AuditLogList />} />
                     
                     {/* System */}
-                    <Route path="dashboard/system" element={<ReturnSystem />} />
+                    <Route path="dashboard/system" element={<SystemHealth />} />
                 </Route>
             </Route>
         </Routes>

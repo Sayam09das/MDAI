@@ -23,7 +23,17 @@ import {
     Search,
     Activity,
     Zap,
-    Home
+    Home,
+    Megaphone,
+    FileText,
+    Server,
+    Shield,
+    BellRing,
+    PieChart,
+    TrendingUp,
+    CreditCard,
+    Calendar,
+    Clock
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -326,22 +336,16 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard",
         },
         {
+            id: "activity",
+            label: "Activity Overview",
+            icon: Activity,
+            route: "/admin/dashboard/activity",
+        },
+        {
             id: "users",
             label: "Users",
             icon: Users,
             route: "/admin/dashboard/user",
-        },
-        {
-            id: "courses",
-            label: "Courses",
-            icon: BookOpen,
-            route: "/admin/dashboard/courses",
-        },
-        {
-            id: "teachers",
-            label: "Teachers",
-            icon: GraduationCap,
-            route: "/admin/dashboard/teachers",
         },
         {
             id: "students",
@@ -350,16 +354,70 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard/students",
         },
         {
+            id: "teachers",
+            label: "Teachers",
+            icon: GraduationCap,
+            route: "/admin/dashboard/teachers",
+        },
+        {
+            id: "courses",
+            label: "Courses",
+            icon: BookOpen,
+            route: "/admin/dashboard/courses",
+        },
+        {
+            id: "course-analytics",
+            label: "Course Analytics",
+            icon: BarChart3,
+            route: "/admin/dashboard/courses/analytics",
+        },
+        {
             id: "resources",
             label: "Resources",
             icon: FolderOpen,
             route: "/admin/dashboard/resources",
         },
         {
-            id: "Student Course Access",
-            label: "Student Course/Payment Access",
-            icon: BarChart3,
+            id: "upload-resource",
+            label: "Upload Resource",
+            icon: FileText,
+            route: "/admin/dashboard/resources/upload",
+        },
+        {
+            id: "announcements",
+            label: "Announcements",
+            icon: Megaphone,
+            route: "/admin/dashboard/announcements",
+        },
+        {
+            id: "reports",
+            label: "Reports",
+            icon: TrendingUp,
+            route: "/admin/dashboard/reports",
+        },
+        {
+            id: "payment-access",
+            label: "Payment Access",
+            icon: CreditCard,
             route: "/admin/dashboard/students/paymentaccess",
+        },
+        {
+            id: "audit-logs",
+            label: "Audit Logs",
+            icon: Shield,
+            route: "/admin/dashboard/audit-logs",
+        },
+        {
+            id: "system",
+            label: "System Health",
+            icon: Server,
+            route: "/admin/dashboard/system",
+        },
+        {
+            id: "settings",
+            label: "Settings",
+            icon: Settings,
+            route: "/admin/dashboard/settings",
         },
     ];
 
@@ -509,12 +567,19 @@ const DashboardLayout = () => {
 
     const pageNames = {
         "/admin/dashboard": "Dashboard",
+        "/admin/dashboard/activity": "Activity Overview",
         "/admin/dashboard/user": "Users",
-        "/admin/dashboard/courses": "Courses",
-        "/admin/dashboard/teachers": "Teachers",
         "/admin/dashboard/students": "Students",
+        "/admin/dashboard/teachers": "Teachers",
+        "/admin/dashboard/courses": "Courses",
+        "/admin/dashboard/courses/analytics": "Course Analytics",
         "/admin/dashboard/resources": "Resources",
-        "/admin/dashboard/students/paymentaccess": "Student Course/Payment Access",
+        "/admin/dashboard/resources/upload": "Upload Resource",
+        "/admin/dashboard/announcements": "Announcements",
+        "/admin/dashboard/reports": "Reports",
+        "/admin/dashboard/students/paymentaccess": "Payment Access",
+        "/admin/dashboard/audit-logs": "Audit Logs",
+        "/admin/dashboard/system": "System Health",
         "/admin/profile": "Profile",
         "/admin/settings": "Settings",
     };
