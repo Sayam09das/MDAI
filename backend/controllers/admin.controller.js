@@ -709,3 +709,279 @@ export const getSystemStatsAdmin = async (req, res) => {
     }
 };
 
+/* =========================================
+   ADMIN: GET ACTIVITY OVERVIEW (REAL-TIME)
+   ========================================= */
+export const getActivityOverviewAdmin = async (req, res) => {
+    try {
+        const now = new Date();
+        const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+        // Get User model and Teacher model
+        const User = require("../models/userModel.js").User;
+        const Teacher = require("../models/teacherModel.js").Teacher;
+
+        // === REAL-TIME STATS ===
+        
+        // Total counts
+        const totalStudents = await User.countDocuments();
+        const totalTeachers = await Teacher.countDocuments();
+        const totalCourses = await Course.countDocuments();
+        const publishedCourses = await Course.countDocuments({ isPublished: true });
+        const totalEnrollments = await Enrollment.countDocuments();
+        const paidEnrollments = await Enrollment.countDocuments({ paymentStatus: "PAID" });
+
+        // === TIME-BASED STATS ===
+        
+        // New registrations today
+        const newStudentsToday = await User.countDocuments({
+            createdAt: { $gte: oneDayAgo }
+        });
+        
+        const newTeachersToday = await Teacher.countDocuments({
+            createdAt: { $gte: oneDayAgo }
+        });
+
+        // New enrollments in different time periods
+        const newEnrollmentsToday = await Enrollment.countDocuments({
+            createdAt: { $gte: oneDayAgo }
+        });
+        
+        const newEnrollmentsThisWeek = await Enrollment.countDocuments({
+            createdAt: { $gte: sevenDaysAgo }
+        });
+        
+        const newEnrollmentsThisMonth = await Enrollment.countDocuments({
+            createdAt: { $gte: thirtyDaysAgo }
+        });
+
+        // Active sessions (enrollments accessed in last 24 hours)
+        const activeSessionsToday = await Enrollment.countDocuments({
+            lastAccessedAt: { $gte: oneDayAgo }
+        });
+
+        // Course completions today
+        const completionsToday = await Enrollment.countDocuments({
+            status: "COMPLETED",
+            completedAt: { $gte: oneDayAgo }
+        });
+
+        // === REVENUE STATS ===
+        
+        const paidEnrollmentsData = await Enrollment.find({ paymentStatus: "PAID" });
+        const totalRevenue = paidEnrollmentsData.reduce((sum, e) => sum + (e.amount || 0), 0);
+        
+        const todayRevenue = paidEnrollmentsData
+            .filter(e => e.createdAt && new Date(e.createdAt) >= oneDayAgo)
+            .reduce((sum, e) => sum + (e.amount || 0), 0);
+        
+        const weekRevenue = paidEnrollmentsData
+            .filter(e => e.createdAt && new Date(e.createdAt) >= sevenDaysAgo)
+            .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        // === MONTHLY ENROLLMENT DATA (LAST 12 MONTHS) ===
+        
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const monthlyEnrollments = await Enrollment.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: twelveMonthsAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        month: { $month: "$createdAt" },
+                        year: { $year: "$createdAt" }
+                    },
+                    count: { $sum: 1 },
+                    revenue: { $sum: "$amount" }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        // Fill in missing months with zero data
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthlyData = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(now);
+            date.setMonth(date.getMonth() - i);
+            const monthNum = date.getMonth() + 1;
+            const year = date.getFullYear();
+            
+            const data = monthlyEnrollments.find(
+                m => m._id.month === monthNum && m._id.year === year
+            );
+            
+            monthlyData.push({
+                month: months[monthNum - 1],
+                year: year,
+                enrollments: data ? data.count : 0,
+                revenue: data ? data.revenue : 0
+            });
+        }
+
+        // === COURSE CATEGORY DISTRIBUTION ===
+        
+        const courseDistribution = await Course.aggregate([
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 },
+                    published: {
+                        $sum: { $cond: [{ $eq: ["$isPublished", true] }, 1, 0] }
+                    }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+
+        // === RECENT ACTIVITY FEED ===
+        
+        // Recent user registrations
+        const recentUsers = await User.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .select("fullName email createdAt")
+            .lean();
+
+        // Recent enrollments
+        const recentEnrollments = await Enrollment.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate("student", "fullName email")
+            .populate("course", "title")
+            .lean();
+
+        // Recent course completions
+        const recentCompletions = await Enrollment.find({ status: "COMPLETED" })
+            .sort({ completedAt: -1 })
+            .limit(5)
+            .populate("student", "fullName email")
+            .populate("course", "title")
+            .lean();
+
+        // === DAILY ACTIVITY (LAST 7 DAYS) ===
+        
+        const dailyActivity = [];
+        for (let i = 6; i >= 0; i--) {
+            const dayStart = new Date(now);
+            dayStart.setDate(dayStart.getDate() - i);
+            dayStart.setHours(0, 0, 0, 0);
+            
+            const dayEnd = new Date(dayStart);
+            dayEnd.setDate(dayEnd.getDate() + 1);
+            dayEnd.setHours(0, 0, 0, 0);
+
+            const dayUsers = await User.countDocuments({
+                createdAt: { $gte: dayStart, $lt: dayEnd }
+            });
+            
+            const dayEnrollments = await Enrollment.countDocuments({
+                createdAt: { $gte: dayStart, $lt: dayEnd }
+            });
+
+            const dayCompletions = await Enrollment.countDocuments({
+                status: "COMPLETED",
+                completedAt: { $gte: dayStart, $lt: dayEnd }
+            });
+
+            dailyActivity.push({
+                day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                users: dayUsers,
+                enrollments: dayEnrollments,
+                completions: dayCompletions
+            });
+        }
+
+        // === ENGAGEMENT METRICS ===
+        
+        const engagementMetrics = {
+            avgProgress: 0,
+            totalTimeSpent: 0,
+            avgTimePerUser: 0
+        };
+        
+        const enrollmentsWithProgress = await Enrollment.find({ status: "ACTIVE" });
+        if (enrollmentsWithProgress.length > 0) {
+            const totalProgress = enrollmentsWithProgress.reduce((sum, e) => sum + (e.progress || 0), 0);
+            engagementMetrics.avgProgress = Math.round(totalProgress / enrollmentsWithProgress.length);
+            
+            const totalTime = enrollmentsWithProgress.reduce((sum, e) => sum + (e.totalTimeSpent || 0), 0);
+            engagementMetrics.totalTimeSpent = totalTime;
+            engagementMetrics.avgTimePerUser = Math.round(totalTime / enrollmentsWithProgress.length);
+        }
+
+        res.json({
+            success: true,
+            timestamp: now.toISOString(),
+            overview: {
+                totalStudents,
+                totalTeachers,
+                totalCourses,
+                publishedCourses,
+                totalEnrollments,
+                paidEnrollments,
+                totalRevenue
+            },
+            realtime: {
+                newStudentsToday,
+                newTeachersToday,
+                newEnrollmentsToday,
+                activeSessionsToday,
+                completionsToday,
+                todayRevenue
+            },
+            trends: {
+                enrollmentsThisWeek: newEnrollmentsThisWeek,
+                enrollmentsThisMonth: newEnrollmentsThisMonth,
+                weekRevenue
+            },
+            charts: {
+                monthlyEnrollments: monthlyData,
+                courseDistribution: courseDistribution.map(d => ({
+                    category: d._id || 'Uncategorized',
+                    count: d.count,
+                    published: d.published
+                })),
+                dailyActivity
+            },
+            activityFeed: {
+                recentUsers: recentUsers.map(u => ({
+                    id: u._id,
+                    name: u.fullName,
+                    email: u.email,
+                    time: u.createdAt,
+                    type: 'registration'
+                })),
+                recentEnrollments: recentEnrollments.map(e => ({
+                    id: e._id,
+                    student: e.student?.fullName || 'Unknown',
+                    course: e.course?.title || 'Unknown',
+                    time: e.createdAt,
+                    type: 'enrollment',
+                    paymentStatus: e.paymentStatus
+                })),
+                recentCompletions: recentCompletions.map(c => ({
+                    id: c._id,
+                    student: c.student?.fullName || 'Unknown',
+                    course: c.course?.title || 'Unknown',
+                    time: c.completedAt,
+                    type: 'completion',
+                    progress: c.progress
+                }))
+            },
+            engagement: engagementMetrics
+        });
+    } catch (error) {
+        console.error("Activity overview error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+

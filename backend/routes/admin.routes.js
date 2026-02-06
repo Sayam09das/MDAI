@@ -23,6 +23,8 @@ import {
     getReportStatsAdmin,
     // System stats
     getSystemStatsAdmin,
+    // Activity overview
+    getActivityOverviewAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -175,6 +177,18 @@ router.get(
     protect,
     adminOnly,
     getSystemStatsAdmin
+);
+
+/* =====================================
+   ADMIN ACTIVITY OVERVIEW
+===================================== */
+
+// Get activity overview (real-time analytics)
+router.get(
+    "/activity/overview",
+    protect,
+    adminOnly,
+    getActivityOverviewAdmin
 );
 
 export default router;
