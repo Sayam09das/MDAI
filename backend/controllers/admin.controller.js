@@ -4,6 +4,8 @@ import Course from "../models/Course.js";
 import Resource from "../models/ResourceModel.js";
 import AuditLog from "../models/auditLogModel.js";
 import Announcement from "../models/announcementModel.js";
+import User from "../models/userModel.js";
+import Teacher from "../models/teacherModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";
@@ -646,8 +648,8 @@ export const getReportStatsAdmin = async (req, res) => {
 export const getSystemStatsAdmin = async (req, res) => {
     try {
         // User counts
-        const totalStudents = await require("../models/userModel.js").User.countDocuments();
-        const totalTeachers = await require("../models/teacherModel.js").Teacher.countDocuments();
+        const totalStudents = await User.countDocuments();
+        const totalTeachers = await Teacher.countDocuments();
         const totalAdmins = await Admin.countDocuments();
 
         // Course and resource counts
@@ -718,10 +720,6 @@ export const getActivityOverviewAdmin = async (req, res) => {
         const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
         const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-
-        // Get User model and Teacher model
-        const User = require("../models/userModel.js").User;
-        const Teacher = require("../models/teacherModel.js").Teacher;
 
         // === REAL-TIME STATS ===
         
