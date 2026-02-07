@@ -267,82 +267,93 @@ const DashboardOverview = () => {
                             </motion.div>
                         ))
                     ) : (
-                        statsData.map((stat) => {
-                            const Icon = stat.icon;
-                            return (
-                                <motion.div
-                                    key={stat.id}
-                                    variants={itemVariants}
-                                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className={`p-3 rounded-lg ${stat.color === 'indigo'
-                                                ? 'bg-indigo-50'
-                                                : 'bg-cyan-50'
-                                            }`}>
-                                            <Icon className={`w-6 h-6 ${stat.color === 'indigo'
-                                                    ? 'text-indigo-600'
-                                                    : 'text-cyan-600'
-                                                }`} />
-                                        </div>
-                                        <div className={`flex items-center space-x-1 text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'
-                                            }`}>
-                                            {stat.isPositive ? (
-                                                <ArrowUpRight className="w-4 h-4" />
-                                            ) : (
-                                                <ArrowDownRight className="w-4 h-4" />
-                                            )}
-                                            <span>{stat.change}</span>
-                                        </div>
+                        statsData.map((stat) => (
+                            <motion.div
+                                key={stat.id}
+                                variants={itemVariants}
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className={`p-3 rounded-lg ${stat.color === 'indigo'
+                                            ? 'bg-indigo-50'
+                                            : 'bg-cyan-50'
+                                        }`}>
+                                        {stat.id === 1 && <Users className="w-6 h-6 text-indigo-600" />}
+                                        {stat.id === 2 && <BookOpen className="w-6 h-6 text-cyan-600" />}
+                                        {stat.id === 3 && <GraduationCap className="w-6 h-6 text-indigo-600" />}
+                                        {stat.id === 4 && <TrendingUp className="w-6 h-6 text-cyan-600" />}
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-slate-900 mb-1">
-                                            {stat.value}
-                                        </div>
-                                        <div className="text-sm text-slate-600">
-                                            {stat.label}
-                                        </div>
+                                    <div className={`flex items-center space-x-1 text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                        {stat.isPositive ? (
+                                            <ArrowUpRight className="w-4 h-4" />
+                                        ) : (
+                                            <ArrowDownRight className="w-4 h-4" />
+                                        )}
+                                        <span>{stat.change}</span>
                                     </div>
-                                </motion.div>
-                            );
-                        })
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                                        {stat.value}
+                                    </div>
+                                    <div className="text-sm text-slate-600">
+                                        {stat.label}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))
                     )}
                 </div>
 
                 {/* Quick Stats Bar */}
                 <motion.div variants={itemVariants}>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {quickStats.map((stat) => {
-                            const Icon = stat.icon;
-                            const colorClasses = {
-                                amber: 'bg-amber-50 text-amber-600',
-                                green: 'bg-green-50 text-green-600',
-                                indigo: 'bg-indigo-50 text-indigo-600',
-                                red: 'bg-red-50 text-red-600'
-                            };
-
-                            return (
-                                <div
-                                    key={stat.id}
-                                    className="bg-white rounded-lg p-4 shadow-sm border border-slate-200"
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <div className={`p-2 rounded-lg ${colorClasses[stat.color]}`}>
-                                            <Icon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <div className="text-xl font-bold text-slate-900">
-                                                {stat.value}
-                                            </div>
-                                            <div className="text-xs text-slate-600">
-                                                {stat.label}
-                                            </div>
-                                        </div>
-                                    </div>
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+                                    <Clock className="w-5 h-5" />
                                 </div>
-                            );
-                        })}
+                                <div>
+                                    <div className="text-xl font-bold text-slate-900">24</div>
+                                    <div className="text-xs text-slate-600">Pending Approvals</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg bg-green-50 text-green-600">
+                                    <Activity className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold text-slate-900">1,842</div>
+                                    <div className="text-xs text-slate-600">Active Sessions</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold text-slate-900">127</div>
+                                    <div className="text-xs text-slate-600">Completed Today</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg bg-red-50 text-red-600">
+                                    <AlertCircle className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold text-slate-900">8</div>
+                                    <div className="text-xs text-slate-600">Issues Reported</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -366,40 +377,77 @@ const DashboardOverview = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                {recentActivity.map((activity, index) => {
-                                    const Icon = activity.icon;
-                                    return (
-                                        <motion.div
-                                            key={activity.id}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                            className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
-                                        >
-                                            <div className={`p-2 rounded-lg flex-shrink-0 ${activity.color === 'indigo'
-                                                    ? 'bg-indigo-50'
-                                                    : 'bg-cyan-50'
-                                                }`}>
-                                                <Icon className={`w-5 h-5 ${activity.color === 'indigo'
-                                                        ? 'text-indigo-600'
-                                                        : 'text-cyan-600'
-                                                    }`} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-slate-900">
-                                                    {activity.title}
-                                                </div>
-                                                <div className="text-sm text-slate-600 truncate">
-                                                    {activity.description}
-                                                </div>
-                                                <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    <span>{activity.time}</span>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    <div className="p-2 rounded-lg bg-indigo-50 flex-shrink-0">
+                                        <Users className="w-5 h-5 text-indigo-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-slate-900">New user registration</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.users?.students || 0} students on platform</div>
+                                        <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>Just now</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    <div className="p-2 rounded-lg bg-cyan-50 flex-shrink-0">
+                                        <BookOpen className="w-5 h-5 text-cyan-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-slate-900">Active courses</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.content?.publishedCourses || 0} published courses</div>
+                                        <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>Active</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    <div className="p-2 rounded-lg bg-indigo-50 flex-shrink-0">
+                                        <GraduationCap className="w-5 h-5 text-indigo-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-slate-900">Teaching staff</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.users?.teachers || 0} teachers</div>
+                                        <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>Available</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    <div className="p-2 rounded-lg bg-cyan-50 flex-shrink-0">
+                                        <Award className="w-5 h-5 text-cyan-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-slate-900">Platform revenue</div>
+                                        <div className="text-sm text-slate-600 truncate">${(systemData?.stats?.enrollments?.total || 0)} total enrollments</div>
+                                        <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>This month</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
                         </div>
                     </motion.div>

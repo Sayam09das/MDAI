@@ -314,49 +314,96 @@ const ActivityOverview = () => {
                             </motion.div>
                         ))
                     ) : (
-                        summaryStatsData.map((stat) => {
-                            const Icon = stat.icon;
-                            const colorClasses = {
-                                indigo: 'bg-indigo-50 text-indigo-600',
-                                cyan: 'bg-cyan-50 text-cyan-600',
-                                green: 'bg-green-50 text-green-600',
-                                amber: 'bg-amber-50 text-amber-600'
-                            };
-
-                            return (
-                                <motion.div
-                                    key={stat.id}
-                                    variants={itemVariants}
-                                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className={`p-3 rounded-lg ${colorClasses[stat.color]}`}>
-                                            <Icon className="w-6 h-6" />
-                                        </div>
-                                        <div className={`flex items-center space-x-1 text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                            {stat.isPositive ? (
-                                                <ArrowUpRight className="w-4 h-4" />
-                                            ) : (
-                                                <ArrowDownRight className="w-4 h-4" />
-                                            )}
-                                            <span>{stat.change}</span>
-                                        </div>
+                        <>
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+                                        <Users className="w-6 h-6" />
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-slate-900 mb-1">
-                                            {stat.value}
-                                        </div>
-                                        <div className="text-sm text-slate-600 mb-1">
-                                            {stat.label}
-                                        </div>
-                                        <div className="text-xs text-slate-400">
-                                            {stat.subtext}
-                                        </div>
+                                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                                        <ArrowUpRight className="w-4 h-4" />
+                                        <span>+18.2%</span>
                                     </div>
-                                </motion.div>
-                            );
-                        })
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                                        {formatNumber(data.overview.totalStudents)}
+                                    </div>
+                                    <div className="text-sm text-slate-600 mb-1">Total Students</div>
+                                    <div className="text-xs text-slate-400">{formatNumber(data.realtime.newStudentsToday)} new today</div>
+                                </div>
+                            </motion.div>
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 rounded-lg bg-cyan-50 text-cyan-600">
+                                        <BookOpen className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                                        <ArrowUpRight className="w-4 h-4" />
+                                        <span>+8.5%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                                        {formatNumber(data.overview.publishedCourses)}
+                                    </div>
+                                    <div className="text-sm text-slate-600 mb-1">Active Courses</div>
+                                    <div className="text-xs text-slate-400">{formatNumber(data.overview.totalCourses)} total</div>
+                                </div>
+                            </motion.div>
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 rounded-lg bg-green-50 text-green-600">
+                                        <Activity className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                                        <ArrowUpRight className="w-4 h-4" />
+                                        <span>+12.3%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                                        {formatNumber(data.realtime.activeSessionsToday)}
+                                    </div>
+                                    <div className="text-sm text-slate-600 mb-1">Active Sessions</div>
+                                    <div className="text-xs text-slate-400">Last 24 hours</div>
+                                </div>
+                            </motion.div>
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 rounded-lg bg-amber-50 text-amber-600">
+                                        <DollarSign className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                                        <ArrowUpRight className="w-4 h-4" />
+                                        <span>+24.1%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                                        {formatCurrency(data.realtime.todayRevenue)}
+                                    </div>
+                                    <div className="text-sm text-slate-600 mb-1">Today's Revenue</div>
+                                    <div className="text-xs text-slate-400">{formatCurrency(data.trends.weekRevenue)} this week</div>
+                                </div>
+                            </motion.div>
+                        </>
                     )}
                 </div>
 
