@@ -49,15 +49,18 @@ const TeacherPayments = () => {
     const fetchData = useCallback(async () => {
         try {
             const [teachersRes, statsRes] = await Promise.all([
-                getAllTeachersWithEarnings(),
-                getAdminFinanceStats()
+                fetch(`${BACKEND_URL}/api/admin/finance/teachers/earnings`, getAuthHeaders()),
+                fetch(`${BACKEND_URL}/api/admin/finance/stats`, getAuthHeaders())
             ]);
             
-            if (teachersRes.success) {
-                setTeachers(teachersRes.teachers);
+            const teachersData = await teachersRes.json();
+            const statsData = await statsRes.json();
+            
+            if (teachersData.success) {
+                setTeachers(teachersData.teachers);
             }
-            if (statsRes.success) {
-                setStats(statsRes.stats);
+            if (statsData.success) {
+                setStats(statsData.stats);
             }
         } catch (error) {
             console.error("Error fetching data:", error);
