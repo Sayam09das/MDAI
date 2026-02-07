@@ -2,7 +2,6 @@
 
 ## Status: COMPLETED ✅
 
-
 ## Backend Deletions:
 - [x] Delete `backend/models/financeTransactionModel.js`
 - [x] Delete `backend/utils/generateReceiptImage.js`
