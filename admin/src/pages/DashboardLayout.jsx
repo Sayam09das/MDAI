@@ -657,9 +657,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.45 }}
                         whileHover={{ x: isCollapsed ? 0 : 4 }}
-                        onClick={() => handleNavClick("/admin/dashboard/students/paymentaccess")}
+                        onClick={() => handleNavClick("/admin/dashboard/payments")}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
-                            ${location.pathname === "/admin/dashboard/students/paymentaccess"
+                            ${location.pathname === "/admin/dashboard/payments"
                                 ? "bg-indigo-50 text-indigo-600 shadow-sm"
                                 : "text-slate-700 hover:bg-slate-100"
                             }
@@ -667,9 +667,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         `}
                         title={isCollapsed ? "Payment Access" : ""}
                     >
-                        <CreditCard className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/students/paymentaccess" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        <CreditCard className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/payments" ? 'text-indigo-600' : 'text-slate-500'}`} />
                         {!isCollapsed && <span className="font-medium text-sm">Payment Access</span>}
-                        {location.pathname === "/admin/dashboard/students/paymentaccess" && !isCollapsed && (
+                        {location.pathname === "/admin/dashboard/payments" && !isCollapsed && (
                             <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
                         )}
                         {isCollapsed && (
@@ -738,15 +738,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.6 }}
                                 whileHover={{ x: 2 }}
-                                onClick={() => handleNavClick("/admin/dashboard/finance/payments")}
+                                onClick={() => handleNavClick("/admin/dashboard/finance/teacher-payments")}
                                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm
-                                    ${location.pathname === "/admin/dashboard/finance/payments"
+                                    ${location.pathname === "/admin/dashboard/finance/teacher-payments"
                                         ? "bg-indigo-50 text-indigo-600 font-medium"
                                         : "text-slate-600 hover:bg-slate-100"
                                     }
                                 `}
                             >
-                                <DollarSign size={16} className={location.pathname === "/admin/dashboard/finance/payments" ? 'text-indigo-600' : 'text-slate-400'} />
+                                <DollarSign size={16} className={location.pathname === "/admin/dashboard/finance/teacher-payments" ? 'text-indigo-600' : 'text-slate-400'} />
                                 <span>Teacher Payments</span>
                             </motion.button>
 
@@ -861,7 +861,7 @@ const DashboardLayout = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const location = useLocation();
 
-    const pageNames = {
+const pageNames = {
         "/admin/dashboard": "Dashboard",
         "/admin/dashboard/activity": "Activity Overview",
         "/admin/dashboard/user": "Users",
@@ -871,7 +871,7 @@ const DashboardLayout = () => {
         "/admin/dashboard/courses/analytics": "Course Analytics",
         "/admin/dashboard/announcements": "Announcements",
         "/admin/dashboard/reports": "Reports",
-        "/admin/dashboard/students/paymentaccess": "Payment Access",
+        "/admin/dashboard/payments": "Payment Access",
         "/admin/dashboard/finance": "Finance Overview",
         "/admin/dashboard/finance/transactions": "Manage Transactions",
         "/admin/dashboard/finance/teacher-payments": "Teacher Payments",
