@@ -9,9 +9,7 @@ import ReturnStudentMain from "../Pages/Student/Dashboard/MainStudentStats/Retur
 import ReturnMyCourses from "../Pages/Student/Dashboard/MyCourses/ReturnMyCourses";
 import ReturnCourseProgress from "../Pages/Student/Dashboard/CourseProgress/ReturnCourseProgress";
 import StudentLiveClasses from "../Pages/Student/Dashboard/StudentLiveClasses/StudentLiveClasses";
-import StudentPayments from "../Pages/Student/Dashboard/StudentPayments/StudentPayments";
 import ReturnStudentResources from "../Pages/Student/Dashboard/StudentResources/ReturnStudentResources";
-import ReturnStudentFinance from "../Pages/Student/Dashboard/StudentFinance/ReturnStudentFinance";
 import ReturnAllCourse from "../Pages/Student/Dashboard/AllCourse/ReturnAllCourse";
 import CourseView from "../Pages/Student/Dashboard/MyCourses/CourseView";
 import ReturnStudentProfile from "../Pages/Student/Dashboard/StudentProfile/ReturnStudentProfile";
@@ -42,9 +40,7 @@ const StudentRoutes = () => {
                     {/* ✅ FIXED HERE */}
                     <Route path="course/:courseId" element={<CourseView />} />
 
-                    <Route path="student-payments" element={<StudentPayments />} />
                     <Route path="resources" element={<ReturnStudentResources />} />
-                    <Route path="finance" element={<ReturnStudentFinance />} />
                     <Route path="profile" element= {<ReturnStudentProfile />} />
                     <Route path="attendance" element={<ReturnAttendence />} />
                     <Route path="calendar" element={<ReturnCalendar />} />

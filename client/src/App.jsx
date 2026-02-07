@@ -23,9 +23,7 @@ import ReturnStudentMain from "./Pages/Student/Dashboard/MainStudentStats/Return
 import ReturnMyCourses from "./Pages/Student/Dashboard/MyCourses/ReturnMyCourses"
 import ReturnCourseProgress from "./Pages/Student/Dashboard/CourseProgress/ReturnCourseProgress"
 import StudentLiveClasses from "./Pages/Student/Dashboard/StudentLiveClasses/StudentLiveClasses"
-import StudentPayments from "./Pages/Student/Dashboard/StudentPayments/StudentPayments"
 import ReturnStudentResources from "./Pages/Student/Dashboard/StudentResources/ReturnStudentResources"
-import ReturnStudentFinance from "./Pages/Student/Dashboard/StudentFinance/ReturnStudentFinance"
 import ReturnAllCourse from "./Pages/Student/Dashboard/AllCourse/ReturnAllCourse"
 import CourseView from "./Pages/Student/Dashboard/MyCourses/CourseView"
 import ReturnStudentProfile from "./Pages/Student/Dashboard/StudentProfile/ReturnStudentProfile"
@@ -35,12 +33,6 @@ import ReturnSearch from "./Pages/Student/Dashboard/Search/ReturnSearch"
 import ReturnStudentMessages from "./Pages/Student/Dashboard/Messages/ReturnStudentMessages"
 import StudentAnnouncements from "./Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
 
-
-// Payment Pages
-import Payment from "./Pages/Student/Dashboard/CoursePayment/Payment"
-import PaymentInfo from "./Pages/Student/Dashboard/CoursePayment/PaymentInfo"
-import PaymentDemo from "./Pages/Student/Dashboard/CoursePayment/paymentdemo"
-import PayLaterRequest from "./Pages/Student/Dashboard/CoursePayment/PayLaterRequest"
 
 // Teacher Pages
 import TeacherLayout from "./components/Dashboard/Teacher/TeacherLayout"
@@ -53,7 +45,6 @@ import ReturnStudentAttendance from "./Pages/teacher/Dashboard/MainAttendance/Re
 import ReturnTeacherCalendar from "./Pages/teacher/Dashboard/MainTeacherCalendar/ReturnTeacherCalendar"
 import ReturnTeacherprofile from "./Pages/teacher/Dashboard/TeacherProfile/ReturnTeacherprofile"
 import ReturnTeacherSettings from "./Pages/teacher/Dashboard/MainTeacherSettings/ReturnTeacherSettings"
-import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
 import ReturnTeacherResources from "./Pages/teacher/Dashboard/MainResources/ReturnTeacherResources"
 import ReturnSearchTeacher from "./Pages/teacher/Dashboard/MainSearch/ReturnSearch"
 import ReturnTeacherMessages from "./Pages/teacher/Dashboard/Messages/ReturnTeacherMessages"
@@ -121,14 +112,12 @@ const App = () => {
           <Route path="course-progress" element={<ReturnCourseProgress />} />
           <Route path="student-live-classes/:courseId" element={<StudentLiveClasses />} />
           <Route path="course/:courseId" element={<CourseView />} />
-          <Route path="student-payments" element={<StudentPayments />} />
           <Route path="resources" element={<ReturnStudentResources />} />
-          <Route path="finance" element={<ReturnStudentFinance />} />
           <Route path="profile" element={<ReturnStudentProfile />} />
           <Route path="attendance" element={<ReturnAttendence />} />
           <Route path="calendar" element={<ReturnCalendar />} />
           <Route path="search" element={<ReturnSearch />} />
-<Route path="messages" element={<ReturnStudentMessages />} />
+          <Route path="messages" element={<ReturnStudentMessages />} />
           <Route path="announcements" element={<StudentAnnouncements />} />
 
         </Route>
@@ -152,39 +141,11 @@ const App = () => {
           <Route path="calendar" element={<ReturnTeacherCalendar />} />
           <Route path="profile" element={<ReturnTeacherprofile />} />
           <Route path="settings" element={<ReturnTeacherSettings />} />
-          <Route path="finance" element={<ReturnTeacherFinance />} />
           <Route path="search" element={<ReturnSearchTeacher />} />
-<Route path="messages" element={<ReturnTeacherMessages />} />
+          <Route path="messages" element={<ReturnTeacherMessages />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
 
         </Route>
-
-        {/* Payment Routes */}
-        <Route
-          path="/payment/:courseId"
-          element={
-            <StudentProtectedRoute>
-              <Payment />
-            </StudentProtectedRoute>
-          }
-        />
-        <Route
-          path="/payment-info/:courseId"
-          element={
-            <StudentProtectedRoute>
-              <PaymentInfo />
-            </StudentProtectedRoute>
-          }
-        />
-        <Route
-          path="/pay-later/:courseId"
-          element={
-            <StudentProtectedRoute>
-              <PayLaterRequest />
-            </StudentProtectedRoute>
-          }
-        />
-        <Route path="/payment-demo" element={<PaymentDemo />} />
 
         {/* 404 - Catch-all route (MUST be last) */}
         <Route path="*" element={<NotFound />} />

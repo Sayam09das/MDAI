@@ -10,7 +10,6 @@ import ReturnStudentAttendance from "../Pages/teacher/Dashboard/MainAttendance/R
 import ReturnTeacherCalendar from "../Pages/teacher/Dashboard/MainTeacherCalendar/ReturnTeacherCalendar";
 import ReturnTeacherprofile from "../Pages/teacher/Dashboard/TeacherProfile/ReturnTeacherprofile";
 import ReturnTeacherSettings from "../Pages/teacher/Dashboard/MainTeacherSettings/ReturnTeacherSettings";
-import ReturnTeacherFinance from "../Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance";
 import ReturnTeacherResources from "../Pages/teacher/Dashboard/MainResources/ReturnTeacherResources";
 import ReturnSearch from "../Pages/teacher/Dashboard/MainSearch/ReturnSearch";
 import ReturnTeacherMessages from "../Pages/teacher/Dashboard/Messages/ReturnTeacherMessages";
@@ -50,7 +49,6 @@ const TeacherRoutes = () => {
                     <Route path="calendar" element={<ReturnTeacherCalendar />} />
                     <Route path="profile" element={<ReturnTeacherprofile />} />
                     <Route path="settings" element={<ReturnTeacherSettings />} />
-                    <Route path="finance" element={<ReturnTeacherFinance />} />
                     <Route path="search" element={<ReturnSearch />} />
                     <Route path="messages" element={<ReturnTeacherMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />

@@ -9,7 +9,6 @@ import {
   Calendar,
   ClipboardCheck,
   MessageSquare,
-  CreditCard,
   User,
   Settings,
   X,
@@ -30,7 +29,6 @@ const extraMenu = [
   { icon: ClipboardCheck, label: "Attendance", path: "/student-dashboard/attendance" },
   { icon: Calendar, label: "Calendar", path: "/student-dashboard/calendar" },
   { icon: MessageSquare, label: "Messages", path: "/student-dashboard/messages" },
-  { icon: CreditCard, label: "Payments", path: "/student-dashboard/student-payments" },
 ];
 
 const otherMenu = [

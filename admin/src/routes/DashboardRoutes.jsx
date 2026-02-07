@@ -12,7 +12,6 @@ import TeacherAnalytics from "../Dashboard/DashboardTeacher/TeacherAnalytics";
 import TeacherList from "../Dashboard/DashboardTeacher/TeacherList";
 import CreateTeacher from "../Dashboard/DashboardTeacher/CreateTeacher";
 import StudentListPreview from "../Dashboard/DashboardStudent/StudentListPreview";
-import ReturnSPayment from "../Dashboard/StudentEnrollment/ReturnSPayment";
 import ReturnSettings from "../Dashboard/DashboardSettings/ReturnSettings";
 import ReturnCourses from "../Dashboard/DashboardCourses/ReturnCourses";
 import CourseEditor from "../Dashboard/DashboardCourses/CourseEditor";
@@ -24,10 +23,6 @@ import AuditLogList from "../Dashboard/DashboardAuditLogs/AuditLogList";
 import ReturnAuditLogs from "../Dashboard/DashboardAuditLogs/ReturnAuditLogs";
 import SystemHealth from "../Dashboard/DashboardSystem/SystemHealth";
 import ReturnSystem from "../Dashboard/DashboardSystem/ReturnSystem";
-import ReturnFinanceDashboard from "../Dashboard/DashboardFinance/ReturnFinanceDashboard";
-import ReturnManageTransactions from "../Dashboard/DashboardFinance/ReturnManageTransactions";
-import ReturnTeacherPayments from "../Dashboard/DashboardFinance/ReturnTeacherPayments";
-import ReturnRevenueReports from "../Dashboard/DashboardFinance/ReturnRevenueReports";
 
 const DashboardRoutes = () => {
     return (
@@ -46,7 +41,6 @@ const DashboardRoutes = () => {
                     <Route path="dashboard/user" element={<ReturnDashboardUser />} />
                     <Route path="dashboard/students" element={<ReturnDashboardStudent />} />
                     <Route path="dashboard/studentlist" element={<StudentListPreview />} />
-                    <Route path="dashboard/students/paymentaccess" element={<ReturnSPayment />} />
                     
                     {/* Teachers */}
                     <Route path="dashboard/teachers" element={<TeacherAnalytics />} />
@@ -73,12 +67,6 @@ const DashboardRoutes = () => {
                     
                     {/* System */}
                     <Route path="dashboard/system" element={<SystemHealth />} />
-                    
-                    {/* Finance */}
-                    <Route path="dashboard/finance" element={<ReturnFinanceDashboard />} />
-                    <Route path="dashboard/finance/transactions" element={<ReturnManageTransactions />} />
-                    <Route path="dashboard/finance/payments" element={<ReturnTeacherPayments />} />
-                    <Route path="dashboard/finance/reports" element={<ReturnRevenueReports />} />
                 </Route>
             </Route>
         </Routes>
