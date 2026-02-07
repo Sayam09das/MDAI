@@ -14,6 +14,7 @@ import {
     User,
     Settings,
     X,
+    Bell,
 } from "lucide-react";
 
 /* ================= MENU ================= */
