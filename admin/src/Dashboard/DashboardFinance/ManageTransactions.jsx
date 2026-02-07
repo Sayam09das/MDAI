@@ -20,7 +20,18 @@ import {
     Calendar,
     FileText
 } from "lucide-react";
-import { getAllFinanceTransactions, updateTransactionStatus } from "../../lib/api/adminFinanceApi";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+const getAuthHeaders = () => {
+    const token = localStorage.getItem("adminToken");
+    return {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+    };
+};
 
 const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "$0.00";
