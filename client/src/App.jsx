@@ -33,7 +33,7 @@ import ReturnAttendence from "./Pages/Student/Dashboard/StudentAttendence/Return
 import ReturnCalendar from "./Pages/Student/Dashboard/StudentCalendar/ReturnCalendar"
 import ReturnSearch from "./Pages/Student/Dashboard/Search/ReturnSearch"
 import ReturnStudentMessages from "./Pages/Student/Dashboard/Messages/ReturnStudentMessages"
-import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
+import ReturnAnnouncements from "./Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
 
 
 // Payment Pages
@@ -57,7 +57,7 @@ import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/R
 import ReturnTeacherResources from "./Pages/teacher/Dashboard/MainResources/ReturnTeacherResources"
 import ReturnSearchTeacher from "./Pages/teacher/Dashboard/MainSearch/ReturnSearch"
 import ReturnTeacherMessages from "./Pages/teacher/Dashboard/Messages/ReturnTeacherMessages"
-import ReturnAnnouncements from "../Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
+import ReturnAnnouncements from "./Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
 
 
 // Protected Routes
