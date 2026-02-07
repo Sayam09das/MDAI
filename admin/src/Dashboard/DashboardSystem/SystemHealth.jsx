@@ -21,7 +21,8 @@ import {
     Bell,
     Terminal
 } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast, Toaster } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAdminSocket } from '../../context/AdminSocketContext';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
