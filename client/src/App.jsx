@@ -59,6 +59,7 @@ import TeacherProtectedRoute from "./ProtectedRoute/TeacherProtectedRoute"
 // 404 Page
 import NotFound from "./Pages/NotFound/NotFound"
 import ReturnStudentPayments from "./Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments"
+import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
 
 const App = () => {
   return (
@@ -122,7 +123,6 @@ const App = () => {
           <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="payments" element={<ReturnStudentPayments />} />
 
-
         </Route>
 
         {/* Teacher Routes */}
@@ -147,6 +147,7 @@ const App = () => {
           <Route path="search" element={<ReturnSearchTeacher />} />
           <Route path="messages" element={<ReturnTeacherMessages />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
+          <Route path="finance" element={<ReturnTeacherFinance />} />
 
         </Route>
 
