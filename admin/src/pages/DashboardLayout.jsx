@@ -18,23 +18,17 @@ import {
     BookOpen,
     GraduationCap,
     UserCircle,
-    FolderOpen,
     BarChart3,
     Search,
     Activity,
     Zap,
     Home,
     Megaphone,
-    FileText,
     Server,
     Shield,
-    BellRing,
-    PieChart,
-    DollarSign,
     TrendingUp,
     CreditCard,
-    Calendar,
-    Clock
+    DollarSign
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -329,113 +323,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const navItems = [
-        {
-            id: "dashboard",
-            label: "Dashboard",
-            icon: LayoutDashboard,
-            route: "/admin/dashboard",
-        },
-        {
-            id: "activity",
-            label: "Activity Overview",
-            icon: Activity,
-            route: "/admin/dashboard/activity",
-        },
-        {
-            id: "users",
-            label: "Users",
-            icon: Users,
-            route: "/admin/dashboard/user",
-        },
-        {
-            id: "students",
-            label: "Students",
-            icon: UserCircle,
-            route: "/admin/dashboard/students",
-        },
-        {
-            id: "teachers",
-            label: "Teachers",
-            icon: GraduationCap,
-            route: "/admin/dashboard/teachers",
-        },
-        {
-            id: "courses",
-            label: "Courses",
-            icon: BookOpen,
-            route: "/admin/dashboard/courses",
-        },
-        {
-            id: "course-analytics",
-            label: "Course Analytics",
-            icon: BarChart3,
-            route: "/admin/dashboard/courses/analytics",
-        },
-        {
-            id: "announcements",
-            label: "Announcements",
-            icon: Megaphone,
-            route: "/admin/dashboard/announcements",
-        },
-        {
-            id: "reports",
-            label: "Reports",
-            icon: TrendingUp,
-            route: "/admin/dashboard/reports",
-        },
-        {
-            id: "payment-access",
-            label: "Payment Access",
-            icon: CreditCard,
-            route: "/admin/dashboard/students/paymentaccess",
-        },
-        {
-            id: "finance",
-            label: "Finance Overview",
-            icon: DollarSign,
-            route: "/admin/dashboard/finance",
-            children: [
-                {
-                    id: "manage-transactions",
-                    label: "Manage Transactions",
-                    icon: FileText,
-                    route: "/admin/dashboard/finance/transactions",
-                },
-                {
-                    id: "teacher-payments",
-                    label: "Teacher Payments",
-                    icon: DollarSign,
-                    route: "/admin/dashboard/finance/payments",
-                },
-                {
-                    id: "revenue-reports",
-                    label: "Revenue Reports",
-                    icon: TrendingUp,
-                    route: "/admin/dashboard/finance/reports",
-                },
-            ],
-        },
-        {
-            id: "audit-logs",
-            label: "Audit Logs",
-            icon: Shield,
-            route: "/admin/dashboard/audit-logs",
-        },
-        {
-            id: "system",
-            label: "System Health",
-            icon: Server,
-            route: "/admin/dashboard/system",
-        },
-        {
-            id: "settings",
-            label: "Settings",
-            icon: Settings,
-            route: "/admin/dashboard/settings",
-        },
-    ];
-
     const handleNavClick = (route) => {
         navigate(route);
         if (window.innerWidth < 768) {
@@ -523,51 +410,382 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
 
                 {/* Navigation */}
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {navItems.map((item, index) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.route;
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Dashboard" : ""}
+                    >
+                        <LayoutDashboard className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Dashboard</span>}
+                        {location.pathname === "/admin/dashboard" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Dashboard
+                            </div>
+                        )}
+                    </motion.button>
 
-                        return (
-                            <motion.button
-                                key={item.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                whileHover={{ x: isCollapsed ? 0 : 4 }}
-                                onClick={() => handleNavClick(item.route)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
-                                    ${isActive
-                                        ? "bg-indigo-50 text-indigo-600 shadow-sm"
-                                        : "text-slate-700 hover:bg-slate-100"
-                                    }
-                                    ${isCollapsed ? "justify-center" : ""}
-                                `}
-                                title={isCollapsed ? item.label : ""}
-                            >
-                                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-500'}`} />
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/activity")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/activity"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Activity Overview" : ""}
+                    >
+                        <Activity className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/activity" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Activity Overview</span>}
+                        {location.pathname === "/admin/dashboard/activity" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Activity Overview
+                            </div>
+                        )}
+                    </motion.button>
 
-                                {!isCollapsed && (
-                                    <span className="font-medium text-sm">{item.label}</span>
-                                )}
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/user")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/user"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Users" : ""}
+                    >
+                        <Users className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/user" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Users</span>}
+                        {location.pathname === "/admin/dashboard/user" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Users
+                            </div>
+                        )}
+                    </motion.button>
 
-                                {/* Active Indicator */}
-                                {isActive && !isCollapsed && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full"
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    />
-                                )}
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/students")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/students"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Students" : ""}
+                    >
+                        <UserCircle className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/students" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Students</span>}
+                        {location.pathname === "/admin/dashboard/students" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Students
+                            </div>
+                        )}
+                    </motion.button>
 
-                                {/* Tooltip for collapsed state */}
-                                {isCollapsed && (
-                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                        {item.label}
-                                    </div>
-                                )}
-                            </motion.button>
-                        );
-                    })}
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/teachers")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/teachers"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Teachers" : ""}
+                    >
+                        <GraduationCap className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/teachers" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Teachers</span>}
+                        {location.pathname === "/admin/dashboard/teachers" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Teachers
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/courses")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/courses"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Courses" : ""}
+                    >
+                        <BookOpen className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/courses" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Courses</span>}
+                        {location.pathname === "/admin/dashboard/courses" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Courses
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/courses/analytics")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/courses/analytics"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Course Analytics" : ""}
+                    >
+                        <BarChart3 className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/courses/analytics" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Course Analytics</span>}
+                        {location.pathname === "/admin/dashboard/courses/analytics" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Course Analytics
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/announcements")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/announcements"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Announcements" : ""}
+                    >
+                        <Megaphone className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/announcements" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Announcements</span>}
+                        {location.pathname === "/admin/dashboard/announcements" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Announcements
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/reports")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/reports"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Reports" : ""}
+                    >
+                        <TrendingUp className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/reports" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Reports</span>}
+                        {location.pathname === "/admin/dashboard/reports" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Reports
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.45 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/students/paymentaccess")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/students/paymentaccess"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Payment Access" : ""}
+                    >
+                        <CreditCard className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/students/paymentaccess" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Payment Access</span>}
+                        {location.pathname === "/admin/dashboard/students/paymentaccess" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Payment Access
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/finance")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/finance"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Finance Overview" : ""}
+                    >
+                        <DollarSign className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/finance" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Finance Overview</span>}
+                        {location.pathname === "/admin/dashboard/finance" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Finance Overview
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.55 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/audit-logs")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/audit-logs"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Audit Logs" : ""}
+                    >
+                        <Shield className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/audit-logs" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Audit Logs</span>}
+                        {location.pathname === "/admin/dashboard/audit-logs" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Audit Logs
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/system")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/system"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "System Health" : ""}
+                    >
+                        <Server className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/system" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">System Health</span>}
+                        {location.pathname === "/admin/dashboard/system" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                System Health
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.65 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/settings")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/settings"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Settings" : ""}
+                    >
+                        <Settings className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/settings" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Settings</span>}
+                        {location.pathname === "/admin/dashboard/settings" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Settings
+                            </div>
+                        )}
+                    </motion.button>
                 </nav>
             </motion.aside>
         </>
