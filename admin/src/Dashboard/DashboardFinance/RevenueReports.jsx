@@ -34,20 +34,23 @@ const RevenueReports = () => {
 
     const fetchReport = useCallback(async () => {
         try {
+            setLoading(true);
             const [reportRes, statsRes] = await Promise.all([
                 getAdminRevenueReport(selectedPeriod),
                 getAdminFinanceStats()
             ]);
             
             if (reportRes.success) {
-                setRevenueData(reportRes.data);
-                setTotals(reportRes.totals);
+                setRevenueData(reportRes.data || []);
+                setTotals(reportRes.totals || {});
             }
             if (statsRes.success) {
-                setStats(statsRes.stats);
+                setStats(statsRes.stats || {});
             }
         } catch (error) {
             console.error("Error fetching revenue report:", error);
+        } finally {
+            setLoading(false);
         }
     }, [selectedPeriod]);
 
