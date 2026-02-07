@@ -58,15 +58,14 @@ const ManageTransactions = () => {
 
     const fetchTransactions = useCallback(async (page = 1) => {
         try {
-            const response = await getAllFinanceTransactions({
-                page,
-                limit: pagination.limit,
-                type: filterType !== "all" ? filterType : undefined,
-                status: filterStatus !== "all" ? filterStatus : undefined,
-            });
-            if (response.success) {
-                setTransactions(response.transactions);
-                setPagination(response.pagination);
+            const response = await fetch(
+                `${BACKEND_URL}/api/admin/finance/transactions?page=${page}&limit=${pagination.limit}${filterType !== "all" ? `&type=${filterType}` : ''}${filterStatus !== "all" ? `&status=${filterStatus}` : ''}`,
+                getAuthHeaders()
+            );
+            const data = await response.json();
+            if (data.success) {
+                setTransactions(data.transactions);
+                setPagination(data.pagination);
             }
         } catch (error) {
             console.error("Error fetching transactions:", error);
