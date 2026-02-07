@@ -50,9 +50,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle OPTIONS preflight requests explicitly
-app.options('*', cors(corsOptions));
-
+// Note: OPTIONS preflight requests are handled automatically by the cors middleware above
+// No need for explicit app.options('*', ...) as it causes issues with newer path-to-regexp versions
 
 
 app.use(express.json());

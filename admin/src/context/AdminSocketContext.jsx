@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AdminSocketContext = createContext(null);
 
@@ -80,7 +81,7 @@ export const AdminSocketProvider = ({ children }) => {
       if (alert.type === 'critical') {
         toast.error(`CRITICAL: ${alert.message}`);
       } else if (alert.type === 'warning') {
-        toast(`⚠️ ${alert.message}`, { icon: '⚠️' });
+        toast.warn(`⚠️ ${alert.message}`);
       } else {
         toast.success(alert.message);
       }
