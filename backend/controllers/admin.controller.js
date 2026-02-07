@@ -6,6 +6,7 @@ import AuditLog from "../models/auditLogModel.js";
 import Announcement from "../models/announcementModel.js";
 import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
+import FinanceTransaction from "../models/financeTransactionModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";
@@ -190,6 +191,23 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             return res.status(400).json({ message: "Only PAID allowed" });
         }
 
+        // Check if already paid
+        if (existingEnrollment.paymentStatus === "PAID") {
+            return res.status(400).json({ message: "Enrollment already paid" });
+        }
+
+        // Get course to calculate amounts
+        const course = await Course.findById(existingEnrollment.course);
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
+        }
+
+        // Calculate amounts (10% admin cut, 90% teacher)
+        const coursePrice = course.price || 0;
+        const adminPercentage = 10;
+        const adminAmount = Math.round((coursePrice * adminPercentage) / 100 * 100) / 100;
+        const teacherAmount = Math.round((coursePrice * (100 - adminPercentage)) / 100 * 100) / 100;
+
         const receiptNumber = `REC-${Date.now()}-${existingEnrollment._id
             .toString()
             .slice(-4)}`;
@@ -203,6 +221,13 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         existingEnrollment.paymentStatus = "PAID";
         existingEnrollment.verifiedBy = req.user.id;
         existingEnrollment.verifiedAt = new Date();
+        
+        // Add amount fields
+        existingEnrollment.amount = coursePrice;
+        existingEnrollment.adminAmount = adminAmount;
+        existingEnrollment.teacherAmount = teacherAmount;
+        existingEnrollment.paymentVerifiedAt = new Date();
+        
         await existingEnrollment.save();
 
         // Now populate for receipt generation
@@ -225,10 +250,43 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         fs.unlinkSync(imagePath);
         await existingEnrollment.save();
 
+        // Create finance transaction record
+        const transaction = await FinanceTransaction.create({
+            type: "PAYMENT",
+            enrollment: enrollmentId,
+            course: course._id,
+            teacher: course.instructor,
+            student: existingEnrollment.student,
+            grossAmount: coursePrice,
+            adminPercentage: adminPercentage,
+            adminAmount: adminAmount,
+            teacherAmount: teacherAmount,
+            status: "COMPLETED",
+            paymentMethod: "ONLINE",
+            description: `Course payment for ${course.title}`,
+            processedAt: new Date(),
+            completedAt: new Date(),
+        });
+
+        // Create audit log
+        await createAuditLog(
+            req.user.id,
+            "PAYMENT_APPROVED",
+            `Payment approved for enrollment ${enrollmentId}. Course: ${course.title}. Amount: $${coursePrice} (Admin: $${adminAmount}, Teacher: $${teacherAmount})`,
+            "success"
+        );
+
         res.json({
             success: true,
             message: "Payment approved & receipt image generated",
             receiptImage: uploadResult.secure_url,
+            finance: {
+                coursePrice,
+                adminAmount,
+                teacherAmount,
+                adminPercentage,
+                transactionId: transaction._id,
+            },
         });
     } catch (error) {
         console.error("Payment approval error:", error);

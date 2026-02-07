@@ -43,6 +43,29 @@ const enrollmentSchema = new mongoose.Schema(
             default: "ACTIVE",
         },
 
+        /* ================= PAYMENT FIELDS ================= */
+        amount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        adminAmount: {
+            type: Number, // 10% of amount
+            default: 0,
+            min: 0,
+        },
+
+        teacherAmount: {
+            type: Number, // 90% of amount
+            default: 0,
+            min: 0,
+        },
+
+        paymentVerifiedAt: {
+            type: Date,
+        },
+
         progress: {
             type: Number,
             default: 0,
