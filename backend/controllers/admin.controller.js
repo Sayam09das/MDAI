@@ -1546,3 +1546,304 @@ export const getStudentAnalyticsAdmin = async (req, res) => {
     }
 };
 
+/* =========================================
+   ADMIN: GET COURSE ANALYTICS (REAL-TIME)
+   ========================================= */
+export const getCourseAnalyticsAdmin = async (req, res) => {
+    try {
+        const { period } = req.query;
+        const now = new Date();
+
+        // Calculate date range based on period
+        let startDate = new Date();
+        switch (period) {
+            case '7days':
+                startDate.setDate(startDate.getDate() - 7);
+                break;
+            case '30days':
+                startDate.setDate(startDate.getDate() - 30);
+                break;
+            case '90days':
+                startDate.setDate(startDate.getDate() - 90);
+                break;
+            case '1year':
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                break;
+            default:
+                startDate.setDate(startDate.getDate() - 30);
+        }
+
+        // === BASIC STATS ===
+        const totalCourses = await Course.countDocuments();
+        const publishedCourses = await Course.countDocuments({ isPublished: true });
+        const totalEnrollments = await Enrollment.countDocuments();
+        const paidEnrollments = await Enrollment.countDocuments({ paymentStatus: "PAID" });
+
+        // === REVENUE STATS ===
+        const paidEnrollmentData = await Enrollment.find({ paymentStatus: "PAID" });
+        const totalRevenue = paidEnrollmentData.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        // === RATING STATS ===
+        const coursesWithRating = await Course.find({ rating: { $exists: true } });
+        const avgRating = coursesWithRating.length > 0
+            ? coursesWithRating.reduce((sum, c) => sum + (c.rating || 0), 0) / coursesWithRating.length
+            : 0;
+
+        // === COMPLETION RATE ===
+        const completedEnrollments = await Enrollment.countDocuments({ status: "COMPLETED" });
+        const completionRate = totalEnrollments > 0 
+            ? Math.round((completedEnrollments / totalEnrollments) * 100) 
+            : 0;
+
+        // === MONTHLY ENROLLMENT DATA ===
+        const monthlyEnrollments = await Enrollment.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate },
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        month: { $month: "$createdAt" },
+                        year: { $year: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                    revenue: { $sum: "$amount" },
+                },
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } },
+        ]);
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const enrollmentData = monthlyEnrollments.map(item => ({
+            month: months[item._id?.month - 1] || 'Unknown',
+            enrollments: item.count || 0,
+            revenue: item.revenue || 0
+        }));
+
+        // === CATEGORY DISTRIBUTION ===
+        const categoryAggregation = await Course.aggregate([
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 },
+                },
+            },
+            { $sort: { count: -1 } },
+        ]);
+
+        // Define colors for categories
+        const categoryColors = {
+            'Programming': '#6366f1',
+            'Web Development': '#06b6d4',
+            'Data Science': '#10b981',
+            'Design': '#f59e0b',
+            'Marketing': '#ec4899',
+            'Business': '#8b5cf6',
+            'Other': '#64748b'
+        };
+
+        const categoryData = categoryAggregation.map((cat, index) => ({
+            name: cat._id || 'Uncategorized',
+            value: cat.count,
+            color: categoryColors[cat._id] || Object.values(categoryColors)[index % Object.values(categoryColors).length]
+        }));
+
+        // === TOP PERFORMING COURSES ===
+        const topCoursesAggregation = await Enrollment.aggregate([
+            {
+                $match: { createdAt: { $gte: startDate } }
+            },
+            {
+                $group: {
+                    _id: "$course",
+                    enrollments: { $sum: 1 },
+                    revenue: { $sum: "$amount" },
+                    completedCount: {
+                        $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] }
+                    },
+                    totalProgress: { $sum: "$progress" }
+                },
+            },
+            { $sort: { enrollments: -1 } },
+            { $limit: 10 },
+            {
+                $lookup: {
+                    from: "courses",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "courseInfo"
+                }
+            },
+            { $unwind: "$courseInfo" },
+            {
+                $project: {
+                    id: "$_id",
+                    title: "$courseInfo.title",
+                    enrollments: 1,
+                    rating: { $ifNull: ["$courseInfo.rating", 0] },
+                    revenue: 1,
+                    completionRate: {
+                        $cond: {
+                            if: { $gt: ["$enrollments", 0] },
+                            then: {
+                                $round: [{ $multiply: [{ $divide: ["$completedCount", "$enrollments"] }, 100] }]
+                            },
+                            else: 0
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const topCourses = topCoursesAggregation.map(course => ({
+            id: course.id?.toString() || Math.random().toString(),
+            title: course.title,
+            enrollments: course.enrollments,
+            rating: Math.round((course.rating || 0) * 10) / 10,
+            revenue: course.revenue || 0,
+            completionRate: course.completionRate || 0
+        }));
+
+        // === ALL COURSES PERFORMANCE ===
+        const allCoursesPerformance = await Enrollment.aggregate([
+            {
+                $group: {
+                    _id: "$course",
+                    enrollments: { $sum: 1 },
+                    revenue: { $sum: "$amount" },
+                    completedCount: {
+                        $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] }
+                    },
+                    avgProgress: { $avg: "$progress" },
+                    studentCount: { $sum: 1 }
+                },
+            },
+            { $sort: { enrollments: -1 } },
+            {
+                $lookup: {
+                    from: "courses",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "courseInfo"
+                }
+            },
+            { $unwind: "$courseInfo" },
+            {
+                $project: {
+                    id: "$_id",
+                    title: "$courseInfo.title",
+                    instructor: "$courseInfo.instructor",
+                    category: "$courseInfo.category",
+                    enrollments: 1,
+                    revenue: 1,
+                    rating: { $ifNull: ["$courseInfo.rating", 0] },
+                    completionRate: {
+                        $cond: {
+                            if: { $gt: ["$enrollments", 0] },
+                            then: {
+                                $round: [{ $multiply: [{ $divide: ["$completedCount", "$enrollments"] }, 100] }]
+                            },
+                            else: 0
+                        }
+                    },
+                    avgProgress: { $round: ["$avgProgress", 1] }
+                }
+            }
+        ]);
+
+        const allCourses = allCoursesPerformance.map(course => ({
+            id: course.id?.toString() || Math.random().toString(),
+            title: course.title || 'Unknown Course',
+            enrollments: course.enrollments || 0,
+            rating: Math.round((course.rating || 0) * 10) / 10,
+            revenue: course.revenue || 0,
+            completionRate: course.completionRate || 0,
+            category: course.category || 'Uncategorized'
+        }));
+
+        // === MONTHLY COMPLETION RATE ===
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const monthlyCompletions = await Enrollment.aggregate([
+            { $match: { createdAt: { $gte: twelveMonthsAgo } } },
+            {
+                $group: {
+                    _id: {
+                        month: { $month: "$createdAt" },
+                        year: { $year: "$createdAt" }
+                    },
+                    total: { $sum: 1 },
+                    completed: {
+                        $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] }
+                    }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        const monthlyProgress = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(now);
+            date.setMonth(date.getMonth() - i);
+            const monthNum = date.getMonth() + 1;
+            const year = date.getFullYear();
+            
+            const data = monthlyCompletions.find(m => m._id.month === monthNum && m._id.year === year);
+            
+            const completionRate = data && data.total > 0
+                ? Math.round((data.completed / data.total) * 100)
+                : 0;
+            
+            monthlyProgress.push({
+                month: months[monthNum - 1],
+                completion: completionRate
+            });
+        }
+
+        // === STUDENTS COUNT ===
+        const totalStudents = await Enrollment.distinct("student").then(students => students.length);
+
+        res.json({
+            success: true,
+            stats: {
+                totalCourses,
+                totalEnrollments,
+                totalRevenue,
+                avgRating: Math.round(avgRating * 10) / 10,
+                completionRate,
+                totalStudents,
+                publishedCourses
+            },
+            charts: {
+                enrollmentData: enrollmentData.length > 0 ? enrollmentData : [
+                    { month: 'Jan', enrollments: 0, revenue: 0 },
+                    { month: 'Feb', enrollments: 0, revenue: 0 },
+                    { month: 'Mar', enrollments: 0, revenue: 0 },
+                    { month: 'Apr', enrollments: 0, revenue: 0 },
+                    { month: 'May', enrollments: 0, revenue: 0 },
+                    { month: 'Jun', enrollments: 0, revenue: 0 },
+                    { month: 'Jul', enrollments: 0, revenue: 0 }
+                ],
+                categoryData: categoryData.length > 0 ? categoryData : [
+                    { name: 'Programming', value: 0, color: '#6366f1' },
+                    { name: 'Web Development', value: 0, color: '#06b6d4' },
+                    { name: 'Data Science', value: 0, color: '#10b981' },
+                    { name: 'Design', value: 0, color: '#f59e0b' },
+                    { name: 'Other', value: 0, color: '#64748b' }
+                ],
+                monthlyProgress
+            },
+            topCourses: topCourses.length > 0 ? topCourses : [
+                { id: '1', title: 'No courses yet', enrollments: 0, rating: 0, revenue: 0, completionRate: 0 }
+            ],
+            allCourses
+        });
+    } catch (error) {
+        console.error("Course analytics error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+

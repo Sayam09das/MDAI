@@ -29,6 +29,8 @@ import {
     getUserAnalyticsAdmin,
     // Student analytics
     getStudentAnalyticsAdmin,
+    // Course analytics
+    getCourseAnalyticsAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -217,6 +219,18 @@ router.get(
     protect,
     adminOnly,
     getStudentAnalyticsAdmin
+);
+
+/* =====================================
+   ADMIN COURSE ANALYTICS
+===================================== */
+
+// Get course analytics (real-time)
+router.get(
+    "/courses/analytics",
+    protect,
+    adminOnly,
+    getCourseAnalyticsAdmin
 );
 
 export default router;

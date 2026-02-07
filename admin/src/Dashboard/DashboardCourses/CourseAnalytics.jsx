@@ -14,7 +14,8 @@ import {
     Award,
     BarChart3,
     PieChart,
-    RefreshCw
+    RefreshCw,
+    GraduationCap
 } from 'lucide-react';
 import {
     LineChart,
@@ -51,56 +52,23 @@ const getAuthHeaders = () => {
     };
 };
 
-// Default mock data for when API is not available
-const defaultEnrollmentData = [
-    { month: 'Jan', enrollments: 120, revenue: 8500 },
-    { month: 'Feb', enrollments: 180, revenue: 12400 },
-    { month: 'Mar', enrollments: 240, revenue: 18200 },
-    { month: 'Apr', enrollments: 320, revenue: 24500 },
-    { month: 'May', enrollments: 280, revenue: 21000 },
-    { month: 'Jun', enrollments: 350, revenue: 28500 },
-    { month: 'Jul', enrollments: 420, revenue: 34200 }
-];
-
-const defaultCategoryData = [
-    { name: 'Programming', value: 35, color: '#6366f1' },
-    { name: 'Web Dev', value: 25, color: '#06b6d4' },
-    { name: 'Data Science', value: 20, color: '#10b981' },
-    { name: 'Design', value: 12, color: '#f59e0b' },
-    { name: 'Other', value: 8, color: '#64748b' }
-];
-
-const defaultTopCourses = [
-    { id: 1, title: 'Complete Python Bootcamp', enrollments: 2456, rating: 4.8, revenue: 220040 },
-    { id: 2, title: 'Web Development Masterclass', enrollments: 1893, rating: 4.7, revenue: 246070 },
-    { id: 3, title: 'Data Science Fundamentals', enrollments: 1654, rating: 4.9, revenue: 165286 },
-    { id: 4, title: 'Machine Learning Basics', enrollments: 1432, rating: 4.6, revenue: 214786 },
-    { id: 5, title: 'UI/UX Design Principles', enrollments: 1289, rating: 4.8, revenue: 103111 }
-];
-
 const CourseAnalytics = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPeriod, setSelectedPeriod] = useState('30days');
-    const [enrollmentData, setEnrollmentData] = useState(defaultEnrollmentData);
-    const [categoryData, setCategoryData] = useState(defaultCategoryData);
-    const [topCourses, setTopCourses] = useState(defaultTopCourses);
+    const [enrollmentData, setEnrollmentData] = useState([]);
+    const [categoryData, setCategoryData] = useState([]);
+    const [topCourses, setTopCourses] = useState([]);
+    const [allCourses, setAllCourses] = useState([]);
     const [stats, setStats] = useState({
         totalCourses: 0,
         totalEnrollments: 0,
         totalRevenue: 0,
-        avgRating: 4.7,
-        completionRate: 78,
-        totalStudents: 0
+        avgRating: 0,
+        completionRate: 0,
+        totalStudents: 0,
+        publishedCourses: 0
     });
-    const [monthlyProgress, setMonthlyProgress] = useState([
-        { month: 'Jan', completion: 75 },
-        { month: 'Feb', completion: 78 },
-        { month: 'Mar', completion: 82 },
-        { month: 'Apr', completion: 79 },
-        { month: 'May', completion: 85 },
-        { month: 'Jun', completion: 88 },
-        { month: 'Jul', completion: 86 }
-    ]);
+    const [monthlyProgress, setMonthlyProgress] = useState([]);
 
     const periods = [
         { value: '7days', label: '7 Days' },
@@ -119,7 +87,7 @@ const CourseAnalytics = () => {
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/reports/stats?period=${selectedPeriod}`, getAuthHeaders());
+            const res = await fetch(`${BACKEND_URL}/api/admin/courses/analytics?period=${selectedPeriod}`, getAuthHeaders());
             
             if (!res.ok) {
                 throw new Error('API request failed');
@@ -128,35 +96,77 @@ const CourseAnalytics = () => {
             const data = await res.json();
 
             if (data.success) {
-                // Transform monthly data for charts
-                if (data.charts?.monthlyEnrollments && Array.isArray(data.charts.monthlyEnrollments) && data.charts.monthlyEnrollments.length > 0) {
-                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const transformedData = data.charts.monthlyEnrollments.map(item => ({
-                        month: months[item._id?.month - 1] || 'Unknown',
-                        enrollments: item.count || item.enrollments || 0,
-                        revenue: item.revenue || 0
-                    }));
-                    setEnrollmentData(transformedData.length > 0 ? transformedData : defaultEnrollmentData);
+                // Transform charts data
+                if (data.charts?.enrollmentData && Array.isArray(data.charts.enrollmentData) && data.charts.enrollmentData.length > 0) {
+                    setEnrollmentData(data.charts.enrollmentData);
+                } else {
+                    // Fallback empty data
+                    setEnrollmentData([
+                        { month: 'Jan', enrollments: 0, revenue: 0 },
+                        { month: 'Feb', enrollments: 0, revenue: 0 },
+                        { month: 'Mar', enrollments: 0, revenue: 0 },
+                        { month: 'Apr', enrollments: 0, revenue: 0 },
+                        { month: 'May', enrollments: 0, revenue: 0 },
+                        { month: 'Jun', enrollments: 0, revenue: 0 },
+                        { month: 'Jul', enrollments: 0, revenue: 0 }
+                    ]);
+                }
+
+                if (data.charts?.categoryData && Array.isArray(data.charts.categoryData) && data.charts.categoryData.length > 0) {
+                    setCategoryData(data.charts.categoryData);
+                } else {
+                    setCategoryData([
+                        { name: 'Programming', value: 0, color: '#6366f1' },
+                        { name: 'Web Development', value: 0, color: '#06b6d4' },
+                        { name: 'Data Science', value: 0, color: '#10b981' },
+                        { name: 'Design', value: 0, color: '#f59e0b' },
+                        { name: 'Other', value: 0, color: '#64748b' }
+                    ]);
+                }
+
+                if (data.charts?.monthlyProgress && Array.isArray(data.charts.monthlyProgress) && data.charts.monthlyProgress.length > 0) {
+                    setMonthlyProgress(data.charts.monthlyProgress);
+                } else {
+                    setMonthlyProgress([
+                        { month: 'Jan', completion: 0 },
+                        { month: 'Feb', completion: 0 },
+                        { month: 'Mar', completion: 0 },
+                        { month: 'Apr', completion: 0 },
+                        { month: 'May', completion: 0 },
+                        { month: 'Jun', completion: 0 },
+                        { month: 'Jul', completion: 0 }
+                    ]);
+                }
+
+                // Set top courses
+                if (data.topCourses && Array.isArray(data.topCourses) && data.topCourses.length > 0) {
+                    setTopCourses(data.topCourses);
+                } else {
+                    setTopCourses([]);
+                }
+
+                // Set all courses
+                if (data.allCourses && Array.isArray(data.allCourses) && data.allCourses.length > 0) {
+                    setAllCourses(data.allCourses);
+                } else {
+                    setAllCourses([]);
                 }
 
                 setStats({
                     totalCourses: data.stats?.totalCourses || 0,
                     totalEnrollments: data.stats?.totalEnrollments || 0,
                     totalRevenue: data.stats?.totalRevenue || 0,
-                    avgRating: data.stats?.avgRating || 4.7,
-                    completionRate: data.stats?.completionRate || 78,
-                    totalStudents: data.stats?.totalStudents || 0
+                    avgRating: data.stats?.avgRating || 0,
+                    completionRate: data.stats?.completionRate || 0,
+                    totalStudents: data.stats?.totalStudents || 0,
+                    publishedCourses: data.stats?.publishedCourses || 0
                 });
             } else {
                 toast.error(data.message || 'Failed to load analytics');
             }
         } catch (error) {
             console.error('Error fetching analytics:', error);
-            // Use default data on error
-            setEnrollmentData(defaultEnrollmentData);
-            setCategoryData(defaultCategoryData);
-            setTopCourses(defaultTopCourses);
-            toast.warning('Using cached data - unable to connect to server');
+            toast.error('Unable to connect to server - showing cached data');
         } finally {
             setLoading(false);
         }
@@ -260,6 +270,17 @@ const CourseAnalytics = () => {
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="p-2 bg-cyan-50 rounded-lg">
+                                <GraduationCap className="w-5 h-5 text-cyan-600" />
+                            </div>
+                            <TrendingUp className="w-5 h-5 text-green-500" />
+                        </div>
+                        <p className="text-2xl font-bold text-slate-900">{stats.publishedCourses}</p>
+                        <p className="text-sm text-slate-600">Published</p>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-cyan-50 rounded-lg">
                                 <Users className="w-5 h-5 text-cyan-600" />
                             </div>
                             <TrendingUp className="w-5 h-5 text-green-500" />
@@ -286,7 +307,7 @@ const CourseAnalytics = () => {
                             </div>
                             <TrendingUp className="w-5 h-5 text-green-500" />
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">{stats.avgRating}</p>
+                        <p className="text-2xl font-bold text-slate-900">{stats.avgRating > 0 ? stats.avgRating.toFixed(1) : 'N/A'}</p>
                         <p className="text-sm text-slate-600">Avg Rating</p>
                     </div>
 
@@ -299,17 +320,6 @@ const CourseAnalytics = () => {
                         </div>
                         <p className="text-2xl font-bold text-slate-900">{stats.completionRate}%</p>
                         <p className="text-sm text-slate-600">Completion Rate</p>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-rose-50 rounded-lg">
-                                <PlayCircle className="w-5 h-5 text-rose-600" />
-                            </div>
-                            <TrendingDown className="w-5 h-5 text-red-500" />
-                        </div>
-                        <p className="text-2xl font-bold text-slate-900">{stats.totalStudents.toLocaleString()}</p>
-                        <p className="text-sm text-slate-600">Active Students</p>
                     </div>
                 </div>
             </motion.div>
@@ -355,7 +365,7 @@ const CourseAnalytics = () => {
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={enrollmentData}>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                            <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value / 1000}k`} />
+                            <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
                                 formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
@@ -376,85 +386,105 @@ const CourseAnalytics = () => {
                 {/* Category Distribution */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Course Categories</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <RechartsPie>
-                            <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
-                                paddingAngle={2}
-                                dataKey="value"
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                            />
-                            <Legend />
-                        </RechartsPie>
-                    </ResponsiveContainer>
+                    {categoryData.length > 0 && categoryData.some(cat => cat.value > 0) ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <RechartsPie>
+                                <Pie
+                                    data={categoryData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                >
+                                    {categoryData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || '#6366f1'} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                                />
+                                <Legend />
+                            </RechartsPie>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-[250px] text-slate-400">
+                            <p>No category data available</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Completion Rate */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Completion Rate Trend</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={monthlyProgress}>
-                            <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                            <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                                formatter={(value) => [`${value}%`, 'Completion Rate']}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="completion"
-                                stroke="#f59e0b"
-                                strokeWidth={2}
-                                dot={{ fill: '#f59e0b', strokeWidth: 2 }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    {monthlyProgress.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={monthlyProgress}>
+                                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                                <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                                    formatter={(value) => [`${value}%`, 'Completion Rate']}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="completion"
+                                    stroke="#f59e0b"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#f59e0b', strokeWidth: 2 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-[250px] text-slate-400">
+                            <p>No completion data available</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Top Performing Courses */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Top Performing Courses</h3>
-                    <div className="space-y-3">
-                        {topCourses.map((course, index) => (
-                            <div
-                                key={course.id}
-                                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                        index === 0 ? 'bg-amber-100 text-amber-700' :
-                                        index === 1 ? 'bg-slate-200 text-slate-700' :
-                                        index === 2 ? 'bg-orange-100 text-orange-700' :
-                                        'bg-slate-100 text-slate-600'
-                                    }`}>
-                                        {index + 1}
-                                    </span>
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-900 truncate max-w-[150px]">
-                                            {course.title}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            {course.enrollments.toLocaleString()} students
-                                        </p>
+                    {topCourses.length > 0 ? (
+                        <div className="space-y-3">
+                            {topCourses.slice(0, 5).map((course, index) => (
+                                <div
+                                    key={course.id || index}
+                                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                            index === 0 ? 'bg-amber-100 text-amber-700' :
+                                            index === 1 ? 'bg-slate-200 text-slate-700' :
+                                            index === 2 ? 'bg-orange-100 text-orange-700' :
+                                            'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            {index + 1}
+                                        </span>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900 truncate max-w-[150px]">
+                                                {course.title || 'Untitled Course'}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {course.enrollments?.toLocaleString() || 0} students
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                        <span className="text-sm font-medium text-slate-900">
+                                            {course.rating || 'N/A'}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                    <span className="text-sm font-medium text-slate-900">{course.rating}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-[200px] text-slate-400">
+                            <p>No courses with enrollments yet</p>
+                        </div>
+                    )}
                 </div>
             </motion.div>
 
@@ -468,57 +498,68 @@ const CourseAnalytics = () => {
                 <div className="p-6 border-b border-slate-200">
                     <h3 className="text-lg font-semibold text-slate-900">Course Performance Details</h3>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-slate-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Course</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Enrollments</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Rating</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Revenue</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Completion</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {topCourses.map((course) => (
-                                <tr key={course.id} className="hover:bg-slate-50">
-                                    <td className="px-6 py-4">
-                                        <p className="font-medium text-slate-900">{course.title}</p>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-600">
-                                        {course.enrollments.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                            <span className="text-slate-900">{course.rating}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-600">
-                                        {formatCurrency(course.revenue)}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-24 bg-slate-200 rounded-full h-2">
-                                                <div
-                                                    className="bg-indigo-600 h-2 rounded-full"
-                                                    style={{ width: `${Math.random() * 30 + 60}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-sm text-slate-600">
-                                                {Math.round(Math.random() * 30 + 60)}%
-                                            </span>
-                                        </div>
-                                    </td>
+                {allCourses.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Course</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Category</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Enrollments</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Rating</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Revenue</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Completion</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {allCourses.map((course) => (
+                                    <tr key={course.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-4">
+                                            <p className="font-medium text-slate-900">{course.title || 'Untitled Course'}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">
+                                            {course.category || 'Uncategorized'}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">
+                                            {course.enrollments?.toLocaleString() || 0}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                                <span className="text-slate-900">{course.rating > 0 ? course.rating.toFixed(1) : 'N/A'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">
+                                            {formatCurrency(course.revenue || 0)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-24 bg-slate-200 rounded-full h-2">
+                                                    <div
+                                                        className="bg-indigo-600 h-2 rounded-full"
+                                                        style={{ width: `${course.completionRate || 0}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-sm text-slate-600">
+                                                    {course.completionRate || 0}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="p-12 text-center text-slate-400">
+                        <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No course performance data available yet.</p>
+                        <p className="text-sm mt-1">Enrollments will appear here once students enroll in courses.</p>
+                    </div>
+                )}
             </motion.div>
         </div>
     );
 };
 
 export default CourseAnalytics;
-
