@@ -39,7 +39,7 @@ const otherMenu = [
 ];
 
 /* ================= SIDEBAR ================= */
-const TeacherSidebar = ({ isOpen, onClose }) => {
+const StudentSidebar = ({ isOpen, onClose }) => {
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
     if (isOpen) {
@@ -172,4 +172,4 @@ const SidebarLink = ({ icon: Icon, label, path, onClick }) => (
   </NavLink>
 );
 
-export default TeacherSidebar;
+export default StudentSidebar;
