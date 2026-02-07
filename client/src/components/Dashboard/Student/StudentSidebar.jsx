@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -113,7 +113,7 @@ const StudentSidebar = ({ isOpen, onClose }) => {
           {/* MAIN MENU */}
           <div className="space-y-1">
             {mainMenu.map(item => (
-              <SidebarLink key={item.label} {...item} onClick={onClick} />
+              <SidebarLink key={item.label} {...item} onClick={onClose} />
             ))}
           </div>
 
