@@ -9,8 +9,9 @@ import {
     MessageSquare,
     X,
 } from "lucide-react";
+import { getBackendURL } from "../../../lib/config";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = getBackendURL();
 
 const extractUrl = (val) => {
     if (!val) return "";
@@ -233,7 +234,7 @@ const StudentNavbar = ({ onMenuClick }) => {
 
     const handleLogout = async () => {
         try {
-            await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
+            await fetch(`${BACKEND_URL}/api/auth/logout`, {
                 method: "POST",
             });
         } catch {

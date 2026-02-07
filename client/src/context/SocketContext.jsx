@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { io } from "socket.io-client";
+import { getBackendURL } from "../lib/config";
 
 /* ================= SOCKET CONTEXT ================= */
 
@@ -93,7 +94,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+    const SOCKET_URL = getBackendURL() || "http://localhost:3000";
 
     const newSocket = io(SOCKET_URL, {
       auth: { token },

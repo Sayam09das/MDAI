@@ -9,8 +9,9 @@ import {
     MessageSquare,
     X,
 } from "lucide-react";
+import { getBackendURL } from "../../../lib/config";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = getBackendURL();
 
 // Accepts either a string URL or an object returned from Cloudinary
 const getProfileImageUrl = (img) => {
@@ -217,7 +218,7 @@ const TeacherNavbar = ({ onMenuClick }) => {
 
     const handleLogout = async () => {
         try {
-            await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
+            await fetch(`${BACKEND_URL}/api/auth/logout`, {
                 method: "POST",
             });
         } catch {

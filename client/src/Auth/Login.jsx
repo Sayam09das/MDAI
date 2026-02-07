@@ -2,7 +2,22 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader, ArrowRight, BookOpen } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+// Get backend URL from environment variable or use fallback for development
+const getBackendURL = () => {
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  // Return the environment URL if it exists and is valid, otherwise use fallback
+  if (envUrl && envUrl.trim() !== '' && envUrl !== 'undefined') {
+    return envUrl.replace(/\/+$/, ''); // Remove trailing slashes
+  }
+  // Fallback URLs based on the deployment
+  if (import.meta.env.PROD || import.meta.env.NODE_ENV === 'production') {
+    return 'https://mdai-self.vercel.app';
+  }
+  // Development fallback
+  return 'http://localhost:5000';
+};
+
+const BACKEND_URL = getBackendURL();
 
 const Login = () => {
     const navigate = useNavigate();
@@ -36,7 +51,7 @@ const Login = () => {
 
         try {
             const res = await fetch(
-                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+                `${BACKEND_URL}/api/auth/login`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

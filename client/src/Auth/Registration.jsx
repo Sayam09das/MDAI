@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, GraduationCap, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Phone, MapPin, Check, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { getBackendURL } from '../lib/config';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = getBackendURL();
 
 const Registration = () => {
     const [formData, setFormData] = useState({
