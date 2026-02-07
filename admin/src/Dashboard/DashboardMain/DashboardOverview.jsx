@@ -387,7 +387,7 @@ const DashboardOverview = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-900">New user registration</div>
-                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.users?.students || 0} students on platform</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemStats?.stats?.users?.students || 0} students on platform</div>
                                         <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
                                             <Clock className="w-3 h-3" />
                                             <span>Just now</span>
@@ -405,7 +405,7 @@ const DashboardOverview = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-900">Active courses</div>
-                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.content?.publishedCourses || 0} published courses</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemStats?.stats?.content?.publishedCourses || 0} published courses</div>
                                         <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
                                             <Clock className="w-3 h-3" />
                                             <span>Active</span>
@@ -423,7 +423,7 @@ const DashboardOverview = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-900">Teaching staff</div>
-                                        <div className="text-sm text-slate-600 truncate">{systemData?.stats?.users?.teachers || 0} teachers</div>
+                                        <div className="text-sm text-slate-600 truncate">{systemStats?.stats?.users?.teachers || 0} teachers</div>
                                         <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
                                             <Clock className="w-3 h-3" />
                                             <span>Available</span>
@@ -441,7 +441,7 @@ const DashboardOverview = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-900">Platform revenue</div>
-                                        <div className="text-sm text-slate-600 truncate">${(systemData?.stats?.enrollments?.total || 0)} total enrollments</div>
+                                        <div className="text-sm text-slate-600 truncate">${(systemStats?.stats?.enrollments?.total || 0)} total enrollments</div>
                                         <div className="flex items-center space-x-1 text-xs text-slate-500 mt-1">
                                             <Clock className="w-3 h-3" />
                                             <span>This month</span>
