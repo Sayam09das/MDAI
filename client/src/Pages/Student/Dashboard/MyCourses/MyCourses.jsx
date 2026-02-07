@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, CheckCircle, Clock, AlertCircle, Play, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
