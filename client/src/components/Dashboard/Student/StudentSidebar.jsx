@@ -143,33 +143,45 @@ const StudentSidebar = ({ isOpen, onClose }) => {
 };
 
 /* ================= LINK ================= */
-const SidebarLink = ({ icon: Icon, label, path, onClick }) => (
-  <NavLink
-    to={path}
-    onClick={onClick}
-    className={({ isActive }) =>
-      `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+const SidebarLink = ({ icon: Icon, label, path, onClick: externalOnClick }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    const handleClick = (e) => {
+        // Call external onClick if provided
+        if (externalOnClick) {
+            externalOnClick(e);
+        }
+        // Navigate to the path
+        if (path) {
+            navigate(path);
+        }
+    };
+    
+    const isActive = location.pathname === path || location.pathname.startsWith(path + '/');
+    
+    return (
+    <button
+        onClick={handleClick}
+        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-left
             transition-all duration-200 group relative overflow-hidden
             ${isActive
-        ? "bg-blue-50 text-blue-700 shadow-sm"
-        : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-      }`
-    }
-  >
-    {({ isActive }) => (
-      <>
+                ? "bg-blue-50 text-blue-700 shadow-sm"
+                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+            }`
+        }
+    >
         {/* Active indicator */}
         {isActive && (
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
         )}
 
         <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110
                     ${isActive ? "text-blue-600" : "text-gray-500"}`}
         />
         <span className="truncate">{label}</span>
-      </>
-    )}
-  </NavLink>
+    </button>
 );
+};
 
 export default StudentSidebar;
