@@ -130,6 +130,37 @@ const StudentNavbar = ({ onMenuClick }) => {
                 });
             });
 
+            // Handle new announcement notifications
+            newSocket.on("new_announcement", (data) => {
+                console.log("📢 New announcement received:", data);
+
+                const newNotification = {
+                    id: Date.now().toString(),
+                    text: `📢 ${data.title || "New Announcement"}`,
+                    time: "Just now",
+                    unread: true,
+                    senderName: "Admin",
+                    senderImage: null,
+                    announcementId: data.announcementId || data.id,
+                    type: "announcement",
+                    createdAt: new Date().toISOString(),
+                };
+
+                // Add to notifications (max 20)
+                setNotifications((prev) => {
+                    const updated = [newNotification, ...prev].slice(0, 20);
+                    return updated;
+                });
+
+                // Show browser notification if permission granted
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    new Notification("New Announcement", {
+                        body: data.title || "You have a new announcement",
+                        icon: "https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"
+                    });
+                }
+            });
+
             setSocket(newSocket);
 
             return () => {

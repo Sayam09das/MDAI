@@ -24,6 +24,7 @@ const mainMenu = [
     { icon: FolderOpen, label: "Resources", path: "/teacher-dashboard/resources" },
     { icon: Video, label: "Live Sessions", path: "/teacher-dashboard/live-sessions" },
     { icon: Users, label: "Students", path: "/teacher-dashboard/students" },
+    { icon: Bell, label: "Announcements", path: "/teacher-dashboard/announcements" },
 ];
 
 const extraMenu = [

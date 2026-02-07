@@ -435,6 +435,28 @@ export const deleteResourceAdmin = async (req, res) => {
 };
 
 /* =========================================
+   ADMIN: GET USER COUNTS (Real-time)
+   ========================================= */
+export const getUserCountsAdmin = async (req, res) => {
+    try {
+        const totalStudents = await User.countDocuments();
+        const totalTeachers = await Teacher.countDocuments();
+
+        res.json({
+            success: true,
+            counts: {
+                students: totalStudents,
+                teachers: totalTeachers,
+                total: totalStudents + totalTeachers
+            }
+        });
+    } catch (error) {
+        console.error("User counts error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* =========================================
    ADMIN: GET ANNOUNCEMENTS
    ========================================= */
 export const getAnnouncementsAdmin = async (req, res) => {
@@ -485,6 +507,10 @@ export const createAnnouncementAdmin = async (req, res) => {
             "success"
         );
 
+        // Emit socket event for real-time notifications
+        // We'll use a workaround since we don't have direct io access here
+        // The io instance will be available through req.app.get('io') in routes
+        
         res.status(201).json({
             success: true,
             message: "Announcement created successfully",

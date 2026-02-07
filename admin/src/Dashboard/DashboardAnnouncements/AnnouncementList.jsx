@@ -40,10 +40,24 @@ const AnnouncementList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', type: 'all', priority: 'normal' });
     const [stats, setStats] = useState({ total: 0, sentToAll: 0, sentToStudents: 0, sentToTeachers: 0 });
+    const [userCounts, setUserCounts] = useState({ students: 0, teachers: 0 });
 
     useEffect(() => {
         fetchAnnouncements();
+        fetchUserCounts();
     }, [filterType, searchQuery]);
+
+    const fetchUserCounts = async () => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/admin/users/count`, getAuthHeaders());
+            const data = await res.json();
+            if (data.success) {
+                setUserCounts(data.counts);
+            }
+        } catch (error) {
+            console.error('Error fetching user counts:', error);
+        }
+    };
 
     const fetchAnnouncements = async () => {
         setLoading(true);
@@ -70,7 +84,7 @@ const AnnouncementList = () => {
                     sentBy: 'Admin',
                     sentAt: new Date(ann.createdAt).toLocaleString(),
                     status: 'sent',
-                    recipients: ann.type === 'all' ? 12458 : ann.type === 'students' ? 8942 : 432,
+                    recipients: ann.type === 'all' ? userCounts.students + userCounts.teachers : ann.type === 'students' ? userCounts.students : userCounts.teachers,
                     createdAt: ann.createdAt
                 }));
                 setAnnouncements(formattedAnnouncements);
@@ -226,7 +240,7 @@ const AnnouncementList = () => {
                         <div className="space-y-4">
                             <div><label className="block text-sm font-medium text-slate-700 mb-2">Title *</label><input type="text" value={newAnnouncement.title} onChange={(e) => setNewAnnouncement(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter announcement title" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
                             <div><label className="block text-sm font-medium text-slate-700 mb-2">Message *</label><textarea value={newAnnouncement.message} onChange={(e) => setNewAnnouncement(prev => ({ ...prev, message: e.target.value }))} placeholder="Enter your message" rows={4} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
-                            <div><label className="block text-sm font-medium text-slate-700 mb-2">Send To</label><select value={newAnnouncement.type} onChange={(e) => setNewAnnouncement(prev => ({ ...prev, type: e.target.value }))} className="w-full px-4 py-2 border border-slate-200 rounded-lg"><option value="all">All Users (12,458)</option><option value="students">Students Only (8,942)</option><option value="teachers">Teachers Only (432)</option></select></div>
+                            <div><label className="block text-sm font-medium text-slate-700 mb-2">Send To</label><select value={newAnnouncement.type} onChange={(e) => setNewAnnouncement(prev => ({ ...prev, type: e.target.value }))} className="w-full px-4 py-2 border border-slate-200 rounded-lg"><option value="all">All Users ({userCounts.students + userCounts.teachers > 0 ? userCounts.students + userCounts.teachers : '...'})</option><option value="students">Students Only ({userCounts.students > 0 ? userCounts.students : '...'})</option><option value="teachers">Teachers Only ({userCounts.teachers > 0 ? userCounts.teachers : '...'})</option></select></div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>

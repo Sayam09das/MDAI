@@ -5,6 +5,7 @@ import {
   getStudentOverview,
   getStudentActivityHours,
   getStudentDashboardStats,
+  getStudentAnnouncements,
 } from "../controllers/student.controller.js";
 import {
   getStudentCourseProgress,
@@ -97,6 +98,15 @@ router.get(
   "/course-stats",
   protect,
   getCourseStats
+);
+
+/* ================= ANNOUNCEMENT ROUTES ================= */
+
+// 🔥 GET STUDENT ANNOUNCEMENTS
+router.get(
+  "/announcements",
+  protect,
+  getStudentAnnouncements
 );
 
 export default router;

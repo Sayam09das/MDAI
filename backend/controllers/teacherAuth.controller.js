@@ -3,6 +3,7 @@ import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
 import Lesson from "../models/lessonModel.js";
 import Attendance from "../models/attendanceModel.js";
+import Announcement from "../models/announcementModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { z } from "zod";
 
@@ -2019,5 +2020,42 @@ export const getTeacherProfile = async (req, res) => {
   } catch (error) {
     console.error("Get Teacher Profile Error:", error);
     res.status(500).json({ message: "Failed to fetch profile" });
+  }
+};
+
+/* ======================================================
+   GET TEACHER ANNOUNCEMENTS
+====================================================== */
+export const getTeacherAnnouncements = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    // Get announcements for all users and teachers only
+    const announcements = await Announcement.find({
+      $or: [
+        { type: "all" },
+        { type: "teachers" }
+      ],
+      isActive: true
+    })
+    .populate("createdBy", "name")
+    .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      announcements: announcements.map(ann => ({
+        id: ann._id,
+        title: ann.title,
+        message: ann.message,
+        type: ann.type,
+        priority: ann.priority,
+        sentBy: ann.createdBy?.name || "Admin",
+        sentAt: ann.createdAt,
+        createdAt: ann.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("Get Teacher Announcements Error:", error);
+    res.status(500).json({ message: "Failed to fetch announcements" });
   }
 };

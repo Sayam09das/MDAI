@@ -3,6 +3,7 @@ import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
 import Attendance from "../models/attendanceModel.js";
 import Lesson from "../models/lessonModel.js";
+import Announcement from "../models/announcementModel.js";
 
 /* ======================================================
    GET STUDENT'S ATTENDANCE RECORDS
@@ -549,6 +550,43 @@ export const getStudentDashboardStats = async (req, res) => {
   } catch (error) {
     console.error("Get Student Dashboard Stats Error:", error);
     res.status(500).json({ message: "Failed to fetch dashboard stats" });
+  }
+};
+
+/* ======================================================
+   GET STUDENT ANNOUNCEMENTS
+====================================================== */
+export const getStudentAnnouncements = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Get announcements for all users and students only
+    const announcements = await Announcement.find({
+      $or: [
+        { type: "all" },
+        { type: "students" }
+      ],
+      isActive: true
+    })
+    .populate("createdBy", "name")
+    .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      announcements: announcements.map(ann => ({
+        id: ann._id,
+        title: ann.title,
+        message: ann.message,
+        type: ann.type,
+        priority: ann.priority,
+        sentBy: ann.createdBy?.name || "Admin",
+        sentAt: ann.createdAt,
+        createdAt: ann.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("Get Student Announcements Error:", error);
+    res.status(500).json({ message: "Failed to fetch announcements" });
   }
 };
 

@@ -5,7 +5,7 @@ import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
 
 /* ======================================================
-   SOCKET.IO SETUP FOR REAL-TIME MESSAGING
+   SOCKET.IO SETUP FOR REAL-TIME MESSAGING & ANNOUNCEMENTS
 ====================================================== */
 
 const setupSocket = (httpServer) => {
@@ -140,6 +140,13 @@ const setupSocket = (httpServer) => {
 
     // Join user's personal room
     socket.join(`user_${socket.user.id}`);
+
+    // Join role-based rooms for announcements
+    if (socket.user.role === 'student') {
+      socket.join('students_room');
+    } else if (socket.user.role === 'teacher') {
+      socket.join('teachers_room');
+    }
 
     // Broadcast online status
     socket.broadcast.emit("user_online", {

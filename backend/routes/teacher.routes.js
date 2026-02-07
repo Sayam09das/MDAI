@@ -25,6 +25,7 @@ import {
     updateTeacherSettings,
     changeTeacherPassword,
     getTeacherProfile,
+    getTeacherAnnouncements,
 } from "../controllers/teacherAuth.controller.js";
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -200,6 +201,14 @@ router.get(
     protect,
     teacherOnly,
     getTeacherProfile
+);
+
+// 🔥 GET TEACHER ANNOUNCEMENTS
+router.get(
+    "/announcements",
+    protect,
+    teacherOnly,
+    getTeacherAnnouncements
 );
 
 

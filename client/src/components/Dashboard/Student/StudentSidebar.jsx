@@ -22,6 +22,7 @@ const mainMenu = [
   { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
   { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
+  { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
 ];
 
 const extraMenu = [

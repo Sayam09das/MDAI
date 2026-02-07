@@ -17,6 +17,8 @@ import {
     getAnnouncementsAdmin,
     createAnnouncementAdmin,
     deleteAnnouncementAdmin,
+    // User counts
+    getUserCountsAdmin,
     // Audit logs
     getAuditLogsAdmin,
     // Reports
@@ -138,7 +140,66 @@ router.post(
     "/announcements",
     protect,
     adminOnly,
-    createAnnouncementAdmin
+    async (req, res) => {
+        try {
+            const { title, message, type } = req.body;
+
+            // Import the model
+            const Announcement = (await import("../models/announcementModel.js")).default;
+
+            const announcement = await Announcement.create({
+                title,
+                message,
+                type,
+                createdBy: req.user.id,
+            });
+
+            // Get io instance and emit event
+            const io = req.app.get("io");
+            
+            // Emit announcement to relevant rooms
+            const announcementData = {
+                id: announcement._id,
+                title: announcement.title,
+                message: announcement.message,
+                type: announcement.type,
+                priority: announcement.priority,
+                createdAt: announcement.createdAt,
+            };
+
+            if (type === "all") {
+                // Broadcast to both students and teachers
+                io.to("students_room").emit("new_announcement", announcementData);
+                io.to("teachers_room").emit("new_announcement", announcementData);
+            } else if (type === "students") {
+                io.to("students_room").emit("new_announcement", announcementData);
+            } else if (type === "teachers") {
+                io.to("teachers_room").emit("new_announcement", announcementData);
+            }
+
+            // Import audit log helper (inline to avoid circular imports)
+            try {
+                const AuditLog = (await import("../models/auditLogModel.js")).default;
+                await AuditLog.create({
+                    adminId: req.user.id,
+                    action: "CREATE_ANNOUNCEMENT",
+                    details: `Created announcement: ${title}`,
+                    status: "success",
+                });
+            } catch (auditError) {
+                console.error("Failed to create audit log:", auditError);
+            }
+
+            res.status(201).json({
+                success: true,
+                message: "Announcement created successfully",
+                announcement,
+            });
+        } catch (error) {
+            console.error("Create announcement error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
 );
 
 // Delete announcement
@@ -147,6 +208,18 @@ router.delete(
     protect,
     adminOnly,
     deleteAnnouncementAdmin
+);
+
+/* =====================================
+   ADMIN USER COUNTS (REAL-TIME)
+===================================== */
+
+// Get real-time user counts
+router.get(
+    "/users/count",
+    protect,
+    adminOnly,
+    getUserCountsAdmin
 );
 
 /* =====================================

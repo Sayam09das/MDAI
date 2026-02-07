@@ -19,6 +19,7 @@ import ReturnAttendence from "../Pages/Student/Dashboard/StudentAttendence/Retur
 import ReturnCalendar from "../Pages/Student/Dashboard/StudentCalendar/ReturnCalendar";
 import ReturnSearch from "../Pages/Student/Dashboard/Search/ReturnSearch";
 import ReturnStudentMessages from "../Pages/Student/Dashboard/Messages/ReturnStudentMessages";
+import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
 
 const StudentRoutes = () => {
     return (
@@ -49,6 +50,7 @@ const StudentRoutes = () => {
                     <Route path="calendar" element={<ReturnCalendar />} />
                     <Route path="search" element={<ReturnSearch />} />
                     <Route path="messages" element={<ReturnStudentMessages />} />
+                    <Route path="announcements" element={<ReturnAnnouncements />} />
                 </Route>
             </Routes>
         </Suspense>
