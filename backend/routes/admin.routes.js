@@ -316,4 +316,244 @@ router.get(
     getCourseAnalyticsAdmin
 );
 
+/* =====================================
+   ADMIN FINANCE ROUTES
+===================================== */
+
+// Get finance dashboard stats
+router.get(
+    "/finance/stats",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
+            
+            // Get all paid enrollments for revenue calculation
+            const paidEnrollments = await Enrollment.find({ paymentStatus: "PAID" });
+            
+            // Calculate total revenue
+            const totalRevenue = paidEnrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
+            
+            // Calculate admin and teacher amounts
+            const totalAdminAmount = paidEnrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
+            const totalTeacherAmount = paidEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+            
+            // Get transaction counts
+            const totalTransactions = await FinanceTransaction.countDocuments();
+            const completedTransactions = await FinanceTransaction.countDocuments({ status: "COMPLETED" });
+            const pendingTransactions = await FinanceTransaction.countDocuments({ status: "PENDING" });
+            
+            // Get recent transactions
+            const recentTransactions = await FinanceTransaction.find()
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .lean();
+
+            res.json({
+                success: true,
+                stats: {
+                    totalRevenue,
+                    totalAdminAmount,
+                    totalTeacherAmount,
+                    totalTransactions,
+                    completedTransactions,
+                    pendingTransactions,
+                    transactionCompletionRate: totalTransactions > 0 
+                        ? Math.round((completedTransactions / totalTransactions) * 100) 
+                        : 0
+                },
+                recentTransactions: recentTransactions.map(t => ({
+                    id: t._id,
+                    type: t.type,
+                    amount: t.grossAmount,
+                    status: t.status,
+                    createdAt: t.createdAt
+                }))
+            });
+        } catch (error) {
+            console.error("Finance stats error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
+// Get all transactions
+router.get(
+    "/finance/transactions",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const { page = 1, limit = 10, status, type, search } = req.query;
+            const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
+            
+            let query = {};
+            
+            if (status && status !== 'all') {
+                query.status = status;
+            }
+            
+            if (type && type !== 'all') {
+                query.type = type;
+            }
+            
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+            
+            const transactions = await FinanceTransaction.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean();
+            
+            const total = await FinanceTransaction.countDocuments(query);
+            
+            res.json({
+                success: true,
+                transactions,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / parseInt(limit))
+                }
+            });
+        } catch (error) {
+            console.error("Get transactions error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
+// Get teacher payments/earnings
+router.get(
+    "/finance/teachers/earnings",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const Teacher = (await import("../models/teacherModel.js")).default;
+            
+            // Get all teachers with their earnings
+            const teachers = await Teacher.find().lean();
+            
+            const teacherEarnings = await Promise.all(
+                teachers.map(async (teacher) => {
+                    const enrollments = await Enrollment.find({
+                        course: { $in: teacher.courses || [] },
+                        paymentStatus: "PAID"
+                    });
+                    
+                    const totalEarnings = enrollments.reduce(
+                        (sum, e) => sum + (e.teacherAmount || 0), 
+                        0
+                    );
+                    
+                    return {
+                        id: teacher._id,
+                        name: teacher.name,
+                        email: teacher.email,
+                        totalEarnings,
+                        courseCount: teacher.courses?.length || 0,
+                        enrollmentCount: enrollments.length
+                    };
+                })
+            );
+            
+            // Sort by earnings descending
+            teacherEarnings.sort((a, b) => b.totalEarnings - a.totalEarnings);
+            
+            res.json({
+                success: true,
+                teachers: teacherEarnings,
+                totalTeachers: teacherEarnings.length,
+                totalEarningsAll: teacherEarnings.reduce((sum, t) => sum + t.totalEarnings, 0)
+            });
+        } catch (error) {
+            console.error("Teacher earnings error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
+// Get revenue reports
+router.get(
+    "/finance/reports",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const { period = '30days' } = req.query;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            
+            // Calculate date range
+            const now = new Date();
+            let startDate = new Date();
+            
+            switch (period) {
+                case '7days':
+                    startDate.setDate(startDate.getDate() - 7);
+                    break;
+                case '30days':
+                    startDate.setDate(startDate.getDate() - 30);
+                    break;
+                case '90days':
+                    startDate.setDate(startDate.getDate() - 90);
+                    break;
+                case '1year':
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    break;
+                default:
+                    startDate.setDate(startDate.getDate() - 30);
+            }
+            
+            // Get enrollments in date range
+            const enrollments = await Enrollment.find({
+                paymentStatus: "PAID",
+                createdAt: { $gte: startDate }
+            });
+            
+            // Calculate revenue by day
+            const revenueByDay = {};
+            enrollments.forEach(e => {
+                const date = e.createdAt.toISOString().split('T')[0];
+                if (!revenueByDay[date]) {
+                    revenueByDay[date] = { date, revenue: 0, count: 0 };
+                }
+                revenueByDay[date].revenue += e.amount || 0;
+                revenueByDay[date].count += 1;
+            });
+            
+            // Sort by date
+            const dailyRevenue = Object.values(revenueByDay)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Calculate totals
+            const totalRevenue = enrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
+            const totalAdminAmount = enrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
+            const totalTeacherAmount = enrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+            
+            res.json({
+                success: true,
+                period,
+                stats: {
+                    totalRevenue,
+                    totalAdminAmount,
+                    totalTeacherAmount,
+                    transactionCount: enrollments.length,
+                    avgTransactionValue: enrollments.length > 0 
+                        ? Math.round(totalRevenue / enrollments.length) 
+                        : 0
+                },
+                dailyRevenue
+            });
+        } catch (error) {
+            console.error("Revenue reports error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
 export default router;
