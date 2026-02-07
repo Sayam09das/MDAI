@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -6,6 +6,11 @@ import 'react-toastify/dist/ReactToastify.css';
 const AdminSocketContext = createContext(null);
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+// Track last shown alert to avoid duplicate notifications
+let lastAlertId = null;
+let lastAlertTime = 0;
+const ALERT_COOLDOWN = 30000; // 30 seconds between same alerts
 
 export const useAdminSocket = () => {
   const context = useContext(AdminSocketContext);
@@ -20,6 +25,8 @@ export const AdminSocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastHealthData, setLastHealthData] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const lastAlertIdRef = useRef(null);
+  const lastAlertTimeRef = useRef(0);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -63,7 +70,6 @@ export const AdminSocketProvider = ({ children }) => {
 
     // Handle system health data updates
     socketInstance.on('system_health', (data) => {
-      console.log('📊 Received system health update:', data);
       setLastHealthData(data);
     });
 
@@ -72,18 +78,44 @@ export const AdminSocketProvider = ({ children }) => {
       console.log('✅ Health subscription confirmed:', data);
     });
 
-    // Handle system alerts
+    // Handle system alerts with deduplication
     socketInstance.on('system_alert', (alert) => {
-      console.log('🚨 Received system alert:', alert);
-      setAlerts((prev) => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+      const now = Date.now();
       
-      // Show toast notification for alerts
-      if (alert.type === 'critical') {
-        toast.error(`CRITICAL: ${alert.message}`);
-      } else if (alert.type === 'warning') {
-        toast.warn(`⚠️ ${alert.message}`);
+      // Skip if same alert within cooldown period
+      if (lastAlertIdRef.current === alert.id && (now - lastAlertTimeRef.current) < ALERT_COOLDOWN) {
+        console.log('⏭️ Skipping duplicate alert:', alert.message);
+        // Just update the alert in the list without notification
+        setAlerts((prev) => {
+          const exists = prev.find(a => a.id === alert.id);
+          if (exists) {
+            return prev.map(a => a.id === alert.id ? alert : a);
+          }
+          return [alert, ...prev.slice(0, 9)];
+        });
+        return;
+      }
+
+      lastAlertIdRef.current = alert.id;
+      lastAlertTimeRef.current = now;
+
+      console.log('🚨 Received system alert:', alert);
+      setAlerts((prev) => [alert, ...prev.slice(0, 9)]);
+      
+      // Show toast notification only for significant alerts (not memory warnings > 85%)
+      const memPercent = alert.message?.match(/(\d+)%/)?.[1];
+      if (memPercent && parseInt(memPercent) >= 85 && alert.type === 'warning') {
+        // Don't show toast for memory warnings - just update the UI
+        console.log('⏭️ Skipping memory warning toast:', alert.message);
       } else {
-        toast.success(alert.message);
+        // Show toast for critical alerts or non-memory warnings
+        if (alert.type === 'critical') {
+          toast.error(`CRITICAL: ${alert.message}`);
+        } else if (alert.type === 'warning') {
+          toast.warn(`⚠️ ${alert.message}`);
+        } else {
+          toast.info(alert.message);
+        }
       }
     });
 
@@ -106,6 +138,8 @@ export const AdminSocketProvider = ({ children }) => {
   // Function to clear alerts
   const clearAlerts = useCallback(() => {
     setAlerts([]);
+    lastAlertIdRef.current = null;
+    lastAlertTimeRef.current = 0;
   }, []);
 
   const value = {
