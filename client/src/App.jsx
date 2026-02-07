@@ -33,6 +33,8 @@ import ReturnAttendence from "./Pages/Student/Dashboard/StudentAttendence/Return
 import ReturnCalendar from "./Pages/Student/Dashboard/StudentCalendar/ReturnCalendar"
 import ReturnSearch from "./Pages/Student/Dashboard/Search/ReturnSearch"
 import ReturnStudentMessages from "./Pages/Student/Dashboard/Messages/ReturnStudentMessages"
+import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
+
 
 // Payment Pages
 import Payment from "./Pages/Student/Dashboard/CoursePayment/Payment"
@@ -55,6 +57,8 @@ import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/R
 import ReturnTeacherResources from "./Pages/teacher/Dashboard/MainResources/ReturnTeacherResources"
 import ReturnSearchTeacher from "./Pages/teacher/Dashboard/MainSearch/ReturnSearch"
 import ReturnTeacherMessages from "./Pages/teacher/Dashboard/Messages/ReturnTeacherMessages"
+import ReturnAnnouncements from "../Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
+
 
 // Protected Routes
 import PublicRoute from "./ProtectedRoute/PublicRoute"
@@ -125,6 +129,8 @@ const App = () => {
           <Route path="calendar" element={<ReturnCalendar />} />
           <Route path="search" element={<ReturnSearch />} />
           <Route path="messages" element={<ReturnStudentMessages />} />
+          <Route path="announcements" element={<ReturnAnnouncements />} />
+
         </Route>
 
         {/* Teacher Routes */}
@@ -149,6 +155,8 @@ const App = () => {
           <Route path="finance" element={<ReturnTeacherFinance />} />
           <Route path="search" element={<ReturnSearchTeacher />} />
           <Route path="messages" element={<ReturnTeacherMessages />} />
+          <Route path="announcements" element={<ReturnAnnouncements />} />
+
         </Route>
 
         {/* Payment Routes */}
