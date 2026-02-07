@@ -1,7 +1,7 @@
-import FinanceDashboard from "./FinanceDashboard"
+import FinanceOverview from "./FinanceOverview"
 
 const ReturnFinanceDashboard = () => {
-    return <FinanceDashboard />
+    return <FinanceOverview />
 }
 
 export default ReturnFinanceDashboard

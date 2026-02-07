@@ -25,6 +25,9 @@ import ReturnAuditLogs from "../Dashboard/DashboardAuditLogs/ReturnAuditLogs";
 import SystemHealth from "../Dashboard/DashboardSystem/SystemHealth";
 import ReturnSystem from "../Dashboard/DashboardSystem/ReturnSystem";
 import ReturnFinanceDashboard from "../Dashboard/DashboardFinance/ReturnFinanceDashboard";
+import ReturnManageTransactions from "../Dashboard/DashboardFinance/ReturnManageTransactions";
+import ReturnTeacherPayments from "../Dashboard/DashboardFinance/ReturnTeacherPayments";
+import ReturnRevenueReports from "../Dashboard/DashboardFinance/ReturnRevenueReports";
 
 const DashboardRoutes = () => {
     return (
@@ -73,6 +76,9 @@ const DashboardRoutes = () => {
                     
                     {/* Finance */}
                     <Route path="dashboard/finance" element={<ReturnFinanceDashboard />} />
+                    <Route path="dashboard/finance/transactions" element={<ReturnManageTransactions />} />
+                    <Route path="dashboard/finance/payments" element={<ReturnTeacherPayments />} />
+                    <Route path="dashboard/finance/reports" element={<ReturnRevenueReports />} />
                 </Route>
             </Route>
         </Routes>

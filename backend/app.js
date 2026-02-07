@@ -23,20 +23,35 @@ dotenv.config();
 const app = express();
 
 /* =====================
-   MIDDLEWARES
+   CORS CONFIGURATION
 ===================== */
-app.use(cors({
-   origin: [
-      "https://mdai-self.vercel.app",
-      "https://mdai-admin.vercel.app",
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:3000"
-   ],
+const corsOptions = {
+   origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl requests, or Postman)
+      // Also allow all localhost origins for development
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+         "https://mdai-self.vercel.app",
+         "https://mdai-admin.vercel.app",
+      ];
+      
+      if (allowedOrigins.includes(origin) || origin.includes('vercel.app') || origin.includes('localhost')) {
+         callback(null, true);
+      } else {
+         callback(new Error('Not allowed by CORS'));
+      }
+   },
    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-   allowedHeaders: ["Content-Type", "Authorization"],
+   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
    credentials: true,
-}));
+   optionsSuccessStatus: 204, // Some legacy browsers choke on 200
+};
+
+app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 
 
