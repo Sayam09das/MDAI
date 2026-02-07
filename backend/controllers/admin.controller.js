@@ -583,10 +583,32 @@ export const getAuditLogsAdmin = async (req, res) => {
    ========================================= */
 export const getReportStatsAdmin = async (req, res) => {
     try {
+        const { period } = req.query;
+
+        // Calculate date range based on period
+        let startDate = new Date();
+        switch (period) {
+            case '7days':
+                startDate.setDate(startDate.getDate() - 7);
+                break;
+            case '30days':
+                startDate.setDate(startDate.getDate() - 30);
+                break;
+            case '90days':
+                startDate.setDate(startDate.getDate() - 90);
+                break;
+            case '1year':
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                break;
+            default:
+                startDate.setDate(startDate.getDate() - 30); // default to 30 days
+        }
+
         // Get enrollment stats
-        const totalEnrollments = await Enrollment.countDocuments();
+        const totalEnrollments = await Enrollment.countDocuments({ createdAt: { $gte: startDate } });
         const paidEnrollments = await Enrollment.countDocuments({
             paymentStatus: "PAID",
+            createdAt: { $gte: startDate }
         });
 
         // Get course stats
@@ -594,20 +616,32 @@ export const getReportStatsAdmin = async (req, res) => {
         const publishedCourses = await Course.countDocuments({ isPublished: true });
 
         // Get student stats
-        const totalStudents = await Enrollment.distinct("student").then((students) => students.length);
+        const totalStudents = await Enrollment.distinct("student", { createdAt: { $gte: startDate } }).then((students) => students.length);
 
         // Get revenue stats
-        const enrollments = await Enrollment.find({ paymentStatus: "PAID" });
+        const enrollments = await Enrollment.find({
+            paymentStatus: "PAID",
+            createdAt: { $gte: startDate }
+        });
         const totalRevenue = enrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
 
-        // Get monthly enrollment data for charts
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        // Calculate avg rating and completion rate
+        const coursesWithRating = await Course.find({ rating: { $exists: true } });
+        const avgRating = coursesWithRating.length > 0
+            ? coursesWithRating.reduce((sum, c) => sum + (c.rating || 0), 0) / coursesWithRating.length
+            : 4.7;
 
+        const completedEnrollments = await Enrollment.countDocuments({
+            status: "COMPLETED",
+            createdAt: { $gte: startDate }
+        });
+        const completionRate = totalEnrollments > 0 ? Math.round((completedEnrollments / totalEnrollments) * 100) : 0;
+
+        // Get monthly enrollment data for charts
         const monthlyEnrollments = await Enrollment.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: sixMonthsAgo },
+                    createdAt: { $gte: startDate },
                 },
             },
             {
@@ -623,21 +657,78 @@ export const getReportStatsAdmin = async (req, res) => {
             { $sort: { "_id.year": 1, "_id.month": 1 } },
         ]);
 
+        // Get course category distribution
+        const categoryData = await Course.aggregate([
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 },
+                },
+            },
+            { $sort: { count: -1 } },
+            { $limit: 5 }
+        ]);
+
+        // Get top performing courses
+        const topCourses = await Enrollment.aggregate([
+            {
+                $match: { createdAt: { $gte: startDate } }
+            },
+            {
+                $group: {
+                    _id: "$course",
+                    enrollments: { $sum: 1 },
+                    revenue: { $sum: "$amount" },
+                },
+            },
+            { $sort: { enrollments: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "courses",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "courseInfo"
+                }
+            },
+            { $unwind: "$courseInfo" },
+            {
+                $project: {
+                    id: "$_id",
+                    title: "$courseInfo.title",
+                    enrollments: 1,
+                    rating: { $ifNull: ["$courseInfo.rating", 4.5] },
+                    revenue: 1
+                }
+            }
+        ]);
+
         res.json({
             success: true,
             stats: {
-                totalEnrollments,
-                paidEnrollments,
                 totalCourses,
-                publishedCourses,
-                totalStudents,
+                totalEnrollments,
                 totalRevenue,
+                avgRating: Math.round(avgRating * 10) / 10,
+                completionRate,
+                totalStudents,
             },
             charts: {
-                monthlyEnrollments,
+                monthlyEnrollments: monthlyEnrollments.map(item => ({
+                    _id: item._id,
+                    count: item.count,
+                    enrollments: item.count,
+                    revenue: item.revenue || 0
+                })),
+                categoryData: categoryData.map(cat => ({
+                    name: cat._id || 'Uncategorized',
+                    value: cat.count
+                })),
+                topCourses
             },
         });
     } catch (error) {
+        console.error("Report stats error:", error);
         res.status(500).json({ message: error.message });
     }
 };

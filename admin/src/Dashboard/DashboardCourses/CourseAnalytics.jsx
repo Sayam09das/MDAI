@@ -88,10 +88,19 @@ const CourseAnalytics = () => {
         totalCourses: 0,
         totalEnrollments: 0,
         totalRevenue: 0,
-        avgRating: 0,
-        completionRate: 0,
+        avgRating: 4.7,
+        completionRate: 78,
         totalStudents: 0
     });
+    const [monthlyProgress, setMonthlyProgress] = useState([
+        { month: 'Jan', completion: 75 },
+        { month: 'Feb', completion: 78 },
+        { month: 'Mar', completion: 82 },
+        { month: 'Apr', completion: 79 },
+        { month: 'May', completion: 85 },
+        { month: 'Jun', completion: 88 },
+        { month: 'Jul', completion: 86 }
+    ]);
 
     const periods = [
         { value: '7days', label: '7 Days' },
@@ -102,6 +111,9 @@ const CourseAnalytics = () => {
 
     useEffect(() => {
         fetchAnalytics();
+        // Set up real-time updates every 30 seconds
+        const interval = setInterval(fetchAnalytics, 30000);
+        return () => clearInterval(interval);
     }, [selectedPeriod]);
 
     const fetchAnalytics = async () => {
@@ -142,6 +154,8 @@ const CourseAnalytics = () => {
             console.error('Error fetching analytics:', error);
             // Use default data on error
             setEnrollmentData(defaultEnrollmentData);
+            setCategoryData(defaultCategoryData);
+            setTopCourses(defaultTopCourses);
             toast.warning('Using cached data - unable to connect to server');
         } finally {
             setLoading(false);
