@@ -242,7 +242,7 @@ const RevenueReports = () => {
                         whileHover={{ scale: 1.05, y: -5 }}
                         className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6"
                     >
-                        <div className="bg-gradient-to-r from-orange-500 to-red-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex-items-center justify-center mb-3">
+                        <div className="bg-gradient-to-r from-orange-500 to-red-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3">
                             <CreditCard className="text-white" size={20} />
                         </div>
                         <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Transactions</p>
