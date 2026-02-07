@@ -30,6 +30,7 @@ import {
     Shield,
     BellRing,
     PieChart,
+    Dollar,
     TrendingUp,
     CreditCard,
     Calendar,
@@ -390,6 +391,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
             route: "/admin/dashboard/students/paymentaccess",
         },
         {
+            id: "finance",
+            label: "Finance",
+            icon: Dollar,
+            route: "/admin/dashboard/finance",
+        },
+        {
             id: "audit-logs",
             label: "Audit Logs",
             icon: Shield,
@@ -564,6 +571,7 @@ const DashboardLayout = () => {
         "/admin/dashboard/announcements": "Announcements",
         "/admin/dashboard/reports": "Reports",
         "/admin/dashboard/students/paymentaccess": "Payment Access",
+        "/admin/dashboard/finance": "Finance",
         "/admin/dashboard/audit-logs": "Audit Logs",
         "/admin/dashboard/system": "System Health",
         "/admin/profile": "Profile",

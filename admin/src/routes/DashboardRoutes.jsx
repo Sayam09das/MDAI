@@ -24,6 +24,7 @@ import AuditLogList from "../Dashboard/DashboardAuditLogs/AuditLogList";
 import ReturnAuditLogs from "../Dashboard/DashboardAuditLogs/ReturnAuditLogs";
 import SystemHealth from "../Dashboard/DashboardSystem/SystemHealth";
 import ReturnSystem from "../Dashboard/DashboardSystem/ReturnSystem";
+import ReturnFinanceDashboard from "../Dashboard/DashboardFinance/ReturnFinanceDashboard";
 
 const DashboardRoutes = () => {
     return (
@@ -69,6 +70,9 @@ const DashboardRoutes = () => {
                     
                     {/* System */}
                     <Route path="dashboard/system" element={<SystemHealth />} />
+                    
+                    {/* Finance */}
+                    <Route path="dashboard/finance" element={<ReturnFinanceDashboard />} />
                 </Route>
             </Route>
         </Routes>
