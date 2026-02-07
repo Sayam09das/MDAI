@@ -26,15 +26,22 @@ const TeacherResources = () => {
   const fetchResources = async () => {
     try {
       const res = await fetch(
-        `${BACKEND_URL}/api/resource/teacher?teacherName=${teacherName}`,
+        `${BACKEND_URL}/api/resource/teacher/me`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      
+      if (!res.ok) {
+        throw new Error("Failed to fetch resources");
+      }
+      
       const data = await res.json();
-      setResources(data || []);
+      // Ensure data is an array
+      setResources(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching resources:", error);
+      setResources([]);
     } finally {
       setIsLoading(false);
     }
