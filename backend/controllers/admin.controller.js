@@ -6,7 +6,6 @@ import AuditLog from "../models/auditLogModel.js";
 import Announcement from "../models/announcementModel.js";
 import User from "../models/userModel.js";
 import Teacher from "../models/teacherModel.js";
-import FinanceTransaction from "../models/financeTransactionModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";

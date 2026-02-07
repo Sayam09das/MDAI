@@ -27,14 +27,7 @@ import {
     getTeacherProfile,
     getTeacherAnnouncements,
 } from "../controllers/teacherAuth.controller.js";
-// Finance controller imports
-import {
-    getTeacherFinanceStats,
-    getTeacherTransactions,
-    getTeacherCourseEarnings,
-    getTeacherMonthlyEarnings,
-    getTeacherFinanceSummary,
-} from "../controllers/finance.controller.js";
+
 
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload  from "../middlewares/multer.js";
@@ -218,50 +211,5 @@ router.get(
     teacherOnly,
     getTeacherAnnouncements
 );
-
-/* =====================================
-   TEACHER FINANCE ROUTES
-===================================== */
-
-// 🔥 GET TEACHER FINANCE STATS
-router.get(
-    "/finance/stats",
-    protect,
-    teacherOnly,
-    getTeacherFinanceStats
-);
-
-// 🔥 GET TEACHER FINANCE TRANSACTIONS
-router.get(
-    "/finance/transactions",
-    protect,
-    teacherOnly,
-    getTeacherTransactions
-);
-
-// 🔥 GET TEACHER COURSE EARNINGS
-router.get(
-    "/finance/course-earnings",
-    protect,
-    teacherOnly,
-    getTeacherCourseEarnings
-);
-
-// 🔥 GET TEACHER MONTHLY EARNINGS (for charts)
-router.get(
-    "/finance/monthly-earnings",
-    protect,
-    teacherOnly,
-    getTeacherMonthlyEarnings
-);
-
-// 🔥 GET TEACHER FINANCE SUMMARY
-router.get(
-    "/finance/summary",
-    protect,
-    teacherOnly,
-    getTeacherFinanceSummary
-);
-
 
 export default router;
