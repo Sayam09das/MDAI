@@ -5,14 +5,17 @@ import "react-toastify/dist/ReactToastify.css"
 import MainRoutes from './routes/MainRoutes'
 import AuthRoutes from './routes/AuthRoutes'
 import DashboardRoutes from './routes/DashboardRoutes'
+import { AdminSocketProvider } from './context/AdminSocketContext'
 
 const App = () => {
   return (
     <>
       <ToastContainer />
-      <MainRoutes />
-      <AuthRoutes />
-      <DashboardRoutes />
+      <AdminSocketProvider>
+        <MainRoutes />
+        <AuthRoutes />
+        <DashboardRoutes />
+      </AdminSocketProvider>
     </>
   )
 }

@@ -33,6 +33,8 @@ import {
     getStudentAnalyticsAdmin,
     // Course analytics
     getCourseAnalyticsAdmin,
+    // Real-time system health
+    getSystemHealthRealTime,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -256,6 +258,14 @@ router.get(
     protect,
     adminOnly,
     getSystemStatsAdmin
+);
+
+// Get real-time system health (live metrics)
+router.get(
+    "/system/health/realtime",
+    protect,
+    adminOnly,
+    getSystemHealthRealTime
 );
 
 /* =====================================
