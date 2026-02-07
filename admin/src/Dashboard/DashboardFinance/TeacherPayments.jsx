@@ -60,6 +60,7 @@ const TeacherPayments = () => {
 
     const fetchData = useCallback(async () => {
         try {
+            setLoading(true);
             const [teachersRes, historyRes] = await Promise.all([
                 fetch(`${BACKEND_URL}/api/admin/finance/teachers/courses`, getAuthHeaders()),
                 fetch(`${BACKEND_URL}/api/admin/finance/payment-history?limit=5`, getAuthHeaders())
@@ -76,6 +77,8 @@ const TeacherPayments = () => {
             }
         } catch (error) {
             console.error("Error fetching data:", error);
+        } finally {
+            setLoading(false);
         }
     }, []);
 

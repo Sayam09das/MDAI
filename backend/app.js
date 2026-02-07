@@ -84,20 +84,8 @@ app.get("/ping", (req, res) => {
 
 
 /* =====================
-   404 HANDLER - API ROUTES
-   Must be AFTER all route definitions
-===================== */
-app.use("/api", (req, res) => {
-   res.status(404).json({
-      success: false,
-      message: "API endpoint not found",
-      path: req.originalUrl
-   });
-});
-
-
-/* =====================
    404 HANDLER - ALL OTHER ROUTES
+   Must be AFTER all route definitions
 ===================== */
 app.use((req, res) => {
    res.status(404).json({
