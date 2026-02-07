@@ -679,6 +679,13 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         )}
                     </motion.button>
 
+                    {/* Finance Section with Sub-items */}
+                    {!isCollapsed && (
+                        <div className="px-4 py-2">
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Finance</p>
+                        </div>
+                    )}
+                    
                     <motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -705,6 +712,62 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                             </div>
                         )}
                     </motion.button>
+
+                    {/* Finance Sub-items */}
+                    {!isCollapsed && (
+                        <div className="ml-4 space-y-1 border-l-2 border-slate-100 pl-4">
+                            <motion.button
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.55 }}
+                                whileHover={{ x: 2 }}
+                                onClick={() => handleNavClick("/admin/dashboard/finance/transactions")}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm
+                                    ${location.pathname === "/admin/dashboard/finance/transactions"
+                                        ? "bg-indigo-50 text-indigo-600 font-medium"
+                                        : "text-slate-600 hover:bg-slate-100"
+                                    }
+                                `}
+                            >
+                                <CreditCard size={16} className={location.pathname === "/admin/dashboard/finance/transactions" ? 'text-indigo-600' : 'text-slate-400'} />
+                                <span>Transactions</span>
+                            </motion.button>
+
+                            <motion.button
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.6 }}
+                                whileHover={{ x: 2 }}
+                                onClick={() => handleNavClick("/admin/dashboard/finance/payments")}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm
+                                    ${location.pathname === "/admin/dashboard/finance/payments"
+                                        ? "bg-indigo-50 text-indigo-600 font-medium"
+                                        : "text-slate-600 hover:bg-slate-100"
+                                    }
+                                `}
+                            >
+                                <DollarSign size={16} className={location.pathname === "/admin/dashboard/finance/payments" ? 'text-indigo-600' : 'text-slate-400'} />
+                                <span>Teacher Payments</span>
+                            </motion.button>
+
+                            <motion.button
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.65 }}
+                                whileHover={{ x: 2 }}
+                                onClick={() => handleNavClick("/admin/dashboard/finance/reports")}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm
+                                    ${location.pathname === "/admin/dashboard/finance/reports"
+                                        ? "bg-indigo-50 text-indigo-600 font-medium"
+                                        : "text-slate-600 hover:bg-slate-100"
+                                    }
+                                `}
+                            >
+                                <TrendingUp size={16} className={location.pathname === "/admin/dashboard/finance/reports" ? 'text-indigo-600' : 'text-slate-400'} />
+                                <span>Revenue Reports</span>
+                            </motion.button>
+                        </div>
+                    )}
 
                     <motion.button
                         initial={{ opacity: 0, x: -20 }}
