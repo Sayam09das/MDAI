@@ -23,6 +23,11 @@ import AuditLogList from "../Dashboard/DashboardAuditLogs/AuditLogList";
 import ReturnAuditLogs from "../Dashboard/DashboardAuditLogs/ReturnAuditLogs";
 import SystemHealth from "../Dashboard/DashboardSystem/SystemHealth";
 import ReturnSystem from "../Dashboard/DashboardSystem/ReturnSystem";
+import StudentPaymentAccess from "../Dashboard/StudentEnrollment/StudentPaymentAccess";
+import FinanceDashboard from "../Dashboard/DashboardFinance/FinanceDashboard";
+import ReturnManageTransactions from "../Dashboard/DashboardFinance/ReturnManageTransactions";
+import ReturnTeacherPayments from "../Dashboard/DashboardFinance/ReturnTeacherPayments";
+import ReturnRevenueReports from "../Dashboard/DashboardFinance/ReturnRevenueReports";
 
 const DashboardRoutes = () => {
     return (
@@ -58,6 +63,13 @@ const DashboardRoutes = () => {
                     
                     {/* Announcements */}
                     <Route path="dashboard/announcements" element={<AnnouncementList />} />
+                    
+                    {/* Finance & Payments */}
+                    <Route path="dashboard/payments" element={<StudentPaymentAccess />} />
+                    <Route path="dashboard/finance" element={<FinanceDashboard />} />
+                    <Route path="dashboard/finance/transactions" element={<ReturnManageTransactions />} />
+                    <Route path="dashboard/finance/teacher-payments" element={<ReturnTeacherPayments />} />
+                    <Route path="dashboard/finance/reports" element={<ReturnRevenueReports />} />
                     
                     {/* Reports */}
                     <Route path="dashboard/reports" element={<ReturnReports />} />

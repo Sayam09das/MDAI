@@ -14,6 +14,7 @@ import ReturnTeacherResources from "../Pages/teacher/Dashboard/MainResources/Ret
 import ReturnSearch from "../Pages/teacher/Dashboard/MainSearch/ReturnSearch";
 import ReturnTeacherMessages from "../Pages/teacher/Dashboard/Messages/ReturnTeacherMessages";
 import ReturnAnnouncements from "../Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
+import ReturnTeacherFinance from "../Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -52,6 +53,7 @@ const TeacherRoutes = () => {
                     <Route path="search" element={<ReturnSearch />} />
                     <Route path="messages" element={<ReturnTeacherMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
+                    <Route path="finance" element={<ReturnTeacherFinance />} />
                 </Route>
             </Routes>
         </Suspense>
