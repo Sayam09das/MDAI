@@ -13,6 +13,7 @@ import {
   Settings,
   X,
   Bell,
+  CreditCard,
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -23,6 +24,7 @@ const mainMenu = [
   { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
   { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
+  { icon: CreditCard, label: "Payments", path: "/student-dashboard/payments" },
 ];
 
 const extraMenu = [
@@ -111,7 +113,7 @@ const StudentSidebar = ({ isOpen, onClose }) => {
           {/* MAIN MENU */}
           <div className="space-y-1">
             {mainMenu.map(item => (
-              <SidebarLink key={item.label} {...item} onClick={onClose} />
+              <SidebarLink key={item.label} {...item} onClick={onClick} />
             ))}
           </div>
 

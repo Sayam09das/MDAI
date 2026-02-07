@@ -18,6 +18,7 @@ import ReturnCalendar from "../Pages/Student/Dashboard/StudentCalendar/ReturnCal
 import ReturnSearch from "../Pages/Student/Dashboard/Search/ReturnSearch";
 import ReturnStudentMessages from "../Pages/Student/Dashboard/Messages/ReturnStudentMessages";
 import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
+import ReturnStudentPayments from "../Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments";
 
 const StudentRoutes = () => {
     return (
@@ -47,6 +48,7 @@ const StudentRoutes = () => {
                     <Route path="search" element={<ReturnSearch />} />
                     <Route path="messages" element={<ReturnStudentMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
+                    <Route path="payments" element={<ReturnStudentPayments />} />
                 </Route>
             </Routes>
         </Suspense>
