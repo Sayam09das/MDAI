@@ -15,7 +15,7 @@ import {
     ArrowDownRight,
     Bell,
 } from "lucide-react";
-import { useSocket } from "../../context/SocketContext";
+import { useSocket } from "../../../context/SocketContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
