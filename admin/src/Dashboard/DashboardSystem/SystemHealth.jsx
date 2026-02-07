@@ -21,7 +21,7 @@ import {
     Bell,
     Terminal
 } from 'lucide-react';
-import { toast, Toaster } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAdminSocket } from '../../context/AdminSocketContext';
 
@@ -186,7 +186,7 @@ const SystemHealth = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
-            <Toaster position="top-right" />
+            <ToastContainer position="top-right" />
             <div className="max-w-7xl mx-auto">
                 {/* Breadcrumb & Header */}
                 <div className="flex items-center space-x-2 text-sm text-slate-600 mb-4">

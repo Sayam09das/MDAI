@@ -30,7 +30,6 @@ import {
     Shield,
     BellRing,
     PieChart,
-    Dollar,
     DollarSign,
     TrendingUp,
     CreditCard,
@@ -394,7 +393,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
         {
             id: "finance",
             label: "Finance Overview",
-            icon: Dollar,
+            icon: DollarSign,
             route: "/admin/dashboard/finance",
             children: [
                 {
