@@ -14,6 +14,7 @@ import {
     Settings,
     X,
     Bell,
+    DollarSign,
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -25,6 +26,7 @@ const mainMenu = [
     { icon: Video, label: "Live Sessions", path: "/teacher-dashboard/live-sessions" },
     { icon: Users, label: "Students", path: "/teacher-dashboard/students" },
     { icon: Bell, label: "Announcements", path: "/teacher-dashboard/announcements" },
+    { icon: DollarSign, label: "Finance", path: "/teacher-dashboard/finance" },
 ];
 
 const extraMenu = [
