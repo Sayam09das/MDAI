@@ -295,6 +295,8 @@ const setupSocket = (httpServer) => {
       socket.join('students_room');
     } else if (socket.user.role === 'teacher') {
       socket.join('teachers_room');
+      // Teacher joins their personal finance room
+      socket.join(`teacher_${socket.user.id}_finance`);
     } else if (socket.user.role === 'admin') {
       // Admin joins admin room for system health monitoring
       socket.join('admin_room');
@@ -507,6 +509,26 @@ const setupSocket = (httpServer) => {
     });
 
     /* ======================================================
+       TEACHER FINANCE EVENTS (Real-time updates)
+    ====================================================== */
+    
+    // Teacher joins their finance room
+    socket.on("join_teacher_finance", () => {
+      if (socket.user.role === 'teacher') {
+        socket.join(`teacher_${socket.user.id}_finance`);
+        console.log(`💰 Teacher ${socket.user.id} joined finance room`);
+      }
+    });
+
+    // Teacher leaves their finance room
+    socket.on("leave_teacher_finance", () => {
+      if (socket.user.role === 'teacher') {
+        socket.leave(`teacher_${socket.user.id}_finance`);
+        console.log(`💰 Teacher ${socket.user.id} left finance room`);
+      }
+    });
+
+    /* ======================================================
        ERROR HANDLING
     ====================================================== */
     socket.on("error", (error) => {
@@ -549,6 +571,36 @@ export const broadcastToAll = (io, event, data) => {
 // Broadcast system alert to all admins
 export const broadcastSystemAlert = (io, alert) => {
   io.to('admin_room').emit('system_alert', alert);
+};
+
+// Broadcast payment received event to specific teacher
+export const broadcastPaymentToTeacher = (io, teacherId, paymentData) => {
+  io.to(`teacher_${teacherId}_finance`).emit("payment_received", {
+    type: "PAYMENT_RECEIVED",
+    amount: paymentData.amount,
+    courseName: paymentData.courseName,
+    studentName: paymentData.studentName,
+    transactionId: paymentData.transactionId,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Also emit general earnings update
+  io.to(`teacher_${teacherId}_finance`).emit("earnings_updated", {
+    type: "EARNINGS_UPDATED",
+    totalEarnings: paymentData.totalEarnings,
+    timestamp: new Date().toISOString()
+  });
+};
+
+// Broadcast enrollment event to teacher
+export const broadcastEnrollmentToTeacher = (io, teacherId, enrollmentData) => {
+  io.to(`teacher_${teacherId}_finance`).emit("new_enrollment", {
+    type: "NEW_ENROLLMENT",
+    courseName: enrollmentData.courseName,
+    studentName: enrollmentData.studentName,
+    expectedAmount: enrollmentData.expectedAmount,
+    timestamp: new Date().toISOString()
+  });
 };
 
 export default setupSocket;

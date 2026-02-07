@@ -276,6 +276,36 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
             "success"
         );
 
+        // Get io instance for socket emission
+        const io = req.app.get("io");
+        
+        // Get student and teacher info for notification
+        const student = await User.findById(existingEnrollment.student).select("fullName email");
+        const teacher = await Teacher.findById(course.instructor).select("name email");
+
+        // Emit socket event to notify teacher about payment
+        if (io && course.instructor) {
+            // Import the helper function
+            const { broadcastPaymentToTeacher } = await import("../utils/socket.js");
+            
+            // Calculate total earnings for this teacher
+            const teacherTransactions = await FinanceTransaction.find({
+                teacher: course.instructor,
+                status: "COMPLETED"
+            });
+            const totalTeacherEarnings = teacherTransactions.reduce(
+                (sum, t) => sum + (t.teacherAmount || 0), 0
+            );
+
+            broadcastPaymentToTeacher(io, course.instructor.toString(), {
+                amount: teacherAmount,
+                courseName: course.title,
+                studentName: student?.fullName || "Unknown Student",
+                transactionId: transaction._id.toString(),
+                totalEarnings: totalTeacherEarnings + teacherAmount
+            });
+        }
+
         res.json({
             success: true,
             message: "Payment approved & receipt image generated",

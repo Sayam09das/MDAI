@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
     DollarSign,
@@ -13,7 +13,9 @@ import {
     Wallet,
     ArrowUpRight,
     ArrowDownRight,
+    Bell,
 } from "lucide-react";
+import { useSocket } from "../../context/SocketContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const getToken = () => localStorage.getItem("token");
@@ -64,6 +66,7 @@ const formatDate = (dateString) => {
 
 /* ================= MAIN COMPONENT ================= */
 const TeacherFinance = () => {
+    const { socket, isConnected } = useSocket();
     const [stats, setStats] = useState({
         totalEarnings: 0,
         pendingEarnings: 0,
@@ -74,8 +77,9 @@ const TeacherFinance = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [timeFilter, setTimeFilter] = useState("all");
+    const [newPaymentNotification, setNewPaymentNotification] = useState(null);
 
-    const fetchFinanceData = async () => {
+    const fetchFinanceData = useCallback(async () => {
         setLoading(true);
         try {
             const token = getToken();
@@ -112,11 +116,79 @@ const TeacherFinance = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
+    // Listen for real-time payment updates
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        // Listen for new payment/earnings updates
+        const handlePaymentUpdate = (data) => {
+            console.log("📊 Real-time payment update:", data);
+            
+            // Show notification for new payment
+            if (data.type === "NEW_PAYMENT" || data.type === "PAYMENT_RECEIVED") {
+                setNewPaymentNotification({
+                    message: `New payment received: ${formatCurrency(data.amount || 0)}`,
+                    course: data.courseName || "Course"
+                });
+                
+                // Clear notification after 5 seconds
+                setTimeout(() => {
+                    setNewPaymentNotification(null);
+                }, 5000);
+            }
+            
+            // Refresh data on any payment update
+            fetchFinanceData();
+        };
+
+        const handleEarningsUpdate = (data) => {
+            console.log("💰 Earnings updated:", data);
+            fetchFinanceData();
+        };
+
+        const handlePayoutUpdate = (data) => {
+            console.log("💵 Payout processed:", data);
+            fetchFinanceData();
+        };
+
+        // Register for teacher finance updates
+        socket.emit("join_teacher_finance");
+
+        socket.on("payment_received", handlePaymentUpdate);
+        socket.on("earnings_updated", handleEarningsUpdate);
+        socket.on("payout_processed", handlePayoutUpdate);
+        
+        // Listen for course enrollment (generates payment)
+        socket.on("new_enrollment", (data) => {
+            console.log("📚 New enrollment:", data);
+            // Enrollment may lead to payment, so refresh
+            setTimeout(fetchFinanceData, 1000);
+        });
+
+        return () => {
+            socket.emit("leave_teacher_finance");
+            socket.off("payment_received", handlePaymentUpdate);
+            socket.off("earnings_updated", handleEarningsUpdate);
+            socket.off("payout_processed", handlePayoutUpdate);
+            socket.off("new_enrollment");
+        };
+    }, [socket, isConnected, fetchFinanceData]);
+
+    // Initial data fetch and periodic refresh
     useEffect(() => {
         fetchFinanceData();
-    }, [timeFilter]);
+        
+        // Refresh data every 30 seconds as backup
+        const interval = setInterval(() => {
+            if (!loading) {
+                fetchFinanceData();
+            }
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, [fetchFinanceData, timeFilter]);
 
     // Filter payments based on time filter
     const filteredPayments = payments.filter(payment => {
@@ -155,6 +227,31 @@ const TeacherFinance = () => {
 
     return (
         <div className="p-6">
+            {/* Real-time Payment Notification */}
+            {newPaymentNotification && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    className="fixed top-4 right-4 z-50 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md"
+                >
+                    <div className="bg-white/20 p-2 rounded-full">
+                        <DollarSign size={24} />
+                    </div>
+                    <div>
+                        <p className="font-bold">New Payment! 💰</p>
+                        <p className="text-sm opacity-90">{newPaymentNotification.message}</p>
+                        <p className="text-xs opacity-75">{newPaymentNotification.course}</p>
+                    </div>
+                    <button
+                        onClick={() => setNewPaymentNotification(null)}
+                        className="ml-4 hover:bg-white/20 rounded-full p-1 transition-colors"
+                    >
+                        <Clock size={16} />
+                    </button>
+                </motion.div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
