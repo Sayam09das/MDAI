@@ -328,49 +328,35 @@ router.get(
     async (req, res) => {
         try {
             const Enrollment = (await import("../models/enrollmentModel.js")).default;
-            const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
+            const Teacher = (await import("../models/teacherModel.js")).default;
             
-            // Get all paid enrollments for revenue calculation
+            // Get all paid enrollments
             const paidEnrollments = await Enrollment.find({ paymentStatus: "PAID" });
             
             // Calculate total revenue
             const totalRevenue = paidEnrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
             
-            // Calculate admin and teacher amounts
-            const totalAdminAmount = paidEnrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
-            const totalTeacherAmount = paidEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+            // Calculate admin amount (10%)
+            const totalAdminAmount = totalRevenue * 0.1;
             
-            // Get transaction counts
-            const totalTransactions = await FinanceTransaction.countDocuments();
-            const completedTransactions = await FinanceTransaction.countDocuments({ status: "COMPLETED" });
-            const pendingTransactions = await FinanceTransaction.countDocuments({ status: "PENDING" });
+            // Calculate teacher amount (90%)
+            const totalTeacherAmount = totalRevenue * 0.9;
             
-            // Get recent transactions
-            const recentTransactions = await FinanceTransaction.find()
-                .sort({ createdAt: -1 })
-                .limit(5)
-                .lean();
-
+            // Get counts
+            const totalTeachers = await Teacher.countDocuments();
+            const totalStudents = new Set(paidEnrollments.map(e => e.student?.toString())).size;
+            const totalTransactions = paidEnrollments.length;
+            
             res.json({
                 success: true,
                 stats: {
-                    totalRevenue,
-                    totalAdminAmount,
-                    totalTeacherAmount,
-                    totalTransactions,
-                    completedTransactions,
-                    pendingTransactions,
-                    transactionCompletionRate: totalTransactions > 0 
-                        ? Math.round((completedTransactions / totalTransactions) * 100) 
-                        : 0
-                },
-                recentTransactions: recentTransactions.map(t => ({
-                    id: t._id,
-                    type: t.type,
-                    amount: t.grossAmount,
-                    status: t.status,
-                    createdAt: t.createdAt
-                }))
+                    totalRevenue: Math.round(totalRevenue * 100) / 100,
+                    totalAdminAmount: Math.round(totalAdminAmount * 100) / 100,
+                    totalTeacherAmount: Math.round(totalTeacherAmount * 100) / 100,
+                    totalTeachers,
+                    totalStudents,
+                    totalTransactions
+                }
             });
         } catch (error) {
             console.error("Finance stats error:", error);
@@ -379,35 +365,167 @@ router.get(
     }
 );
 
-// Get all transactions
+// Get all teachers with their courses and pending payments
 router.get(
-    "/finance/transactions",
+    "/finance/teachers/courses",
     protect,
     adminOnly,
     async (req, res) => {
         try {
-            const { page = 1, limit = 10, status, type, search } = req.query;
+            const Teacher = (await import("../models/teacherModel.js")).default;
+            const Course = (await import("../models/Course.js")).default;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            
+            // Get all teachers with their courses
+            const teachers = await Teacher.find().lean();
+            
+            const teachersWithCourses = await Promise.all(
+                teachers.map(async (teacher) => {
+                    // Get teacher's courses with enrollment info
+                    const courses = await Course.find({ instructor: teacher._id }).lean();
+                    
+                    const coursesWithDetails = await Promise.all(
+                        courses.map(async (course) => {
+                            // Get paid enrollments for this course
+                            const enrollments = await Enrollment.find({
+                                course: course._id,
+                                paymentStatus: "PAID"
+                            }).lean();
+                            
+                            const coursePrice = course.price || 0;
+                            const studentCount = enrollments.length;
+                            const totalEarned = studentCount * coursePrice;
+                            const teacherShare = totalEarned * 0.9; // 90%
+                            
+                            return {
+                                id: course._id,
+                                title: course.title,
+                                price: coursePrice,
+                                studentCount,
+                                totalEarned: Math.round(totalEarned * 100) / 100,
+                                teacherShare: Math.round(teacherShare * 100) / 100,
+                                adminShare: Math.round((totalEarned * 0.1) * 100) / 100
+                            };
+                        })
+                    );
+                    
+                    const totalPending = coursesWithDetails.reduce(
+                        (sum, c) => sum + c.teacherShare, 
+                        0
+                    );
+                    
+                    return {
+                        id: teacher._id,
+                        name: teacher.fullName || teacher.name,
+                        email: teacher.email,
+                        courses: coursesWithDetails,
+                        totalPending: Math.round(totalPending * 100) / 100,
+                        totalCourses: coursesWithDetails.length
+                    };
+                })
+            );
+            
+            // Sort by pending amount descending
+            teachersWithCourses.sort((a, b) => b.totalPending - a.totalPending);
+            
+            const grandTotalPending = teachersWithCourses.reduce(
+                (sum, t) => sum + t.totalPending, 
+                0
+            );
+            
+            res.json({
+                success: true,
+                teachers: teachersWithCourses,
+                totalTeachers: teachersWithCourses.length,
+                grandTotalPending: Math.round(grandTotalPending * 100) / 100
+            });
+        } catch (error) {
+            console.error("Teacher courses error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
+// Process payment to a teacher
+router.post(
+    "/finance/pay-teacher",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const { teacherId, amount, courseId, description } = req.body;
             const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const Teacher = (await import("../models/teacherModel.js")).default;
             
-            let query = {};
-            
-            if (status && status !== 'all') {
-                query.status = status;
+            if (!teacherId || !amount || amount <= 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: "Valid teacher ID and amount are required" 
+                });
             }
             
-            if (type && type !== 'all') {
-                query.type = type;
+            const teacher = await Teacher.findById(teacherId);
+            if (!teacher) {
+                return res.status(404).json({ success: false, message: "Teacher not found" });
             }
+            
+            // Create finance transaction
+            const transaction = await FinanceTransaction.create({
+                type: "PAYMENT",
+                teacher: teacherId,
+                course: courseId || null,
+                grossAmount: amount,
+                adminPercentage: 0, // No admin cut for payouts
+                adminAmount: 0,
+                teacherAmount: amount,
+                status: "COMPLETED",
+                paymentMethod: "BANK_TRANSFER",
+                description: description || `Payment to ${teacher.fullName || teacher.name}`,
+                processedAt: new Date(),
+                completedAt: new Date()
+            });
+            
+            res.json({
+                success: true,
+                message: "Payment processed successfully",
+                transaction: {
+                    id: transaction._id,
+                    teacher: teacher.fullName || teacher.name,
+                    amount: transaction.teacherAmount,
+                    status: transaction.status,
+                    processedAt: transaction.processedAt
+                }
+            });
+        } catch (error) {
+            console.error("Pay teacher error:", error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+);
+
+// Get payment history
+router.get(
+    "/finance/payment-history",
+    protect,
+    adminOnly,
+    async (req, res) => {
+        try {
+            const { page = 1, limit = 10 } = req.query;
+            const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
             
             const skip = (parseInt(page) - 1) * parseInt(limit);
             
-            const transactions = await FinanceTransaction.find(query)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(parseInt(limit))
-                .lean();
+            const transactions = await FinanceTransaction.find({
+                type: "PAYMENT"
+            })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate("teacher", "fullName name email")
+            .lean();
             
-            const total = await FinanceTransaction.countDocuments(query);
+            const total = await FinanceTransaction.countDocuments({ type: "PAYMENT" });
             
             res.json({
                 success: true,
@@ -420,137 +538,7 @@ router.get(
                 }
             });
         } catch (error) {
-            console.error("Get transactions error:", error);
-            res.status(500).json({ message: error.message });
-        }
-    }
-);
-
-// Get teacher payments/earnings
-router.get(
-    "/finance/teachers/earnings",
-    protect,
-    adminOnly,
-    async (req, res) => {
-        try {
-            const Enrollment = (await import("../models/enrollmentModel.js")).default;
-            const Teacher = (await import("../models/teacherModel.js")).default;
-            
-            // Get all teachers with their earnings
-            const teachers = await Teacher.find().lean();
-            
-            const teacherEarnings = await Promise.all(
-                teachers.map(async (teacher) => {
-                    const enrollments = await Enrollment.find({
-                        course: { $in: teacher.courses || [] },
-                        paymentStatus: "PAID"
-                    });
-                    
-                    const totalEarnings = enrollments.reduce(
-                        (sum, e) => sum + (e.teacherAmount || 0), 
-                        0
-                    );
-                    
-                    return {
-                        id: teacher._id,
-                        name: teacher.name,
-                        email: teacher.email,
-                        totalEarnings,
-                        courseCount: teacher.courses?.length || 0,
-                        enrollmentCount: enrollments.length
-                    };
-                })
-            );
-            
-            // Sort by earnings descending
-            teacherEarnings.sort((a, b) => b.totalEarnings - a.totalEarnings);
-            
-            res.json({
-                success: true,
-                teachers: teacherEarnings,
-                totalTeachers: teacherEarnings.length,
-                totalEarningsAll: teacherEarnings.reduce((sum, t) => sum + t.totalEarnings, 0)
-            });
-        } catch (error) {
-            console.error("Teacher earnings error:", error);
-            res.status(500).json({ message: error.message });
-        }
-    }
-);
-
-// Get revenue reports
-router.get(
-    "/finance/reports",
-    protect,
-    adminOnly,
-    async (req, res) => {
-        try {
-            const { period = '30days' } = req.query;
-            const Enrollment = (await import("../models/enrollmentModel.js")).default;
-            
-            // Calculate date range
-            const now = new Date();
-            let startDate = new Date();
-            
-            switch (period) {
-                case '7days':
-                    startDate.setDate(startDate.getDate() - 7);
-                    break;
-                case '30days':
-                    startDate.setDate(startDate.getDate() - 30);
-                    break;
-                case '90days':
-                    startDate.setDate(startDate.getDate() - 90);
-                    break;
-                case '1year':
-                    startDate.setFullYear(startDate.getFullYear() - 1);
-                    break;
-                default:
-                    startDate.setDate(startDate.getDate() - 30);
-            }
-            
-            // Get enrollments in date range
-            const enrollments = await Enrollment.find({
-                paymentStatus: "PAID",
-                createdAt: { $gte: startDate }
-            });
-            
-            // Calculate revenue by day
-            const revenueByDay = {};
-            enrollments.forEach(e => {
-                const date = e.createdAt.toISOString().split('T')[0];
-                if (!revenueByDay[date]) {
-                    revenueByDay[date] = { date, revenue: 0, count: 0 };
-                }
-                revenueByDay[date].revenue += e.amount || 0;
-                revenueByDay[date].count += 1;
-            });
-            
-            // Sort by date
-            const dailyRevenue = Object.values(revenueByDay)
-                .sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-            // Calculate totals
-            const totalRevenue = enrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
-            const totalAdminAmount = enrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
-            const totalTeacherAmount = enrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
-            
-            res.json({
-                success: true,
-                period,
-                stats: {
-                    totalRevenue,
-                    totalAdminAmount,
-                    totalTeacherAmount,
-                    transactionCount: enrollments.length,
-                    avgTransactionValue: enrollments.length > 0 
-                        ? Math.round(totalRevenue / enrollments.length) 
-                        : 0
-                },
-                dailyRevenue
-            });
-        } catch (error) {
-            console.error("Revenue reports error:", error);
+            console.error("Payment history error:", error);
             res.status(500).json({ message: error.message });
         }
     }

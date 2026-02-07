@@ -212,4 +212,88 @@ router.get(
     getTeacherAnnouncements
 );
 
+/* ======================================================
+   TEACHER FINANCE ROUTES
+====================================================== */
+
+// Get teacher's finance overview
+router.get(
+    "/finance/overview",
+    protect,
+    teacherOnly,
+    async (req, res) => {
+        try {
+            const teacherId = req.user.id;
+            const Teacher = (await import("../models/teacherModel.js")).default;
+            const Course = (await import("../models/Course.js")).default;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            
+            // Get all courses by this teacher
+            const courses = await Course.find({ instructor: teacherId }).select("_id price title").lean();
+            const courseIds = courses.map(c => c._id);
+            
+            // Get all paid enrollments for teacher's courses
+            const enrollments = await Enrollment.find({
+                course: { $in: courseIds },
+                paymentStatus: "PAID"
+            }).lean();
+            
+            // Calculate total earnings
+            let totalEarnings = 0;
+            let pendingEarnings = 0;
+            
+            const coursesWithStats = courses.map(course => {
+                const courseEnrollments = enrollments.filter(
+                    e => e.course?.toString() === course._id.toString()
+                );
+                const studentCount = courseEnrollments.length;
+                const courseEarnings = studentCount * (course.price || 0);
+                const teacherShare = courseEarnings * 0.9; // 90%
+                
+                totalEarnings += teacherShare;
+                pendingEarnings += teacherShare;
+                
+                return {
+                    id: course._id,
+                    title: course.title,
+                    price: course.price || 0,
+                    studentCount,
+                    earnings: Math.round(teacherShare * 100) / 100
+                };
+            });
+            
+            // Get payment history from finance transactions
+            const FinanceTransaction = (await import("../models/financeTransactionModel.js")).default;
+            const payments = await FinanceTransaction.find({
+                teacher: teacherId,
+                type: "PAYMENT",
+                status: "COMPLETED"
+            }).sort({ completedAt: -1 }).limit(10).lean();
+            
+            const totalPaidOut = payments.reduce((sum, p) => sum + (p.teacherAmount || 0), 0);
+            
+            res.json({
+                success: true,
+                overview: {
+                    totalEarnings: Math.round(totalEarnings * 100) / 100,
+                    pendingEarnings: Math.round(pendingEarnings * 100) / 100,
+                    totalPaidOut: Math.round(totalPaidOut * 100) / 100,
+                    courseCount: courses.length,
+                    studentCount: enrollments.length
+                },
+                courses: coursesWithStats,
+                recentPayments: payments.map(p => ({
+                    id: p._id,
+                    amount: p.teacherAmount,
+                    date: p.completedAt || p.createdAt,
+                    description: p.description
+                }))
+            });
+        } catch (error) {
+            console.error("Teacher finance overview error:", error);
+            res.status(500).json({ message: "Failed to fetch finance overview" });
+        }
+    }
+);
+
 export default router;
