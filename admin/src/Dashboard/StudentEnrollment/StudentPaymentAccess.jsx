@@ -454,6 +454,3 @@ export default function StudentPaymentAccess() {
         </div>
     );
 }
-
-
-
