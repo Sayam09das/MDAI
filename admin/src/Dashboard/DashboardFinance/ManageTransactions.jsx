@@ -20,7 +20,7 @@ import {
     Calendar,
     FileText
 } from "lucide-react";
-import { getAllFinanceTransactions, updateTransactionStatus } from "../../../lib/api/adminFinanceApi";
+import { getAllFinanceTransactions, updateTransactionStatus } from "../../lib/api/adminFinanceApi";
 
 const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "$0.00";

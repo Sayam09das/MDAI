@@ -14,7 +14,7 @@ import {
     CreditCard,
     Users
 } from "lucide-react";
-import { getAdminRevenueReport, getAdminFinanceStats } from "../../../lib/api/adminFinanceApi";
+import { getAdminRevenueReport, getAdminFinanceStats } from "../../lib/api/adminFinanceApi";
 
 const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "$0.00";
