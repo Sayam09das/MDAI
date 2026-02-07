@@ -35,6 +35,10 @@ import {
     getCourseAnalyticsAdmin,
     // Real-time system health
     getSystemHealthRealTime,
+    // Finance
+    getAllTransactionsAdmin,
+    getTeacherPaymentsAdmin,
+    getRevenueReportsAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -314,6 +318,34 @@ router.get(
     protect,
     adminOnly,
     getCourseAnalyticsAdmin
+);
+
+/* =====================================
+   ADMIN FINANCE ROUTES
+===================================== */
+
+// Get all transactions
+router.get(
+    "/finance/transactions",
+    protect,
+    adminOnly,
+    getAllTransactionsAdmin
+);
+
+// Get teacher payments
+router.get(
+    "/finance/teacher-payments",
+    protect,
+    adminOnly,
+    getTeacherPaymentsAdmin
+);
+
+// Get revenue reports
+router.get(
+    "/finance/reports",
+    protect,
+    adminOnly,
+    getRevenueReportsAdmin
 );
 
 export default router;

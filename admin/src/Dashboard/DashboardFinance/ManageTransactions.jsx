@@ -258,7 +258,7 @@ export default function ManageTransactions() {
                             {filteredTransactions.length === 0 ? (
                                 <tr>
                                     <td colSpan="9" className="p-8 text-center">
-                                        <Transaction size={48} className="mx-auto text-gray-300 mb-4" />
+                                        <Receipt size={48} className="mx-auto text-gray-300 mb-4" />
                                         <p className="text-gray-500">No transactions found</p>
                                     </td>
                                 </tr>
