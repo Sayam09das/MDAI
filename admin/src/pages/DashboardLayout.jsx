@@ -874,7 +874,7 @@ const DashboardLayout = () => {
         "/admin/dashboard/students/paymentaccess": "Payment Access",
         "/admin/dashboard/finance": "Finance Overview",
         "/admin/dashboard/finance/transactions": "Manage Transactions",
-        "/admin/dashboard/finance/payments": "Teacher Payments",
+        "/admin/dashboard/finance/teacher-payments": "Teacher Payments",
         "/admin/dashboard/finance/reports": "Revenue Reports",
         "/admin/dashboard/audit-logs": "Audit Logs",
         "/admin/dashboard/system": "System Health",

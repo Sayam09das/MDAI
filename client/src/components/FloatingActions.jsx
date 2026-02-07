@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { MessageCircle, Mail, UserPlus, X } from "lucide-react";
-import { useState } from "react";
 
 const FloatingActions = () => {
     const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER;

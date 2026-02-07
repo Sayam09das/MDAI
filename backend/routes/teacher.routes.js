@@ -216,6 +216,78 @@ router.get(
    TEACHER FINANCE ROUTES
 ====================================================== */
 
+// Get teacher's earnings and payments
+router.get(
+    "/earnings",
+    protect,
+    teacherOnly,
+    async (req, res) => {
+        try {
+            const teacherId = req.user.id;
+            const Teacher = (await import("../models/teacherModel.js")).default;
+            const Course = (await import("../models/Course.js")).default;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const User = (await import("../models/userModel.js")).default;
+            
+            // Get all courses by this teacher
+            const courses = await Course.find({ instructor: teacherId }).select("_id title price category").lean();
+            const courseIds = courses.map(c => c._id);
+            
+            // Get all enrollments for teacher's courses with payment info
+            const enrollments = await Enrollment.find({
+                course: { $in: courseIds },
+                paymentStatus: "PAID"
+            })
+            .populate("student", "fullName email")
+            .populate("course", "title price category")
+            .sort({ createdAt: -1 })
+            .lean();
+            
+            // Format payments for frontend
+            const payments = enrollments.map(enrollment => ({
+                _id: enrollment._id,
+                student: enrollment.student,
+                course: enrollment.course,
+                amount: enrollment.amount || 0,
+                teacherAmount: enrollment.teacherAmount || 0,
+                adminAmount: enrollment.adminAmount || 0,
+                paymentStatus: enrollment.paymentStatus,
+                receipt: enrollment.receipt,
+                createdAt: enrollment.createdAt,
+                verifiedAt: enrollment.verifiedAt
+            }));
+            
+            // Calculate stats
+            const totalEarnings = payments.reduce((sum, p) => sum + (p.teacherAmount || 0), 0);
+            const pendingEnrollments = await Enrollment.find({
+                course: { $in: courseIds },
+                paymentStatus: "PENDING"
+            }).lean();
+            const pendingAmount = pendingEnrollments.reduce((sum, e) => {
+                const course = courses.find(c => c._id.toString() === e.course?.toString());
+                return sum + (course ? (course.price * 0.9) : 0);
+            }, 0);
+            
+            // Get unique students count
+            const uniqueStudents = new Set(enrollments.map(e => e.student?._id?.toString()).filter(Boolean));
+            
+            res.json({
+                success: true,
+                payments,
+                stats: {
+                    totalEarnings: Math.round(totalEarnings * 100) / 100,
+                    pendingEarnings: Math.round(pendingAmount * 100) / 100,
+                    completedPayments: payments.length,
+                    totalStudents: uniqueStudents.size
+                }
+            });
+        } catch (error) {
+            console.error("Teacher earnings error:", error);
+            res.status(500).json({ message: "Failed to fetch earnings" });
+        }
+    }
+);
+
 // Get teacher's finance overview
 router.get(
     "/finance/overview",
