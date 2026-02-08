@@ -33,6 +33,19 @@ export default function StudentPaymentAccess() {
         }).format(amount);
     };
 
+    // Helper to get student display name
+    const getStudentName = (student) => {
+        if (!student) return "Unknown Student";
+        return student.fullName || student.name || "Unknown Student";
+    };
+
+    // Helper to get student initial
+    const getStudentInitial = (student) => {
+        if (!student) return "U";
+        const name = student.fullName || student.name || "Unknown";
+        return name.charAt(0).toUpperCase();
+    };
+
     const fetchEnrollments = async () => {
         if (!token) {
             setError("Admin not logged in");
@@ -40,6 +53,7 @@ export default function StudentPaymentAccess() {
         }
 
         setLoading(true);
+        setError("");
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/enrollments`, {
                 headers: {
@@ -47,15 +61,16 @@ export default function StudentPaymentAccess() {
                 },
             });
 
+            const data = await res.json();
+
             if (!res.ok) {
-                throw new Error("Unauthorized or session expired");
+                throw new Error(data.message || "Failed to fetch enrollments");
             }
 
-            const data = await res.json();
             setEnrollments(data.enrollments || []);
-            setError("");
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to load enrollments");
+            console.error("Fetch enrollments error:", err);
         } finally {
             setLoading(false);
         }
@@ -65,6 +80,7 @@ export default function StudentPaymentAccess() {
         if (!token) return;
 
         setProcessingId(id);
+        setError("");
         try {
             const res = await fetch(
                 `${BACKEND_URL}/api/admin/enrollments/${id}/payment-status`,
@@ -92,7 +108,7 @@ export default function StudentPaymentAccess() {
             }
         } catch (err) {
             console.error(err);
-            setError("Failed to process payment");
+            setError("Failed to process payment. Please try again.");
         } finally {
             setProcessingId(null);
         }
@@ -337,12 +353,12 @@ export default function StudentPaymentAccess() {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
                                                     <span className="text-indigo-600 font-medium">
-                                                        {e.student?.fullName?.charAt(0) || "S"}
+                                                        {getStudentInitial(e.student)}
                                                     </span>
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-gray-900">
-                                                        {e.student?.fullName || "Unknown"}
+                                                        {getStudentName(e.student)}
                                                     </p>
                                                     <p className="text-sm text-gray-500">
                                                         {e.student?.email || "No email"}

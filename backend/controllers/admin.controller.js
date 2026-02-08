@@ -160,7 +160,7 @@ export const getAdminProfile = async (req, res) => {
 export const getAllEnrollmentsForAdmin = async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
-            .populate("student", "name email")
+            .populate("student", "fullName email")
             .populate("course", "title");
 
         res.json({
@@ -168,7 +168,11 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
             enrollments,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Get All Enrollments Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to fetch enrollments" 
+        });
     }
 };
 
@@ -184,22 +188,34 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         // First, check if enrollment exists
         const existingEnrollment = await Enrollment.findById(enrollmentId);
         if (!existingEnrollment) {
-            return res.status(404).json({ message: "Enrollment not found" });
+            return res.status(404).json({ 
+                success: false,
+                message: "Enrollment not found" 
+            });
         }
 
         if (status !== "PAID") {
-            return res.status(400).json({ message: "Only PAID allowed" });
+            return res.status(400).json({ 
+                success: false,
+                message: "Only PAID status is allowed" 
+            });
         }
 
         // Check if already paid
         if (existingEnrollment.paymentStatus === "PAID") {
-            return res.status(400).json({ message: "Enrollment already paid" });
+            return res.status(400).json({ 
+                success: false,
+                message: "Enrollment already paid" 
+            });
         }
 
         // Get course to calculate amounts
         const course = await Course.findById(existingEnrollment.course);
         if (!course) {
-            return res.status(404).json({ message: "Course not found" });
+            return res.status(404).json({ 
+                success: false,
+                message: "Course not found" 
+            });
         }
 
         // Calculate amounts (10% admin cut, 90% teacher)
@@ -230,25 +246,37 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         
         await existingEnrollment.save();
 
-        // Now populate for receipt generation
+        // Now populate for receipt generation with correct field names
         const enrollment = await Enrollment.findById(enrollmentId)
             .populate("student", "fullName email")
             .populate("course", "title price");
 
-        // 1️⃣ Generate image with populated data
-        const imagePath = await generateReceiptImage(enrollment);
+        // Try to generate receipt image, but don't fail if it doesn't work
+        let receiptUrl = null;
+        let receiptPublicId = null;
+        
+        try {
+            // 1️⃣ Generate image with populated data
+            const imagePath = await generateReceiptImage(enrollment);
 
-        // 2️⃣ Upload image to Cloudinary
-        const uploadResult = await cloudinary.uploader.upload(imagePath, {
-            folder: "receipts",
-            resource_type: "image",
-        });
+            // 2️⃣ Upload image to Cloudinary
+            const uploadResult = await cloudinary.uploader.upload(imagePath, {
+                folder: "receipts",
+                resource_type: "image",
+            });
 
-        existingEnrollment.receipt.public_id = uploadResult.public_id;
-        existingEnrollment.receipt.url = uploadResult.secure_url;
+            receiptUrl = uploadResult.secure_url;
+            receiptPublicId = uploadResult.public_id;
 
-        fs.unlinkSync(imagePath);
-        await existingEnrollment.save();
+            existingEnrollment.receipt.public_id = receiptPublicId;
+            existingEnrollment.receipt.url = receiptUrl;
+
+            fs.unlinkSync(imagePath);
+            await existingEnrollment.save();
+        } catch (receiptError) {
+            console.error("Receipt generation error:", receiptError);
+            // Continue without receipt - payment is still valid
+        }
 
         // Create finance transaction record
         const transaction = await FinanceTransaction.create({
@@ -308,8 +336,8 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
         res.json({
             success: true,
-            message: "Payment approved & receipt image generated",
-            receiptImage: uploadResult.secure_url,
+            message: "Payment approved successfully",
+            receiptImage: receiptUrl,
             finance: {
                 coursePrice,
                 adminAmount,
@@ -320,7 +348,10 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error("Payment approval error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to process payment" 
+        });
     }
 };
 
