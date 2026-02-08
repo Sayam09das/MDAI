@@ -23,7 +23,7 @@ export default function MyCourses() {
 
     try {
       const res = await fetch(
-        `${BACKEND_URL}/api/enroll/my-courses`,
+        `${BACKEND_URL}/api/enrollments/my-courses`,
         {
           method: "GET",
           headers: {

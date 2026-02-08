@@ -53,7 +53,7 @@ const AllCourse = () => {
     /* ================= ENROLL ================= */
     const handleEnroll = async (courseId) => {
         try {
-            const res = await fetch(`${BACKEND_URL}/api/enroll/${courseId}`, {
+            const res = await fetch(`${BACKEND_URL}/api/enrollments/${courseId}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
