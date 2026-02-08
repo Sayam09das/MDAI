@@ -2444,37 +2444,33 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
     try {
         const { search, status, page = 1, limit = 50 } = req.query;
 
-        // Get all paid enrollments with course and teacher info
+        // Get all paid enrollments with course and instructor info populated
         const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
-            .populate('course', 'title instructor')
+            .populate({
+                path: 'course',
+                select: 'title instructor',
+                populate: { path: 'instructor', select: 'fullName email' }
+            })
             .populate('student', 'fullName email')
             .sort({ createdAt: -1 });
 
-        // Group by teacher
+        // Group by teacher using populated instructor data
         const teacherPayments = {};
         
-        // Get unique teacher IDs from courses
-        const teacherIds = [...new Set(enrollments
-            .filter(e => e.course?.instructor)
-            .map(e => e.course.instructor))];
-        
-        // Fetch teacher names from Teacher collection
-        const teachers = await Teacher.find({ _id: { $in: teacherIds } }).select('name email').lean();
-        const teacherMap = {};
-        teachers.forEach(t => {
-            teacherMap[t._id.toString()] = { 
-                name: t.name || 'Unknown Teacher',
-                email: t.email || 'N/A'
-            };
-        });
-
         enrollments.forEach(e => {
-            const teacherId = e.course?.instructor?.toString() || 'unknown';
+            const teacherId = e.course?.instructor?._id?.toString() || e.course?.instructor?.toString() || 'unknown';
+            
+            // Get instructor name from populated data
+            const instructorName = e.course?.instructor?.fullName || 
+                                  e.course?.instructor?.name || 
+                                  'Unknown Teacher';
+            const instructorEmail = e.course?.instructor?.email || 'N/A';
+            
             if (!teacherPayments[teacherId]) {
                 teacherPayments[teacherId] = {
                     teacherId,
-                    teacherName: teacherMap[teacherId]?.name || 'Unknown Teacher',
-                    teacherEmail: teacherMap[teacherId]?.email || 'N/A',
+                    teacherName: instructorName,
+                    teacherEmail: instructorEmail,
                     totalPayouts: 0,
                     completedPayouts: 0,
                     pendingPayouts: 0,
