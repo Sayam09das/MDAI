@@ -18,7 +18,6 @@ import Login from "./Auth/Login"
 
 // Student Pages
 import StudentLayout from "./components/Dashboard/Student/StudentLayout"
-import PageLoader from "./components/common/PageLoader"
 import ReturnStudentMain from "./Pages/Student/Dashboard/MainStudentStats/ReturnStudentMain"
 import ReturnMyCourses from "./Pages/Student/Dashboard/MyCourses/ReturnMyCourses"
 import ReturnCourseProgress from "./Pages/Student/Dashboard/CourseProgress/ReturnCourseProgress"
@@ -31,8 +30,9 @@ import ReturnAttendence from "./Pages/Student/Dashboard/StudentAttendence/Return
 import ReturnCalendar from "./Pages/Student/Dashboard/StudentCalendar/ReturnCalendar"
 import ReturnSearch from "./Pages/Student/Dashboard/Search/ReturnSearch"
 import ReturnStudentMessages from "./Pages/Student/Dashboard/Messages/ReturnStudentMessages"
-import StudentAnnouncements from "./Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
-
+import StudentAnnouncements from "./Pages/Student/Dashboard/Announcements/ReturnAnnouncements"
+import ReturnStudentPayments from "./Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments"
+import StudentPaymentPage from "./Pages/Student/Dashboard/StudentPayments/StudentPaymentPage"
 
 // Teacher Pages
 import TeacherLayout from "./components/Dashboard/Teacher/TeacherLayout"
@@ -48,8 +48,8 @@ import ReturnTeacherSettings from "./Pages/teacher/Dashboard/MainTeacherSettings
 import ReturnTeacherResources from "./Pages/teacher/Dashboard/MainResources/ReturnTeacherResources"
 import ReturnSearchTeacher from "./Pages/teacher/Dashboard/MainSearch/ReturnSearch"
 import ReturnTeacherMessages from "./Pages/teacher/Dashboard/Messages/ReturnTeacherMessages"
-import TeacherAnnouncements from "./Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
-
+import TeacherAnnouncements from "./Pages/teacher/Dashboard/Announcements/ReturnAnnouncements"
+import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
 
 // Protected Routes
 import PublicRoute from "./ProtectedRoute/PublicRoute"
@@ -58,9 +58,9 @@ import TeacherProtectedRoute from "./ProtectedRoute/TeacherProtectedRoute"
 
 // 404 Page
 import NotFound from "./Pages/NotFound/NotFound"
-import ReturnStudentPayments from "./Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments"
-import StudentPaymentPage from "./Pages/Student/Dashboard/StudentPayments/StudentPaymentPage"
-import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
+
+// Payment Routes
+import PaymentRoutes from "./routes/PaymentRoutes"
 
 const App = () => {
   return (
@@ -124,18 +124,7 @@ const App = () => {
           <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="payments" element={<ReturnStudentPayments />} />
           <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
-
         </Route>
-
-        {/* Standalone Payment Page Route */}
-        <Route
-          path="/payment/:enrollmentId"
-          element={
-            <StudentProtectedRoute>
-              <StudentPaymentPage />
-            </StudentProtectedRoute>
-          }
-        />
 
         {/* Teacher Routes */}
         <Route
@@ -160,8 +149,10 @@ const App = () => {
           <Route path="messages" element={<ReturnTeacherMessages />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
           <Route path="finance" element={<ReturnTeacherFinance />} />
-
         </Route>
+
+        {/* Payment Routes */}
+        <Route path="*" element={<PaymentRoutes />} />
 
         {/* 404 - Catch-all route (MUST be last) */}
         <Route path="*" element={<NotFound />} />
@@ -171,4 +162,3 @@ const App = () => {
 }
 
 export default App
-
