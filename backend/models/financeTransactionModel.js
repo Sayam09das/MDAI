@@ -116,18 +116,13 @@ financeTransactionSchema.index({ student: 1 });
 financeTransactionSchema.index({ teacher: 1 });
 financeTransactionSchema.index({ course: 1 });
 
-// Pre-save middleware to calculate netAmount
-financeTransactionSchema.pre('save', function(next) {
-    try {
-        if (this.grossAmount && this.adminAmount) {
-            this.netAmount = this.grossAmount - this.adminAmount;
-        } else if (this.grossAmount && this.adminPercentage) {
-            this.adminAmount = (this.grossAmount * this.adminPercentage) / 100;
-            this.netAmount = this.grossAmount - this.adminAmount;
-        }
-        if (next) next();
-    } catch (error) {
-        if (next) next(error);
+// Pre-save middleware to calculate netAmount (Mongoose 7+ compatible - no next parameter)
+financeTransactionSchema.pre('save', async function() {
+    if (this.grossAmount && this.adminAmount) {
+        this.netAmount = this.grossAmount - this.adminAmount;
+    } else if (this.grossAmount && this.adminPercentage) {
+        this.adminAmount = (this.grossAmount * this.adminPercentage) / 100;
+        this.netAmount = this.grossAmount - this.adminAmount;
     }
 });
 

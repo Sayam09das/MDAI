@@ -48,7 +48,8 @@ export default function TeacherPayments() {
             const data = await res.json();
             console.log("Teacher payments data:", data);
             
-            // Transform data to include teacher info
+            // Transform data to include combined teacher info
+            // Each teacher has one row with total earnings across all courses
             const paymentsArray = (data.payments || []).map(p => ({
                 _id: p.teacherId,
                 teacherName: p.teacherName || "Unknown Teacher",
@@ -56,14 +57,15 @@ export default function TeacherPayments() {
                 amount: p.totalPayouts || 0,
                 status: p.totalPayouts > 0 ? "COMPLETED" : "PENDING",
                 createdAt: new Date(),
-                courseName: p.transactions?.[0]?.courseName || "N/A"
+                totalTransactions: p.transactions?.length || 0,
+                courses: [...new Set(p.transactions?.map(t => t.courseName) || [])].length
             }));
 
             setPayments(paymentsArray);
             setStats({
-                totalPaid: data.stats?.completedPayouts || 0,
+                totalPaid: data.stats?.completedPayouts || data.stats?.totalPayouts || 0,
                 pending: data.stats?.pendingPayouts || 0,
-                totalTeachers: data.stats?.totalTeachers || 0,
+                totalTeachers: data.stats?.totalTeachers || paymentsArray.length,
             });
             setError("");
         } catch (err) {
@@ -198,10 +200,10 @@ export default function TeacherPayments() {
                                     <th className="p-4 text-left">ID</th>
                                     <th className="p-4 text-left">Teacher</th>
                                     <th className="p-4 text-left">Email</th>
-                                    <th className="p-4 text-center">Amount</th>
+                                    <th className="p-4 text-center">Total Earnings</th>
                                     <th className="p-4 text-center">Status</th>
-                                    <th className="p-4 text-center">Date</th>
-                                    <th className="p-4 text-center">Course</th>
+                                    <th className="p-4 text-center">Courses</th>
+                                    <th className="p-4 text-center">Transactions</th>
                                 </tr>
                             </thead>
 <tbody>
@@ -247,13 +249,13 @@ export default function TeacherPayments() {
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className="text-gray-600">
-                                                {formatDate(payment.createdAt)}
+                                            <span className="text-gray-600 font-medium">
+                                                {payment.courses || 0}
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
                                             <span className="text-gray-600">
-                                                {payment.courseName || "N/A"}
+                                                {payment.totalTransactions || 0}
                                             </span>
                                         </td>
                                     </motion.tr>
