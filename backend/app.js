@@ -69,7 +69,7 @@ database();
 app.use("/api/auth", authRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/enroll", enrollmentRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/resource", resourceRoutes);
