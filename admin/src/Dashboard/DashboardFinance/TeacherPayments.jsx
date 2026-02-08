@@ -46,17 +46,18 @@ export default function TeacherPayments() {
             }
 
             const data = await res.json();
+            console.log("Teacher payments data:", data);
             
             // Transform data to include teacher info
-            const paymentsArray = data.payments?.map(p => ({
+            const paymentsArray = (data.payments || []).map(p => ({
                 _id: p.teacherId,
-                teacherName: p.teacherName,
+                teacherName: p.teacherName || "Unknown Teacher",
                 teacherEmail: p.teacherEmail || "N/A",
-                amount: p.totalPayouts,
+                amount: p.totalPayouts || 0,
                 status: p.totalPayouts > 0 ? "COMPLETED" : "PENDING",
                 createdAt: new Date(),
                 courseName: p.transactions?.[0]?.courseName || "N/A"
-            })) || [];
+            }));
 
             setPayments(paymentsArray);
             setStats({

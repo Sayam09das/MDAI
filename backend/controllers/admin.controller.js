@@ -1745,13 +1745,13 @@ export const getStudentAnalyticsAdmin = async (req, res) => {
                 }))
             },
             recentEnrollments: recentEnrollments.map(e => ({
-                id: e._id,
-                student: e.student?.fullName || 'Unknown',
-                email: e.student?.email || '',
-                course: e.course?.title || 'Unknown',
-                status: e.status,
-                paymentStatus: e.paymentStatus,
-                progress: e.progress,
+                id: e._id.toString(),
+                student: e.student?.fullName || 'Unknown Student',
+                email: e.student?.email || 'N/A',
+                course: e.course?.title || 'Unknown Course',
+                status: e.status || 'ACTIVE',
+                paymentStatus: e.paymentStatus || 'PENDING',
+                progress: e.progress || 0,
                 time: e.createdAt
             }))
         });
@@ -2444,33 +2444,58 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
     try {
         const { search, status, page = 1, limit = 50 } = req.query;
 
-        // Get all paid enrollments with course and instructor info populated
-        const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
-            .populate({
-                path: 'course',
-                select: 'title instructor',
-                populate: { path: 'instructor', select: 'fullName email' }
-            })
+        // First, try to get data from FinanceTransaction collection
+        let transactions = await FinanceTransaction.find({ 
+            type: 'PAYMENT',
+            status: 'COMPLETED'
+        })
+            .populate('teacher', 'name email')
             .populate('student', 'fullName email')
+            .populate('course', 'title')
             .sort({ createdAt: -1 });
 
-        // Group by teacher using populated instructor data
+        // If no transactions found, fallback to enrollments
+        if (transactions.length === 0) {
+            const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
+                .populate({
+                    path: 'course',
+                    select: 'title instructor',
+                    populate: { path: 'instructor', select: 'name email' }
+                })
+                .populate('student', 'fullName email')
+                .sort({ createdAt: -1 });
+
+            // Convert enrollments to transaction format
+            transactions = enrollments.map(e => ({
+                _id: e._id,
+                teacher: e.course?.instructor,
+                student: e.student,
+                course: e.course,
+                teacherAmount: e.teacherAmount || 0,
+                status: 'COMPLETED',
+                createdAt: e.createdAt
+            }));
+        }
+
+        // Group by teacher
         const teacherPayments = {};
         
-        enrollments.forEach(e => {
-            const teacherId = e.course?.instructor?._id?.toString() || e.course?.instructor?.toString() || 'unknown';
+        transactions.forEach(t => {
+            const teacherId = t.teacher?._id?.toString() || 
+                             t.teacher?.toString() || 
+                             'unknown';
             
-            // Get instructor name from populated data
-            const instructorName = e.course?.instructor?.fullName || 
-                                  e.course?.instructor?.name || 
-                                  'Unknown Teacher';
-            const instructorEmail = e.course?.instructor?.email || 'N/A';
+            // Get teacher name from populated data or fallback
+            const teacherName = t.teacher?.name || 
+                               t.teacher?.fullName || 
+                               'Unknown Teacher';
+            const teacherEmail = t.teacher?.email || 'N/A';
             
             if (!teacherPayments[teacherId]) {
                 teacherPayments[teacherId] = {
                     teacherId,
-                    teacherName: instructorName,
-                    teacherEmail: instructorEmail,
+                    teacherName,
+                    teacherEmail,
                     totalPayouts: 0,
                     completedPayouts: 0,
                     pendingPayouts: 0,
@@ -2478,15 +2503,15 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
                 };
             }
             
-            const teacherAmount = e.teacherAmount || 0;
+            const teacherAmount = t.teacherAmount || 0;
             teacherPayments[teacherId].totalPayouts += teacherAmount;
             teacherPayments[teacherId].transactions.push({
-                id: e._id,
+                id: t._id,
                 amount: teacherAmount,
-                status: 'COMPLETED',
-                studentName: e.student?.fullName || 'Unknown',
-                courseName: e.course?.title || 'Unknown',
-                createdAt: e.createdAt
+                status: t.status,
+                studentName: t.student?.fullName || 'Unknown',
+                courseName: t.course?.title || 'Unknown',
+                createdAt: t.createdAt
             });
             teacherPayments[teacherId].completedPayouts += teacherAmount;
         });
