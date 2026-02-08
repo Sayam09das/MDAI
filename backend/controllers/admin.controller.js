@@ -2453,12 +2453,28 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
         // Group by teacher
         const teacherPayments = {};
         
+        // Get unique teacher IDs from courses
+        const teacherIds = [...new Set(enrollments
+            .filter(e => e.course?.instructor)
+            .map(e => e.course.instructor))];
+        
+        // Fetch teacher names from Teacher collection
+        const teachers = await Teacher.find({ _id: { $in: teacherIds } }).select('name email').lean();
+        const teacherMap = {};
+        teachers.forEach(t => {
+            teacherMap[t._id.toString()] = { 
+                name: t.name || 'Unknown Teacher',
+                email: t.email || 'N/A'
+            };
+        });
+
         enrollments.forEach(e => {
             const teacherId = e.course?.instructor?.toString() || 'unknown';
             if (!teacherPayments[teacherId]) {
                 teacherPayments[teacherId] = {
                     teacherId,
-                    teacherName: e.course?.instructorName || 'Unknown',
+                    teacherName: teacherMap[teacherId]?.name || 'Unknown Teacher',
+                    teacherEmail: teacherMap[teacherId]?.email || 'N/A',
                     totalPayouts: 0,
                     completedPayouts: 0,
                     pendingPayouts: 0,

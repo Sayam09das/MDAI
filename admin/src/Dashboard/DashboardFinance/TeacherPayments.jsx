@@ -51,7 +51,7 @@ export default function TeacherPayments() {
             const paymentsArray = data.payments?.map(p => ({
                 _id: p.teacherId,
                 teacherName: p.teacherName,
-                teacherEmail: p.teacherId?.substring(0, 8) + "...", // Using truncated ID as fallback
+                teacherEmail: p.teacherEmail || "N/A",
                 amount: p.totalPayouts,
                 status: p.totalPayouts > 0 ? "COMPLETED" : "PENDING",
                 createdAt: new Date(),
