@@ -540,6 +540,11 @@ export const getRecipients = async (req, res) => {
             ];
         } else if (senderRole === "admin") {
             // Admins can complain to anyone
+            // Get students and teachers for admin
+            const students = await User.find({ isSuspended: false })
+                .select("fullName email")
+                .lean();
+            
             recipients = [
                 ...students.map(s => ({
                     userId: s._id,

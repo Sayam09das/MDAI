@@ -27,9 +27,15 @@
 - **Fix**: Added null checks and default values (?. operators and fallback values)
 - **Status**: Completed
 
+### 6. Backend getRecipients Bug ✅
+- **Problem**: Admin case referenced undefined `students` and `teachers` arrays
+- **Fix**: Added database queries for students and teachers in admin case
+- **Status**: Completed
+
 ## Files Modified
 - `client/src/Pages/teacher/Dashboard/Complaints/TeacherComplaints.jsx`
 - `client/src/Pages/Student/Dashboard/Complaints/StudentComplaints.jsx`
+- `backend/controllers/complaint.controller.js`
 
 ## Changes Made
 1. **Removed duplicate code**: Deleted the malformed duplicate imports and second component export at the end of the TeacherComplaints file
@@ -38,6 +44,7 @@
 4. **Added error boundaries**: All API calls wrapped in try-catch with proper error messages
 5. **Null safety**: Used optional chaining (?.) and fallback values for all potentially undefined properties
 6. **Safe array handling**: Added fallback to empty arrays for complaints and recipients
+7. **Fixed admin recipients bug**: Added missing database queries for students and teachers
 
 ## Testing Checklist
 - [x] Component compiles without syntax errors
@@ -45,11 +52,13 @@
 - [x] API calls handle errors gracefully
 - [x] Null/undefined values don't crash the UI
 - [x] Backend URL properly resolved
+- [x] Admin recipients show all users (students, teachers, admins)
 
 ## Related Pages
 - Student Complaints: `client/src/Pages/Student/Dashboard/Complaints/StudentComplaints.jsx`
 - Teacher Complaints: `client/src/Pages/teacher/Dashboard/Complaints/TeacherComplaints.jsx`
 - Backend API: `backend/routes/complaint.routes.js`
+- Backend Controller: `backend/controllers/complaint.controller.js`
 - Config: `client/src/lib/config.js`
 
 ## Deployment Note
