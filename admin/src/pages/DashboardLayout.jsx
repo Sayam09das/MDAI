@@ -346,7 +346,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                 )}
             </AnimatePresence>
 
-            {/* Sidebar */}
+{/* Sidebar */}
             <motion.aside
                 initial={false}
                 animate={{
@@ -354,10 +354,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                     x: window.innerWidth >= 768 ? 0 : isOpen ? 0 : "-100%",
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-50 shadow-xl"
+                className="fixed left-0 top-0 h-screen bg-white border-r border-slate-200 z-50 shadow-xl flex flex-col"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-slate-200">
+                <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-slate-200">
                     <motion.div
                         animate={{ opacity: isCollapsed ? 0 : 1 }}
                         className="flex items-center gap-3"
@@ -399,7 +399,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 }}
-                        className="p-4"
+                        className="flex-shrink-0 p-4"
                     >
                         <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-shadow font-medium text-sm">
                             <Zap className="w-4 h-4" />
@@ -408,8 +408,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                     </motion.div>
                 )}
 
-                {/* Navigation */}
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                {/* Navigation - Scrollable Area */}
+                <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                     <motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
