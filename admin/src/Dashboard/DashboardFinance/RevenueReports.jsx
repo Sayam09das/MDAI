@@ -39,7 +39,15 @@ export default function RevenueReports() {
         totalRevenue: 0,
         adminShare: 0,
         teacherShare: 0,
-        growth: 0,
+        pendingPayouts: 0,
+        totalTransactions: 0,
+    });
+    const [charts, setCharts] = useState({
+        monthlyRevenue: [],
+        categoryRevenue: [],
+        dailyRevenue: [],
+        topCourses: [],
+        topTeachers: [],
     });
     const token = localStorage.getItem("adminToken");
 
@@ -57,16 +65,39 @@ export default function RevenueReports() {
             }
 
             const data = await res.json();
-            setReports(data.reports || []);
+            
+            // Transform top courses to reports format
+            const topCourses = data.charts?.topCourses || [];
+            const reportsArray = topCourses.map((course, index) => ({
+                _id: course.id || `course-${index}`,
+                period: dateRange === 'all' ? 'All Time' : dateRange,
+                totalRevenue: course.revenue || 0,
+                adminShare: Math.round((course.revenue || 0) * 0.1 * 100) / 100,
+                teacherShare: Math.round((course.revenue || 0) * 0.9 * 100) / 100,
+                transactionCount: course.enrollments || 0,
+                generatedAt: new Date().toISOString(),
+                title: course.title,
+            }));
+
+            setReports(reportsArray);
             setStats({
-                totalRevenue: data.totalRevenue || 0,
-                adminShare: data.adminShare || 0,
-                teacherShare: data.teacherShare || 0,
-                growth: data.growth || 0,
+                totalRevenue: data.stats?.totalRevenue || 0,
+                adminShare: data.stats?.totalAdminEarnings || 0,
+                teacherShare: data.stats?.totalTeacherEarnings || 0,
+                pendingPayouts: data.stats?.pendingPayouts || 0,
+                totalTransactions: data.stats?.totalTransactions || 0,
+            });
+            setCharts({
+                monthlyRevenue: data.charts?.monthlyRevenue || [],
+                categoryRevenue: data.charts?.categoryRevenue || [],
+                dailyRevenue: data.charts?.dailyRevenue || [],
+                topCourses: data.charts?.topCourses || [],
+                topTeachers: data.charts?.topTeachers || [],
             });
             setError("");
         } catch (err) {
             setError(err.message);
+            console.error("Fetch revenue reports error:", err);
         } finally {
             setLoading(false);
         }
@@ -150,18 +181,11 @@ export default function RevenueReports() {
                         <div className="bg-indigo-100 p-3 rounded-lg">
                             <DollarSign className="text-indigo-600" size={24} />
                         </div>
-                        {stats.growth >= 0 ? (
-                            <TrendingUp className="text-green-500" size={20} />
-                        ) : (
-                            <TrendingDown className="text-red-500" size={20} />
-                        )}
+                        <TrendingUp className="text-green-500" size={20} />
                     </div>
                     <h3 className="text-gray-600 text-sm font-medium mb-1">Total Revenue</h3>
                     <p className="text-3xl font-bold text-gray-900">
                         {formatCurrency(stats.totalRevenue)}
-                    </p>
-                    <p className={`text-sm mt-2 ${stats.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {stats.growth >= 0 ? '+' : ''}{stats.growth}% from last period
                     </p>
                 </motion.div>
 
@@ -197,16 +221,19 @@ export default function RevenueReports() {
 
                 <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500"
+                    className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-amber-500"
                 >
                     <div className="flex items-center justify-between mb-4">
-                        <div className="bg-purple-100 p-3 rounded-lg">
-                            <Calendar className="text-purple-600" size={24} />
+                        <div className="bg-amber-100 p-3 rounded-lg">
+                            <Calendar className="text-amber-600" size={24} />
                         </div>
                     </div>
-                    <h3 className="text-gray-600 text-sm font-medium mb-1">Reports Generated</h3>
+                    <h3 className="text-gray-600 text-sm font-medium mb-1">Pending Payouts</h3>
                     <p className="text-3xl font-bold text-gray-900">
-                        {reports.length}
+                        {formatCurrency(stats.pendingPayouts)}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {stats.totalTransactions} transactions
                     </p>
                 </motion.div>
             </div>
@@ -228,13 +255,13 @@ export default function RevenueReports() {
                         <table className="w-full">
                             <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                                 <tr>
-                                    <th className="p-4 text-left">Report ID</th>
-                                    <th className="p-4 text-left">Period</th>
+                                    <th className="p-4 text-left">ID</th>
+                                    <th className="p-4 text-left">Course</th>
                                     <th className="p-4 text-center">Total Revenue</th>
                                     <th className="p-4 text-center">Admin (10%)</th>
                                     <th className="p-4 text-center">Teachers (90%)</th>
-                                    <th className="p-4 text-center">Transactions</th>
-                                    <th className="p-4 text-center">Generated</th>
+                                    <th className="p-4 text-center">Enrollments</th>
+                                    <th className="p-4 text-center">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -253,7 +280,7 @@ export default function RevenueReports() {
                                         </td>
                                         <td className="p-4">
                                             <span className="font-medium text-gray-900">
-                                                {report.period || "N/A"}
+                                                {report.title || "N/A"}
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">

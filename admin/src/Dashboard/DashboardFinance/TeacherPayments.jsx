@@ -46,15 +46,28 @@ export default function TeacherPayments() {
             }
 
             const data = await res.json();
-            setPayments(data.payments || []);
+            
+            // Transform data to include teacher info
+            const paymentsArray = data.payments?.map(p => ({
+                _id: p.teacherId,
+                teacherName: p.teacherName,
+                teacherEmail: p.teacherId?.substring(0, 8) + "...", // Using truncated ID as fallback
+                amount: p.totalPayouts,
+                status: p.totalPayouts > 0 ? "COMPLETED" : "PENDING",
+                createdAt: new Date(),
+                courseName: p.transactions?.[0]?.courseName || "N/A"
+            })) || [];
+
+            setPayments(paymentsArray);
             setStats({
-                totalPaid: data.totalPaid || 0,
-                pending: data.pending || 0,
-                totalTeachers: data.totalTeachers || 0,
+                totalPaid: data.stats?.completedPayouts || 0,
+                pending: data.stats?.pendingPayouts || 0,
+                totalTeachers: data.stats?.totalTeachers || 0,
             });
             setError("");
         } catch (err) {
             setError(err.message);
+            console.error("Fetch teacher payments error:", err);
         } finally {
             setLoading(false);
         }

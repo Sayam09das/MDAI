@@ -2438,59 +2438,60 @@ export const getAllTransactionsAdmin = async (req, res) => {
 };
 
 /* =========================================
-   ADMIN: GET TEACHER PAYMENTS
+   ADMIN: GET TEACHER PAYMENTS (REAL-TIME)
    ========================================= */
 export const getTeacherPaymentsAdmin = async (req, res) => {
     try {
         const { search, status, page = 1, limit = 50 } = req.query;
 
-        let query = { type: 'PAYOUT' };
-
-        if (search) {
-            query.$or = [
-                { 'teacher.name': { $regex: search, $options: 'i' } },
-                { 'teacher.email': { $regex: search, $options: 'i' } }
-            ];
-        }
-
-        if (status && status !== 'all') {
-            query.status = status;
-        }
-
-        // Get all payout transactions
-        const payouts = await FinanceTransaction.find({ type: 'PAYOUT' })
-            .populate('teacher', 'name email')
+        // Get all paid enrollments with course and teacher info
+        const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
+            .populate('course', 'title instructor')
+            .populate('student', 'fullName email')
             .sort({ createdAt: -1 });
 
         // Group by teacher
         const teacherPayments = {};
-        payouts.forEach(payout => {
-            const teacherId = payout.teacher?._id?.toString() || 'unknown';
+        
+        enrollments.forEach(e => {
+            const teacherId = e.course?.instructor?.toString() || 'unknown';
             if (!teacherPayments[teacherId]) {
                 teacherPayments[teacherId] = {
-                    teacher: payout.teacher,
+                    teacherId,
+                    teacherName: e.course?.instructorName || 'Unknown',
                     totalPayouts: 0,
                     completedPayouts: 0,
                     pendingPayouts: 0,
                     transactions: []
                 };
             }
-            teacherPayments[teacherId].totalPayouts += payout.teacherAmount || 0;
+            
+            const teacherAmount = e.teacherAmount || 0;
+            teacherPayments[teacherId].totalPayouts += teacherAmount;
             teacherPayments[teacherId].transactions.push({
-                id: payout._id,
-                amount: payout.teacherAmount,
-                status: payout.status,
-                createdAt: payout.createdAt,
-                completedAt: payout.completedAt
+                id: e._id,
+                amount: teacherAmount,
+                status: 'COMPLETED',
+                studentName: e.student?.fullName || 'Unknown',
+                courseName: e.course?.title || 'Unknown',
+                createdAt: e.createdAt
             });
-            if (payout.status === 'COMPLETED') {
-                teacherPayments[teacherId].completedPayouts += payout.teacherAmount || 0;
-            } else {
-                teacherPayments[teacherId].pendingPayouts += payout.teacherAmount || 0;
-            }
+            teacherPayments[teacherId].completedPayouts += teacherAmount;
         });
 
-        const paymentsList = Object.values(teacherPayments);
+        // Apply search filter
+        let paymentsList = Object.values(teacherPayments);
+        
+        if (search) {
+            const searchLower = search.toLowerCase();
+            paymentsList = paymentsList.filter(p => 
+                p.teacherName?.toLowerCase().includes(searchLower) ||
+                p.teacherId?.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Sort by total payouts descending
+        paymentsList.sort((a, b) => b.totalPayouts - a.totalPayouts);
 
         // Pagination
         const startIndex = (page - 1) * limit;
@@ -2519,7 +2520,7 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
 };
 
 /* =========================================
-   ADMIN: GET REVENUE REPORTS
+   ADMIN: GET REVENUE REPORTS (REAL-TIME)
    ========================================= */
 export const getRevenueReportsAdmin = async (req, res) => {
     try {
@@ -2545,60 +2546,61 @@ export const getRevenueReportsAdmin = async (req, res) => {
                 startDate = new Date(0);
         }
 
-        // Get all transactions in range
-        const query = {
-            createdAt: { $gte: startDate, $lte: endDate }
-        };
-
-        const transactions = await FinanceTransaction.find(query)
-            .populate('course', 'title category')
-            .populate('teacher', 'name')
+        // Get all enrollments
+        const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
+            .populate('course', 'title category price')
             .sort({ createdAt: -1 });
 
-        // Calculate totals
-        const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
-        const totalRevenue = completedTransactions.reduce((sum, t) => sum + (t.grossAmount || 0), 0);
-        const totalAdminEarnings = completedTransactions.reduce((sum, t) => sum + (t.adminAmount || 0), 0);
-        const totalTeacherEarnings = completedTransactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0);
-        
-        // Pending payouts
-        const pendingTransactions = transactions.filter(t => t.status === 'PENDING');
-        const pendingPayouts = pendingTransactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0);
+        // Filter by date range
+        const filteredEnrollments = enrollments.filter(e => 
+            e.createdAt && new Date(e.createdAt) >= startDate && new Date(e.createdAt) <= endDate
+        );
 
-        // Monthly revenue data
+        // Calculate totals from enrollments
+        const totalRevenue = filteredEnrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const totalAdminEarnings = filteredEnrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
+        const totalTeacherEarnings = filteredEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+        
+        // Pending payouts (from LATER status enrollments)
+        const laterEnrollments = await Enrollment.find({ paymentStatus: 'LATER' });
+        const pendingPayouts = laterEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+
+        // Monthly revenue data from filtered enrollments
         const monthlyRevenue = {};
-        completedTransactions.forEach(t => {
-            const month = t.createdAt.toISOString().slice(0, 7); // YYYY-MM
-            if (!monthlyRevenue[month]) {
-                monthlyRevenue[month] = { revenue: 0, adminEarnings: 0, teacherEarnings: 0 };
+        filteredEnrollments.forEach(e => {
+            if (e.createdAt) {
+                const month = new Date(e.createdAt).toISOString().slice(0, 7); // YYYY-MM
+                if (!monthlyRevenue[month]) {
+                    monthlyRevenue[month] = { revenue: 0, adminEarnings: 0, teacherEarnings: 0 };
+                }
+                monthlyRevenue[month].revenue += e.amount || 0;
+                monthlyRevenue[month].adminEarnings += e.adminAmount || 0;
+                monthlyRevenue[month].teacherEarnings += e.teacherAmount || 0;
             }
-            monthlyRevenue[month].revenue += t.grossAmount || 0;
-            monthlyRevenue[month].adminEarnings += t.adminAmount || 0;
-            monthlyRevenue[month].teacherEarnings += t.teacherAmount || 0;
         });
 
         // Category-wise revenue
         const categoryRevenue = {};
-        completedTransactions.forEach(t => {
-            const category = t.course?.category || 'Other';
+        filteredEnrollments.forEach(e => {
+            const category = e.course?.category || 'Other';
             if (!categoryRevenue[category]) {
                 categoryRevenue[category] = 0;
             }
-            categoryRevenue[category] += t.grossAmount || 0;
+            categoryRevenue[category] += e.amount || 0;
         });
 
         // Top courses by revenue
         const courseRevenue = {};
-        completedTransactions.forEach(t => {
-            const courseId = t.course?._id?.toString();
+        filteredEnrollments.forEach(e => {
+            const courseId = e.course?._id?.toString();
             if (!courseRevenue[courseId]) {
                 courseRevenue[courseId] = {
-                    title: t.course?.title || 'Unknown',
+                    title: e.course?.title || 'Unknown',
                     revenue: 0,
                     transactions: 0
                 };
             }
-            courseRevenue[courseId].revenue += t.grossAmount || 0;
+            courseRevenue[courseId].revenue += e.amount || 0;
             courseRevenue[courseId].transactions += 1;
         });
 
@@ -2615,16 +2617,38 @@ export const getRevenueReportsAdmin = async (req, res) => {
             const dayEnd = new Date(dayStart);
             dayEnd.setDate(dayEnd.getDate() + 1);
 
-            const dayTransactions = completedTransactions.filter(t => 
-                t.createdAt >= dayStart && t.createdAt < dayEnd
+            const dayTransactions = filteredEnrollments.filter(e => 
+                e.createdAt && new Date(e.createdAt) >= dayStart && new Date(e.createdAt) < dayEnd
             );
 
             dailyRevenue.push({
                 date: dayStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-                revenue: dayTransactions.reduce((sum, t) => sum + (t.grossAmount || 0), 0),
+                revenue: dayTransactions.reduce((sum, e) => sum + (e.amount || 0), 0),
                 transactions: dayTransactions.length
             });
         }
+
+        // Teacher earnings breakdown
+        const teacherEarnings = {};
+        filteredEnrollments.forEach(e => {
+            if (e.course?.instructor) {
+                const teacherId = e.course.instructor.toString();
+                if (!teacherEarnings[teacherId]) {
+                    teacherEarnings[teacherId] = {
+                        teacherId: teacherId,
+                        name: e.course.instructorName || 'Unknown',
+                        earnings: 0,
+                        courses: 0
+                    };
+                }
+                teacherEarnings[teacherId].earnings += e.teacherAmount || 0;
+                teacherEarnings[teacherId].courses += 1;
+            }
+        });
+
+        const topTeachers = Object.values(teacherEarnings)
+            .sort((a, b) => b.earnings - a.earnings)
+            .slice(0, 5);
 
         res.json({
             success: true,
@@ -2634,7 +2658,7 @@ export const getRevenueReportsAdmin = async (req, res) => {
                 totalAdminEarnings,
                 totalTeacherEarnings,
                 pendingPayouts,
-                totalTransactions: completedTransactions.length
+                totalTransactions: filteredEnrollments.length
             },
             charts: {
                 monthlyRevenue: Object.entries(monthlyRevenue).map(([month, data]) => ({
@@ -2646,7 +2670,8 @@ export const getRevenueReportsAdmin = async (req, res) => {
                     revenue
                 })).sort((a, b) => b.revenue - a.revenue),
                 dailyRevenue,
-                topCourses
+                topCourses,
+                topTeachers
             }
         });
     } catch (error) {
