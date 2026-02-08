@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
     AlertCircle, 
     Send, 
-    Clock, 
     CheckCircle, 
     XCircle, 
     Eye, 
@@ -88,7 +87,7 @@ export default function TeacherComplaints() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
     useEffect(() => {
         // Check if user is authenticated
@@ -110,25 +109,31 @@ const token = localStorage.getItem("token");
             });
             const data = await res.json();
             if (data.success) {
-                setRecipients(data.recipients);
+                setRecipients(data.recipients || []);
             }
         } catch (err) {
             console.error("Fetch recipients error:", err);
+            setRecipients([]);
         }
     };
 
     const fetchComplaints = async () => {
         setLoading(true);
+        setError("");
         try {
             const res = await fetch(`${BACKEND_URL}/api/complaints/my?status=${filter}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
+            
             if (data.success) {
-                setComplaints(data.complaints);
+                setComplaints(data.complaints || []);
+            } else {
+                setError(data.message || "Failed to load complaints");
             }
         } catch (err) {
-            setError("Failed to load complaints");
+            console.error("Fetch complaints error:", err);
+            setError("Failed to load complaints. Please check your connection.");
         } finally {
             setLoading(false);
         }
@@ -167,6 +172,7 @@ const token = localStorage.getItem("token");
                 setError(data.message || "Failed to submit complaint");
             }
         } catch (err) {
+            console.error("Submit complaint error:", err);
             setError("Network error. Please try again.");
         } finally {
             setSubmitting(false);
@@ -179,10 +185,10 @@ const token = localStorage.getItem("token");
     });
 
     const stats = {
-        total: complaints.length,
-        pending: complaints.filter(c => c.status === "pending").length,
-        inReview: complaints.filter(c => c.status === "in_review").length,
-        resolved: complaints.filter(c => c.status === "resolved").length
+        total: complaints?.length || 0,
+        pending: complaints?.filter(c => c.status === "pending").length || 0,
+        inReview: complaints?.filter(c => c.status === "in_review").length || 0,
+        resolved: complaints?.filter(c => c.status === "resolved").length || 0
     };
 
     return (
@@ -292,21 +298,21 @@ const token = localStorage.getItem("token");
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(complaint.status)}`}>
-                                                {complaint.status.replace("_", " ").toUpperCase()}
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(complaint?.status)}`}>
+                                                {(complaint?.status || "pending").replace("_", " ").toUpperCase()}
                                             </span>
-                                            <span className={`text-xs font-medium ${getPriorityColor(complaint.priority)}`}>
-                                                {complaint.priority.toUpperCase()}
+                                            <span className={`text-xs font-medium ${getPriorityColor(complaint?.priority)}`}>
+                                                {(complaint?.priority || "medium").toUpperCase()}
                                             </span>
                                             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                {complaint.category.replace("_", " ")}
+                                                {(complaint?.category || "other").replace("_", " ")}
                                             </span>
                                         </div>
                                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            {complaint.title}
+                                            {complaint?.title || "Untitled Complaint"}
                                         </h3>
                                         <p className="text-gray-600 text-sm line-clamp-2">
-                                            {complaint.description}
+                                            {complaint?.description || "No description provided"}
                                         </p>
                                     </div>
                                     <motion.button
@@ -322,15 +328,15 @@ const token = localStorage.getItem("token");
                                 <div className="flex items-center gap-4 text-sm text-gray-500">
                                     <div className="flex items-center gap-1">
                                         <User size={14} />
-                                        <span>To: {complaint.recipient?.name}</span>
+                                        <span>To: {complaint?.recipient?.name || "Unknown"}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Calendar size={14} />
-                                        <span>{formatDate(complaint.createdAt)}</span>
+                                        <span>{formatDate(complaint?.createdAt)}</span>
                                     </div>
                                 </div>
 
-                                {complaint.adminResponse?.message && (
+                                {complaint?.adminResponse?.message && (
                                     <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
                                         <p className="text-sm text-green-700 font-medium">Admin Response:</p>
                                         <p className="text-sm text-green-600 mt-1">{complaint.adminResponse.message}</p>
@@ -527,45 +533,45 @@ const token = localStorage.getItem("token");
 
                             <div className="p-6 space-y-4">
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedComplaint.status)}`}>
-                                        {selectedComplaint.status.replace("_", " ").toUpperCase()}
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedComplaint?.status)}`}>
+                                        {(selectedComplaint?.status || "pending").replace("_", " ").toUpperCase()}
                                     </span>
-                                    <span className={`text-xs font-medium ${getPriorityColor(selectedComplaint.priority)}`}>
-                                        {selectedComplaint.priority.toUpperCase()}
+                                    <span className={`text-xs font-medium ${getPriorityColor(selectedComplaint?.priority)}`}>
+                                        {(selectedComplaint?.priority || "medium").toUpperCase()}
                                     </span>
                                 </div>
 
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{selectedComplaint.title}</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">{selectedComplaint?.title || "Untitled"}</h3>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Category: {selectedComplaint.category.replace("_", " ")}
+                                        Category: {(selectedComplaint?.category || "other").replace("_", " ")}
                                     </p>
                                 </div>
 
                                 <div className="bg-gray-50 rounded-lg p-4">
-                                    <p className="text-gray-700 whitespace-pre-wrap">{selectedComplaint.description}</p>
+                                    <p className="text-gray-700 whitespace-pre-wrap">{selectedComplaint?.description || "No description provided"}</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p className="text-gray-500">From:</p>
-                                        <p className="font-medium">{selectedComplaint.sender?.name}</p>
+                                        <p className="font-medium">{selectedComplaint?.sender?.name || "Unknown"}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-500">To:</p>
-                                        <p className="font-medium">{selectedComplaint.recipient?.name}</p>
+                                        <p className="font-medium">{selectedComplaint?.recipient?.name || "Unknown"}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-500">Submitted:</p>
-                                        <p className="font-medium">{formatDate(selectedComplaint.createdAt)}</p>
+                                        <p className="font-medium">{formatDate(selectedComplaint?.createdAt)}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-500">Last Updated:</p>
-                                        <p className="font-medium">{formatDate(selectedComplaint.updatedAt)}</p>
+                                        <p className="font-medium">{formatDate(selectedComplaint?.updatedAt)}</p>
                                     </div>
                                 </div>
 
-                                {selectedComplaint.adminResponse?.message && (
+                                {selectedComplaint?.adminResponse?.message && (
                                     <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                                         <p className="text-sm font-medium text-green-700 mb-1">Admin Response:</p>
                                         <p className="text-sm text-green-600">{selectedComplaint.adminResponse.message}</p>
@@ -584,3 +590,4 @@ const token = localStorage.getItem("token");
         </div>
     );
 }
+
