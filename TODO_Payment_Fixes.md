@@ -2,70 +2,99 @@
 
 ## Issues Fixed:
 1. **Backend Fix**: `TypeError: next is not a function` in `financeTransactionModel.js`
-2. **Frontend Fix**: Teacher Payments UI to show individual payment records per teacher
+2. **Teacher Name/Email NOT showing** - Root cause identified and fixed
 
-## Root Cause Analysis:
-The original issue was that the backend `getTeacherPaymentsAdmin` controller was:
-1. **Grouping payments by teacher** - merging all transactions into one row per teacher
-2. **Not properly populating teacher data** - the `populate()` wasn't returning teacher info correctly
-3. **Frontend was receiving grouped data** instead of individual transactions
+## Root Cause Analysis (Why Teacher Names Were Not Showing):
 
-This caused all payments to appear under "Unknown Teacher" because the teacher population wasn't working properly.
+### Problem 1: Wrong Schema Reference
+- **Course.js** had: `ref: "User"` for instructor field
+- **Should be**: `ref: "Teacher"`
+- **Result**: When populating instructor, Mongoose looked in User collection instead of Teacher
 
-## Implementation Steps Completed:
+### Problem 2: Wrong Field Names in Populate
+- **Backend** used: `.populate('teacher', 'name email')`
+- **Teacher Schema** has: `fullName` (NOT `name`)
+- **Result**: Populate returned undefined for name
 
-### Step 1: Backend - financeTransactionModel.js ✅
-- Changed `pre('save', function(next)` to `pre('save', async function()`
-- Removed all `next()` calls as they're not needed in Mongoose 7+
-
-### Step 2: Backend - admin.controller.js (getTeacherPaymentsAdmin) ✅
-- **Fixed the root cause**: Removed grouping by teacher
-- Now returns **individual transaction records** (one row per payment)
-- Properly populates `teacher`, `student`, and `course` fields
-- Added fallback to enrollments if no FinanceTransaction records exist
-- Added proper search filtering on individual transactions
-- Returns accurate stats (totalTransactions, totalTeachers, totalPayouts)
-
-### Step 3: Frontend - TeacherPayments.jsx ✅
-- Updated to display **individual payments** (one row per transaction)
-- Table columns now show:
-  - **Payment ID** - Transaction ID
-  - **Teacher** - Teacher name (populated from backend)
-  - **Email** - Teacher email
-  - **Course** - Course name (which course generated the payment)
-  - **Amount** - Payment amount for this transaction
-  - **Status** - Payment status (COMPLETED/PENDING)
-  - **Date** - Transaction date
-- Added debug logging to console for troubleshooting
-- Updated stats to show total transactions count
-
-## How It Works Now:
-
-1. **When admin approves a payment** (`updatePaymentStatusByAdmin`):
-   - Creates a FinanceTransaction record with `teacher: course.instructor`
-   - Teacher ID is properly saved
-
-2. **When viewing teacher payments** (`getTeacherPaymentsAdmin`):
-   - Fetches all FinanceTransaction records
-   - Populates `teacher` field with teacher data
-   - Returns **individual records** (not grouped)
-   - Each payment shows its own teacher, course, amount, date
-
-3. **Frontend displays**:
-   - One row per payment transaction
-   - Each row shows the correct teacher name
-   - Each row shows the course name
-   - No aggregation/merging of payments
-
-## Expected Behavior:
-- Teacher "John Doe" with 3 course payments → 3 separate rows in the table
-- Each row shows: Teacher Name, Course Name, Amount, Date, Status
-- Different teachers appear on different rows
-- No more "Unknown Teacher" or merged payments
+### Problem 3: Frontend Using Wrong Field
+- **Frontend** used: `payment.teacherName = p.teacher?.name`
+- **Should be**: `payment.teacherName = p.teacher?.fullName`
+- **Result**: Even if populate worked, frontend couldn't access the field
 
 ## Files Modified:
-1. `backend/models/financeTransactionModel.js` - Fixed pre-save middleware
-2. `backend/controllers/admin.controller.js` - Fixed getTeacherPaymentsAdmin to return individual transactions
-3. `admin/src/Dashboard/DashboardFinance/TeacherPayments.jsx` - Updated UI to display individual payments
+
+### 1. `backend/models/Course.js` ✅
+Changed instructor reference from `"User"` to `"Teacher"`:
+```javascript
+instructor: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Teacher",  // Changed from "User"
+  required: true,
+},
+```
+
+### 2. `backend/controllers/admin.controller.js` ✅
+Fixed populate to use correct field names:
+```javascript
+// FinanceTransaction populate
+.populate('teacher', 'fullName email')  // Changed from 'name email'
+
+// Enrollment fallback populate  
+.populate({ path: 'instructor', select: 'fullName email' })  // Changed from 'name email'
+
+// Search filter
+t.teacher?.fullName?.toLowerCase().includes(searchLower)  // Changed from 'name'
+```
+
+### 3. `admin/src/Dashboard/DashboardFinance/TeacherPayments.jsx` ✅
+Fixed frontend to access correct field:
+```javascript
+teacherName: p.teacher?.fullName || "Unknown Teacher",  // Changed from 'name'
+teacherEmail: p.teacher?.email || "N/A",
+```
+
+### 4. `backend/models/financeTransactionModel.js` ✅
+Fixed pre-save middleware for Mongoose 7+:
+```javascript
+// Changed from function(next) to async function
+financeTransactionSchema.pre('save', async function() {
+    // ... calculation logic without next() calls
+});
+```
+
+## How the Fix Works:
+
+1. **Course instructor now correctly references Teacher model**
+2. **Backend populate uses `fullName` field (not `name`)**
+3. **Frontend accesses `teacher.fullName` (not `teacher.name`)**
+4. **Teacher names and emails now display correctly**
+
+## API Response Structure:
+```json
+{
+  "payments": [
+    {
+      "_id": "transaction_id",
+      "teacher": {
+        "_id": "teacher_id",
+        "fullName": "John Doe",  // Now works!
+        "email": "john@example.com"  // Now works!
+      },
+      "course": {
+        "title": "React Course"
+      },
+      "teacherAmount": 90,
+      "status": "COMPLETED",
+      "createdAt": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+## Expected Result:
+✅ Teacher Name column shows actual teacher names  
+✅ Teacher Email column shows actual emails  
+✅ Each payment row displays correct teacher information  
+✅ No more "Unknown Teacher" or undefined values
 
 

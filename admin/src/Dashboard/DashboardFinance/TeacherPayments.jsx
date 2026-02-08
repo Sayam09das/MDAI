@@ -62,7 +62,7 @@ export default function TeacherPayments() {
                 return {
                     _id: p._id,
                     teacherId: p.teacher?._id || p.teacher || "unknown",
-                    teacherName: p.teacher?.name || "Unknown Teacher",
+                    teacherName: p.teacher?.fullName || "Unknown Teacher",
                     teacherEmail: p.teacher?.email || "N/A",
                     courseName: p.course?.title || "Unknown Course",
                     studentName: p.student?.fullName || "Unknown Student",

@@ -2450,9 +2450,9 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
             query.status = status;
         }
 
-        // Get individual transactions with proper populate
+        // Get individual transactions with proper populate - use "fullName email" for Teacher
         let transactions = await FinanceTransaction.find(query)
-            .populate('teacher', 'name email')
+            .populate('teacher', 'fullName email')
             .populate('student', 'fullName email')
             .populate('course', 'title')
             .sort({ createdAt: -1 })
@@ -2467,7 +2467,7 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
                 .populate({
                     path: 'course',
                     select: 'title price instructor',
-                    populate: { path: 'instructor', select: 'name email' }
+                    populate: { path: 'instructor', select: 'fullName email' }
                 })
                 .populate('student', 'fullName email')
                 .sort({ createdAt: -1 })
@@ -2494,7 +2494,7 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
         if (search) {
             const searchLower = search.toLowerCase();
             filteredTransactions = transactions.filter(t => 
-                t.teacher?.name?.toLowerCase().includes(searchLower) ||
+                t.teacher?.fullName?.toLowerCase().includes(searchLower) ||
                 t.teacher?.email?.toLowerCase().includes(searchLower) ||
                 t.course?.title?.toLowerCase().includes(searchLower) ||
                 t._id?.toString().includes(searchLower)
