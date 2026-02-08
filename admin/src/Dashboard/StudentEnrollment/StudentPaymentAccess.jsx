@@ -540,12 +540,26 @@ export default function StudentPaymentAccess() {
                                                     Completed
                                                 </button>
                                             ) : e.paymentStatus === "LATER" ? (
-                                                <button
-                                                    disabled
-                                                    className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed"
-                                                >
-                                                    Waiting
-                                                </button>
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => updatePayment(e._id)}
+                                                        disabled={processingId === e._id}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
+                                                    >
+                                                        {processingId === e._id ? (
+                                                            <>
+                                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <DollarSign size={16} />
+                                                            </>
+                                                        )}
+                                                        {processingId === e._id ? "Processing..." : "Payment Done"}
+                                                    </motion.button>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-center justify-center gap-2">
                                                     <motion.button
