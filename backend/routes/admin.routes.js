@@ -37,6 +37,7 @@ import {
     // Real-time system health
     getSystemHealthRealTime,
     // Finance
+    getFinanceOverviewAdmin,
     getAllTransactionsAdmin,
     getTeacherPaymentsAdmin,
     getRevenueReportsAdmin,
@@ -332,6 +333,14 @@ router.get(
 /* =====================================
    ADMIN FINANCE ROUTES
 ===================================== */
+
+// Get finance overview (real-time)
+router.get(
+    "/finance/overview",
+    protect,
+    adminOnly,
+    getFinanceOverviewAdmin
+);
 
 // Get all transactions
 router.get(

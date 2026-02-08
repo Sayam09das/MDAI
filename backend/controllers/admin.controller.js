@@ -2167,6 +2167,191 @@ export const getSystemHealthRealTime = async (req, res) => {
 };
 
 /* =========================================
+   ADMIN: GET FINANCE OVERVIEW (REAL-TIME)
+   ========================================= */
+export const getFinanceOverviewAdmin = async (req, res) => {
+    try {
+        const now = new Date();
+        const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+        // === GET ALL ENROLLMENTS WITH PAYMENT STATUS ===
+        const allEnrollments = await Enrollment.find()
+            .populate('student', 'fullName email')
+            .populate('course', 'title price')
+            .sort({ createdAt: -1 });
+
+        // === CALCULATE STATS FROM ENROLLMENTS ===
+        const paidEnrollments = allEnrollments.filter(e => e.paymentStatus === 'PAID');
+        const pendingEnrollments = allEnrollments.filter(e => e.paymentStatus === 'PENDING');
+        const laterEnrollments = allEnrollments.filter(e => e.paymentStatus === 'LATER');
+
+        // Calculate totals
+        const totalRevenue = paidEnrollments.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const adminEarnings = paidEnrollments.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
+        const teacherPayouts = paidEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+        const pendingPayouts = laterEnrollments.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+
+        // === TODAY'S STATS ===
+        const todayRevenue = paidEnrollments
+            .filter(e => e.createdAt && new Date(e.createdAt) >= oneDayAgo)
+            .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        // === THIS WEEK'S STATS ===
+        const weekRevenue = paidEnrollments
+            .filter(e => e.createdAt && new Date(e.createdAt) >= sevenDaysAgo)
+            .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        // === RECENT TRANSACTIONS (LAST 10) ===
+        const recentTransactions = allEnrollments
+            .filter(e => e.paymentStatus === 'PAID' || e.paymentStatus === 'LATER')
+            .slice(0, 10)
+            .map(e => ({
+                _id: e._id,
+                type: e.paymentStatus === 'PAID' ? 'PAYMENT' : 'PAY_LATER',
+                amount: e.amount || 0,
+                adminAmount: e.adminAmount || 0,
+                teacherAmount: e.teacherAmount || 0,
+                status: e.paymentStatus === 'PAID' ? 'COMPLETED' : 'PENDING',
+                studentName: e.student?.fullName || 'Unknown',
+                studentEmail: e.student?.email || 'N/A',
+                courseName: e.course?.title || 'Unknown',
+                createdAt: e.createdAt,
+                paymentStatus: e.paymentStatus
+            }));
+
+        // === MONTHLY REVENUE DATA (LAST 6 MONTHS) ===
+        const monthlyRevenue = [];
+        for (let i = 5; i >= 0; i--) {
+            const monthStart = new Date(now);
+            monthStart.setMonth(monthStart.getMonth() - i);
+            monthStart.setDate(1);
+            monthStart.setHours(0, 0, 0, 0);
+            
+            const monthEnd = new Date(monthStart);
+            monthEnd.setMonth(monthEnd.getMonth() + 1);
+            monthEnd.setHours(0, 0, 0, 0);
+
+            const monthTransactions = paidEnrollments.filter(e => {
+                if (!e.createdAt) return false;
+                const date = new Date(e.createdAt);
+                return date >= monthStart && date < monthEnd;
+            });
+
+            const monthName = monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+            monthlyRevenue.push({
+                month: monthName,
+                revenue: monthTransactions.reduce((sum, e) => sum + (e.amount || 0), 0),
+                transactions: monthTransactions.length
+            });
+        }
+
+        // === DAILY ACTIVITY (LAST 7 DAYS) ===
+        const dailyActivity = [];
+        for (let i = 6; i >= 0; i--) {
+            const dayStart = new Date(now);
+            dayStart.setDate(dayStart.getDate() - i);
+            dayStart.setHours(0, 0, 0, 0);
+            
+            const dayEnd = new Date(dayStart);
+            dayEnd.setDate(dayEnd.getDate() + 1);
+            dayEnd.setHours(0, 0, 0, 0);
+
+            const dayTransactions = paidEnrollments.filter(e => {
+                if (!e.createdAt) return false;
+                const date = new Date(e.createdAt);
+                return date >= dayStart && date < dayEnd;
+            });
+
+            dailyActivity.push({
+                day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                revenue: dayTransactions.reduce((sum, e) => sum + (e.amount || 0), 0),
+                transactions: dayTransactions.length
+            });
+        }
+
+        // === TEACHER EARNINGS ===
+        const teacherEarnings = {};
+        paidEnrollments.forEach(e => {
+            if (e.course?.instructor) {
+                const teacherId = e.course.instructor.toString();
+                if (!teacherEarnings[teacherId]) {
+                    teacherEarnings[teacherId] = {
+                        teacherId,
+                        name: e.course.instructorName || 'Unknown',
+                        totalEarnings: 0,
+                        transactions: 0
+                    };
+                }
+                teacherEarnings[teacherId].totalEarnings += e.teacherAmount || 0;
+                teacherEarnings[teacherId].transactions += 1;
+            }
+        });
+
+        const topTeachers = Object.values(teacherEarnings)
+            .sort((a, b) => b.totalEarnings - a.totalEarnings)
+            .slice(0, 5);
+
+        // === COURSE REVENUE ===
+        const courseRevenue = {};
+        paidEnrollments.forEach(e => {
+            if (e.course?._id) {
+                const courseId = e.course._id.toString();
+                if (!courseRevenue[courseId]) {
+                    courseRevenue[courseId] = {
+                        courseId,
+                        title: e.course.title || 'Unknown',
+                        revenue: 0,
+                        enrollments: 0
+                    };
+                }
+                courseRevenue[courseId].revenue += e.amount || 0;
+                courseRevenue[courseId].enrollments += 1;
+            }
+        });
+
+        const topCourses = Object.values(courseRevenue)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        res.json({
+            success: true,
+            timestamp: now.toISOString(),
+            overview: {
+                totalRevenue,
+                adminEarnings,
+                teacherPayouts,
+                pendingPayouts,
+                totalTransactions: paidEnrollments.length,
+                pendingTransactions: pendingEnrollments.length + laterEnrollments.length,
+                totalStudents: new Set(allEnrollments.map(e => e.student?._id)).size,
+                totalCourses: new Set(allEnrollments.map(e => e.course?._id)).size
+            },
+            realtime: {
+                todayRevenue,
+                weekRevenue,
+                todayTransactions: paidEnrollments.filter(e => 
+                    e.createdAt && new Date(e.createdAt) >= oneDayAgo
+                ).length
+            },
+            charts: {
+                monthlyRevenue,
+                dailyActivity,
+                topTeachers,
+                topCourses
+            },
+            transactions: recentTransactions
+        });
+    } catch (error) {
+        console.error("Finance overview error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* =========================================
    ADMIN: GET ALL TRANSACTIONS
    ========================================= */
 export const getAllTransactionsAdmin = async (req, res) => {
@@ -2177,7 +2362,6 @@ export const getAllTransactionsAdmin = async (req, res) => {
 
         if (search) {
             query.$or = [
-                { transactionId: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } }
             ];
         }
@@ -2196,23 +2380,39 @@ export const getAllTransactionsAdmin = async (req, res) => {
             if (endDate) query.createdAt.$lte = new Date(endDate);
         }
 
-        const transactions = await FinanceTransaction.find(query)
+        // Get enrollments as transactions
+        const enrollments = await Enrollment.find()
             .populate('student', 'fullName email')
-            .populate('teacher', 'name email')
-            .populate('course', 'title')
+            .populate('course', 'title price')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
 
-        const total = await FinanceTransaction.countDocuments(query);
+        // Transform enrollments to transaction format
+        const transactions = enrollments.map(e => ({
+            _id: e._id,
+            type: e.paymentStatus === 'PAID' ? 'PAYMENT' : (e.paymentStatus === 'LATER' ? 'PAY_LATER' : 'ENROLLMENT'),
+            amount: e.amount || 0,
+            adminAmount: e.adminAmount || 0,
+            teacherAmount: e.teacherAmount || 0,
+            status: e.paymentStatus === 'PAID' ? 'COMPLETED' : 'PENDING',
+            studentEmail: e.student?.email || 'N/A',
+            teacherEmail: e.course?.instructorEmail || 'N/A',
+            courseName: e.course?.title || 'N/A',
+            createdAt: e.createdAt,
+            paymentStatus: e.paymentStatus
+        }));
 
-        // Calculate stats
-        const completedTransactions = await FinanceTransaction.find({ ...query, status: 'COMPLETED' });
-        const totalRevenue = completedTransactions.reduce((sum, t) => sum + (t.grossAmount || 0), 0);
-        const totalAdminAmount = completedTransactions.reduce((sum, t) => sum + (t.adminAmount || 0), 0);
-        const totalTeacherAmount = completedTransactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0);
-        const pendingTransactions = await FinanceTransaction.find({ ...query, status: 'PENDING' });
-        const pendingAmount = pendingTransactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0);
+        const total = await Enrollment.countDocuments(query);
+
+        // Calculate stats from all enrollments
+        const allEnrollments = await Enrollment.find();
+        const completedTransactions = allEnrollments.filter(e => e.paymentStatus === 'PAID');
+        const totalRevenue = completedTransactions.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const totalAdminAmount = completedTransactions.reduce((sum, e) => sum + (e.adminAmount || 0), 0);
+        const totalTeacherAmount = completedTransactions.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
+        const pendingTransactions = allEnrollments.filter(e => e.paymentStatus !== 'PAID');
+        const pendingAmount = pendingTransactions.reduce((sum, e) => sum + (e.teacherAmount || 0), 0);
 
         res.json({
             success: true,
@@ -2224,7 +2424,7 @@ export const getAllTransactionsAdmin = async (req, res) => {
                 pages: Math.ceil(total / limit)
             },
             stats: {
-                totalTransactions: await FinanceTransaction.countDocuments(),
+                totalTransactions: allEnrollments.length,
                 totalRevenue,
                 totalAdminEarnings: totalAdminAmount,
                 totalTeacherPayouts: totalTeacherAmount,

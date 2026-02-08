@@ -179,8 +179,9 @@ export default function TeacherPayments() {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+<thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                                 <tr>
+                                    <th className="p-4 text-left">ID</th>
                                     <th className="p-4 text-left">Teacher</th>
                                     <th className="p-4 text-left">Email</th>
                                     <th className="p-4 text-center">Amount</th>
@@ -189,7 +190,7 @@ export default function TeacherPayments() {
                                     <th className="p-4 text-center">Course</th>
                                 </tr>
                             </thead>
-                            <tbody>
+<tbody>
                                 {payments.map((payment, index) => (
                                     <motion.tr
                                         key={payment._id}
@@ -198,6 +199,11 @@ export default function TeacherPayments() {
                                         transition={{ delay: index * 0.05 }}
                                         className="border-b hover:bg-gray-50"
                                     >
+                                        <td className="p-4">
+                                            <span className="font-mono text-sm text-gray-600">
+                                                {payment._id?.substring(0, 8)}...
+                                            </span>
+                                        </td>
                                         <td className="p-4">
                                             <span className="font-medium text-gray-900">
                                                 {payment.teacherName || "N/A"}

@@ -241,20 +241,20 @@ export default function ManageTransactions() {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+<thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                             <tr>
-                                <th className="p-4 text-left">Transaction ID</th>
+                                <th className="p-4 text-left">ID</th>
                                 <th className="p-4 text-left">Type</th>
                                 <th className="p-4 text-center">Amount</th>
                                 <th className="p-4 text-center">Admin (10%)</th>
                                 <th className="p-4 text-center">Teacher (90%)</th>
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-left">Student</th>
-                                <th className="p-4 text-left">Teacher</th>
+                                <th className="p-4 text-left">Course</th>
                                 <th className="p-4 text-left">Date</th>
                             </tr>
                         </thead>
-                        <tbody>
+<tbody>
                             {filteredTransactions.length === 0 ? (
                                 <tr>
                                     <td colSpan="9" className="p-8 text-center">
@@ -311,7 +311,7 @@ export default function ManageTransactions() {
                                         </td>
                                         <td className="p-4">
                                             <span className="text-gray-600">
-                                                {tx.teacherEmail || "N/A"}
+                                                {tx.courseName || "N/A"}
                                             </span>
                                         </td>
                                         <td className="p-4">

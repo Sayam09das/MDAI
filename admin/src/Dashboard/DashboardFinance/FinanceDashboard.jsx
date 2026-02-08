@@ -55,21 +55,18 @@ export default function FinanceDashboard() {
 
             const data = await res.json();
             
-            // Calculate stats from transactions
-            const transactions = data.transactions || [];
-            const completedTransactions = transactions.filter(t => t.status === "COMPLETED");
-            
+            // Set stats from response
             setStats({
-                totalRevenue: data.totalRevenue || 0,
-                adminEarnings: completedTransactions.reduce((sum, t) => sum + (t.adminAmount || 0), 0),
-                teacherPayouts: completedTransactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0),
-                pendingPayouts: transactions.filter(t => t.status === "PENDING").reduce((sum, t) => sum + (t.teacherAmount || 0), 0),
-                totalTransactions: transactions.length,
-                totalStudents: data.totalStudents || 0,
-                totalCourses: data.totalCourses || 0,
+                totalRevenue: data.overview?.totalRevenue || 0,
+                adminEarnings: data.overview?.adminEarnings || 0,
+                teacherPayouts: data.overview?.teacherPayouts || 0,
+                pendingPayouts: data.overview?.pendingPayouts || 0,
+                totalTransactions: data.overview?.totalTransactions || 0,
+                totalStudents: data.overview?.totalStudents || 0,
+                totalCourses: data.overview?.totalCourses || 0,
             });
             
-            setRecentTransactions(transactions.slice(0, 10));
+            setRecentTransactions(data.transactions || []);
             setError("");
         } catch (err) {
             setError(err.message);
@@ -271,17 +268,20 @@ export default function FinanceDashboard() {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+<thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                                 <tr>
+                                    <th className="p-4 text-left">ID</th>
                                     <th className="p-4 text-left">Type</th>
-                                    <th className="p-4 text-left">Amount</th>
+                                    <th className="p-4 text-left">Student</th>
+                                    <th className="p-4 text-left">Course</th>
+                                    <th className="p-4 text-center">Amount</th>
                                     <th className="p-4 text-center">Admin (10%)</th>
                                     <th className="p-4 text-center">Teacher (90%)</th>
                                     <th className="p-4 text-center">Status</th>
                                     <th className="p-4 text-center">Date</th>
                                 </tr>
                             </thead>
-                            <tbody>
+<tbody>
                                 {recentTransactions.map((transaction, index) => (
                                     <motion.tr
                                         key={transaction._id}
@@ -291,11 +291,26 @@ export default function FinanceDashboard() {
                                         className="border-b hover:bg-gray-50"
                                     >
                                         <td className="p-4">
+                                            <span className="font-mono text-sm text-gray-600">
+                                                {transaction._id?.substring(0, 8)}...
+                                            </span>
+                                        </td>
+                                        <td className="p-4">
                                             <span className="font-medium text-gray-900">
                                                 {transaction.type || "PAYMENT"}
                                             </span>
                                         </td>
                                         <td className="p-4">
+                                            <span className="text-gray-600">
+                                                {transaction.studentName || "N/A"}
+                                            </span>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-gray-600">
+                                                {transaction.courseName || "N/A"}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center">
                                             <span className="font-bold text-gray-900">
                                                 {formatCurrency(transaction.amount || 0)}
                                             </span>
