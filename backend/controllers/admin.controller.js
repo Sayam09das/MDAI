@@ -355,6 +355,76 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
     }
 };
 
+/* ================= ADMIN: MARK PAYMENT AS LATER ================= */
+export const markPaymentAsLaterByAdmin = async (req, res) => {
+    try {
+        const { enrollmentId } = req.params;
+        const { reason } = req.body;
+
+        // First, check if enrollment exists
+        const existingEnrollment = await Enrollment.findById(enrollmentId);
+        if (!existingEnrollment) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Enrollment not found" 
+            });
+        }
+
+        // Check if already PAID
+        if (existingEnrollment.paymentStatus === "PAID") {
+            return res.status(400).json({ 
+                success: false,
+                message: "Cannot change status of already paid enrollment" 
+            });
+        }
+
+        // Check if already marked as LATER
+        if (existingEnrollment.paymentStatus === "LATER") {
+            return res.status(400).json({ 
+                success: false,
+                message: "Enrollment already marked as Pay Later" 
+            });
+        }
+
+        // Update enrollment to LATER status
+        existingEnrollment.paymentStatus = "LATER";
+        existingEnrollment.paymentLaterReason = reason || "No reason provided";
+        existingEnrollment.paymentMarkedLaterAt = new Date();
+        existingEnrollment.paymentMarkedLaterBy = req.user.id;
+        
+        await existingEnrollment.save();
+
+        // Get course info for audit log
+        const course = await Course.findById(existingEnrollment.course);
+        const student = await User.findById(existingEnrollment.student).select("fullName email");
+
+        // Create audit log
+        await createAuditLog(
+            req.user.id,
+            "PAYMENT_MARKED_LATER",
+            `Payment marked as LATER for enrollment ${enrollmentId}. Course: ${course?.title || 'Unknown'}. Student: ${student?.fullName || 'Unknown'}. Reason: ${reason || 'Not specified'}`,
+            "success"
+        );
+
+        // Re-fetch enrollment with populated data
+        const enrollment = await Enrollment.findById(enrollmentId)
+            .populate("student", "fullName email")
+            .populate("course", "title");
+
+        res.json({
+            success: true,
+            message: "Payment marked as 'Pay Later' successfully",
+            enrollment,
+        });
+    } catch (error) {
+        console.error("Mark payment as later error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to mark payment as later" 
+        });
+    }
+};
+
 /* =========================================
    ADMIN: GET ALL COURSES
    ========================================= */

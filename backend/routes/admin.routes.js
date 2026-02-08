@@ -6,6 +6,7 @@ import {
     getAdminProfile,
     getAllEnrollmentsForAdmin,
     updatePaymentStatusByAdmin,
+    markPaymentAsLaterByAdmin,
     // Course management
     getAllCoursesAdmin,
     updateCourseAdmin,
@@ -79,6 +80,14 @@ router.patch(
     protect,
     adminOnly,
     updatePaymentStatusByAdmin
+);
+
+// Mark enrollment payment as LATER
+router.patch(
+    "/enrollments/:enrollmentId/payment-later",
+    protect,
+    adminOnly,
+    markPaymentAsLaterByAdmin
 );
 
 /* =====================================

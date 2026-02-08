@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     DollarSign,
     CreditCard,
@@ -9,9 +9,9 @@ import {
     User,
     BookOpen,
     Calculator,
-    ArrowRight,
     RefreshCw,
     AlertCircle,
+    Calendar,
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -22,6 +22,9 @@ export default function StudentPaymentAccess() {
     const [loading, setLoading] = useState(false);
     const [processingId, setProcessingId] = useState(null);
     const [financeData, setFinanceData] = useState(null);
+    const [laterModalData, setLaterModalData] = useState(null); // { id, studentName, courseName }
+    const [laterReason, setLaterReason] = useState("");
+    const [submittingLater, setSubmittingLater] = useState(false);
     const token = localStorage.getItem("adminToken");
 
     // Helper to format currency
@@ -114,15 +117,51 @@ export default function StudentPaymentAccess() {
         }
     };
 
-    useEffect(() => {
-        fetchEnrollments();
-    }, []);
+    const markAsLater = async () => {
+        if (!token || !laterModalData?.id) return;
 
-    // Get pending enrollments count
+        setSubmittingLater(true);
+        setError("");
+        try {
+            const res = await fetch(
+                `${BACKEND_URL}/api/admin/enrollments/${laterModalData.id}/payment-later`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ reason: laterReason }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (data.success) {
+                setLaterModalData(null);
+                setLaterReason("");
+                fetchEnrollments();
+            } else {
+                setError(data.message || "Failed to mark as pay later");
+            }
+        } catch (err) {
+            console.error(err);
+            setError("Failed to mark as pay later. Please try again.");
+        } finally {
+            setSubmittingLater(false);
+        }
+    };
+
+    // Get counts by status
     const pendingCount = enrollments.filter(
         (e) => e.paymentStatus === "PENDING"
     ).length;
     const paidCount = enrollments.filter((e) => e.paymentStatus === "PAID").length;
+    const laterCount = enrollments.filter((e) => e.paymentStatus === "LATER").length;
+
+    useEffect(() => {
+        fetchEnrollments();
+    }, []);
 
     return (
         <div className="p-6">
@@ -151,17 +190,30 @@ export default function StudentPaymentAccess() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <motion.div
                     whileHover={{ scale: 1.02 }}
                     className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-yellow-500"
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm">Pending Payments</p>
+                            <p className="text-gray-600 text-sm">Pending</p>
                             <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
                         </div>
                         <Clock className="text-yellow-500" size={32} />
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-red-500"
+                >
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-600 text-sm">Pay Later</p>
+                            <p className="text-2xl font-bold text-red-600">{laterCount}</p>
+                        </div>
+                        <Calendar className="text-red-500" size={32} />
                     </div>
                 </motion.div>
 
@@ -171,7 +223,7 @@ export default function StudentPaymentAccess() {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm">Completed Payments</p>
+                            <p className="text-gray-600 text-sm">Completed</p>
                             <p className="text-2xl font-bold text-green-600">{paidCount}</p>
                         </div>
                         <CheckCircle className="text-green-500" size={32} />
@@ -184,7 +236,7 @@ export default function StudentPaymentAccess() {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm">Total Enrollments</p>
+                            <p className="text-gray-600 text-sm">Total</p>
                             <p className="text-2xl font-bold text-indigo-600">{enrollments.length}</p>
                         </div>
                         <BookOpen className="text-indigo-500" size={32} />
@@ -227,7 +279,6 @@ export default function StudentPaymentAccess() {
                         </div>
 
                         <div className="space-y-4">
-                            {/* Total Amount */}
                             <div className="bg-gray-50 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-gray-600">Course Price</span>
@@ -237,7 +288,6 @@ export default function StudentPaymentAccess() {
                                 </div>
                             </div>
 
-                            {/* Admin Cut */}
                             <div className="bg-indigo-50 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-indigo-600 flex items-center gap-2">
@@ -253,7 +303,6 @@ export default function StudentPaymentAccess() {
                                 </p>
                             </div>
 
-                            {/* Teacher Earnings */}
                             <div className="bg-green-50 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-green-600 flex items-center gap-2">
@@ -281,6 +330,80 @@ export default function StudentPaymentAccess() {
                     </motion.div>
                 </motion.div>
             )}
+
+            {/* Pay Later Modal */}
+            <AnimatePresence>
+                {laterModalData && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setLaterModalData(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center mb-6">
+                                <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Calendar className="text-orange-600" size={32} />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900">Mark as Pay Later</h2>
+                                <p className="text-gray-600 mt-1">
+                                    {getStudentName(laterModalData.student)} - {laterModalData.course}
+                                </p>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason (optional)
+                                </label>
+                                <textarea
+                                    value={laterReason}
+                                    onChange={(e) => setLaterReason(e.target.value)}
+                                    placeholder="Enter reason for pay later..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setLaterModalData(null)}
+                                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                >
+                                    Cancel
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={markAsLater}
+                                    disabled={submittingLater}
+                                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {submittingLater ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Calendar size={16} />
+                                            Confirm
+                                        </>
+                                    )}
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Enrollments Table */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -416,26 +539,48 @@ export default function StudentPaymentAccess() {
                                                 >
                                                     Completed
                                                 </button>
-                                            ) : (
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => updatePayment(e._id)}
-                                                    disabled={processingId === e._id}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
+                                            ) : e.paymentStatus === "LATER" ? (
+                                                <button
+                                                    disabled
+                                                    className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed"
                                                 >
-                                                    {processingId === e._id ? (
-                                                        <>
-                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                            Processing...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <DollarSign size={16} />
-                                                            Mark as Paid
-                                                        </>
-                                                    )}
-                                                </motion.button>
+                                                    Waiting
+                                                </button>
+                                            ) : (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => updatePayment(e._id)}
+                                                        disabled={processingId === e._id}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
+                                                    >
+                                                        {processingId === e._id ? (
+                                                            <>
+                                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <DollarSign size={16} />
+                                                            </>
+                                                        )}
+                                                        {processingId === e._id ? "Processing..." : "Mark Paid"}
+                                                    </motion.button>
+
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => setLaterModalData({
+                                                            id: e._id,
+                                                            student: e.student,
+                                                            course: e.course?.title || "N/A"
+                                                        })}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                                                    >
+                                                        <Calendar size={16} />
+                                                        Pay Later
+                                                    </motion.button>
+                                                </div>
                                             )}
                                         </td>
                                     </motion.tr>
@@ -464,9 +609,13 @@ export default function StudentPaymentAccess() {
                         <li>
                             <strong>Teacher Earnings (90%)</strong> - Amount credited to teacher's account
                         </li>
+                        <li>
+                            <strong>Pay Later</strong> - Mark enrollment for delayed payment
+                        </li>
                     </ul>
                 </div>
             </div>
         </div>
     );
 }
+
