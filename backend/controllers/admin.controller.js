@@ -161,7 +161,7 @@ export const getAllEnrollmentsForAdmin = async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
             .populate("student", "fullName email")
-            .populate("course", "title");
+            .populate("course", "title price");
 
         res.json({
             success: true,

@@ -34,11 +34,12 @@ export const enrollCourse = async (req, res) => {
             });
         }
 
-        // ✅ 3. CREATE ENROLLMENT (COURSE ONLY)
+        // ✅ 3. CREATE ENROLLMENT WITH COURSE PRICE
         const enrollment = await Enrollment.create({
             student: studentId,
             course: courseId,
-            paymentStatus: "PENDING", // optional but recommended
+            paymentStatus: "PENDING",
+            amount: courseExists.price || 0, // Save course price at enrollment time
         });
 
         res.status(201).json({
