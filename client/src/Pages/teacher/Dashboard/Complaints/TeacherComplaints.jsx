@@ -13,8 +13,9 @@ import {
     Calendar,
     Shield
 } from "lucide-react";
+import { getBackendURL } from "../../../../lib/config";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = getBackendURL();
 
 const formatDate = (dateString) => {
     if (!dateString) return "N/A";
