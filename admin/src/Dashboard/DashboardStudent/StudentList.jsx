@@ -16,8 +16,8 @@ import {
     XCircle,
     AlertCircle,
     MoreVertical,
-    BookOpen,
-    Award
+    UserCheck,
+    UserX
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -42,55 +42,55 @@ const getAuthHeaders = () => {
 
 const ITEMS_PER_PAGE = 20;
 
-const TeacherList = () => {
+const StudentList = () => {
     const [loading, setLoading] = useState(true);
-    const [teachers, setTeachers] = useState([]);
+    const [students, setStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalTeachers, setTotalTeachers] = useState(0);
+    const [totalStudents, setTotalStudents] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    const fetchTeachers = async () => {
+    const fetchStudents = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/teachers`, getAuthHeaders());
+            const res = await fetch(`${BACKEND_URL}/api/admin/users/students`, getAuthHeaders());
             const result = await res.json();
             
             if (result.success) {
-                setTeachers(result.teachers || []);
-                setTotalTeachers(result.teachers?.length || 0);
-                setTotalPages(Math.ceil((result.teachers?.length || 0) / ITEMS_PER_PAGE));
+                setStudents(result.users || []);
+                setTotalStudents(result.users?.length || 0);
+                setTotalPages(Math.ceil((result.users?.length || 0) / ITEMS_PER_PAGE));
             } else {
-                toast.error('Failed to fetch teachers');
+                toast.error('Failed to fetch students');
             }
         } catch (error) {
-            console.error('Error fetching teachers:', error);
-            toast.error('Failed to load teachers');
+            console.error('Error fetching students:', error);
+            toast.error('Failed to load students');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchTeachers();
+        fetchStudents();
     }, []);
 
-    // Filter teachers
-    const filteredTeachers = teachers.filter(teacher => {
+    // Filter students
+    const filteredStudents = students.filter(student => {
         const matchesSearch = 
-            teacher.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            teacher.email?.toLowerCase().includes(searchQuery.toLowerCase());
+            student.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.email?.toLowerCase().includes(searchQuery.toLowerCase());
         
         const matchesStatus = statusFilter === 'all' || 
-            (statusFilter === 'active' && !teacher.isSuspended) ||
-            (statusFilter === 'suspended' && teacher.isSuspended);
+            (statusFilter === 'active' && !student.isSuspended) ||
+            (statusFilter === 'suspended' && student.isSuspended);
         
         return matchesSearch && matchesStatus;
     });
 
     // Paginate
-    const paginatedTeachers = filteredTeachers.slice(
+    const paginatedStudents = filteredStudents.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     );
@@ -148,22 +148,22 @@ const TeacherList = () => {
                         <ChevronRight className="w-4 h-4" />
                         <span className="text-slate-600">Users</span>
                         <ChevronRight className="w-4 h-4" />
-                        <span className="text-indigo-600 font-medium">Teachers</span>
+                        <span className="text-indigo-600 font-medium">Students</span>
                     </div>
 
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
                             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                                All Teachers
+                                All Students
                             </h1>
                             <p className="text-slate-600">
-                                Complete list of all registered teachers ({totalTeachers} total)
+                                Complete list of all registered students ({totalStudents} total)
                             </p>
                         </div>
 
                         <button
-                            onClick={fetchTeachers}
+                            onClick={fetchStudents}
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -203,7 +203,7 @@ const TeacherList = () => {
                     </div>
                 </div>
 
-                {/* Teacher List */}
+                {/* Student List */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -213,16 +213,10 @@ const TeacherList = () => {
                                         #
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
-                                        Teacher
+                                        Student
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
                                         Contact
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
-                                        Skills
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
-                                        Experience
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
                                         Status
@@ -253,18 +247,16 @@ const TeacherList = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-40"></div></td>
-                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-32"></div></td>
-                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
                                             <td className="px-6 py-4"><div className="h-6 bg-slate-200 rounded w-20"></div></td>
                                             <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
                                             <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
                                             <td className="px-6 py-4"><div className="h-8 bg-slate-200 rounded w-20"></div></td>
                                         </tr>
                                     ))
-                                ) : paginatedTeachers.length > 0 ? (
-                                    paginatedTeachers.map((teacher, index) => (
+                                ) : paginatedStudents.length > 0 ? (
+                                    paginatedStudents.map((student, index) => (
                                         <motion.tr
-                                            key={teacher.id || teacher._id}
+                                            key={student.id || student._id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.03 }}
@@ -278,14 +270,14 @@ const TeacherList = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold">
-                                                        {teacher.name?.charAt(0) || '?'}
+                                                        {student.fullName?.charAt(0) || '?'}
                                                     </div>
                                                     <div>
                                                         <div className="text-sm font-medium text-slate-900">
-                                                            {teacher.name || 'Unknown'}
+                                                            {student.fullName || 'Unknown'}
                                                         </div>
                                                         <div className="text-xs text-slate-500">
-                                                            ID: {teacher._id?.substring(0, 8)}
+                                                            ID: {student._id?.substring(0, 8)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -294,46 +286,23 @@ const TeacherList = () => {
                                                 <div className="space-y-1">
                                                     <div className="flex items-center space-x-2 text-sm text-slate-600">
                                                         <Mail className="w-3 h-3 text-slate-400" />
-                                                        <span>{teacher.email || 'N/A'}</span>
+                                                        <span>{student.email || 'N/A'}</span>
                                                     </div>
                                                     <div className="flex items-center space-x-2 text-sm text-slate-600">
                                                         <Phone className="w-3 h-3 text-slate-400" />
-                                                        <span>{teacher.phone || 'N/A'}</span>
+                                                        <span>{student.phone || 'N/A'}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {(teacher.skills || []).slice(0, 3).map((skill, i) => (
-                                                        <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full">
-                                                            {skill}
-                                                        </span>
-                                                    ))}
-                                                    {(teacher.skills?.length || 0) > 3 && (
-                                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">
-                                                            +{teacher.skills.length - 3}
-                                                        </span>
-                                                    )}
-                                                    {(!teacher.skills || teacher.skills.length === 0) && (
-                                                        <span className="text-xs text-slate-400">No skills</span>
-                                                    )}
-                                                </div>
+                                                {getStatusBadge(student.isSuspended)}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-1 text-sm text-slate-600">
-                                                    <Award className="w-3 h-3 text-amber-500" />
-                                                    <span>{teacher.experience || 0} years</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getStatusBadge(teacher.isSuspended)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getVerifiedBadge(teacher.isVerified)}
+                                                {getVerifiedBadge(student.isVerified)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm text-slate-600">
-                                                    {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString('en-US', {
+                                                    {student.createdAt ? new Date(student.createdAt).toLocaleDateString('en-US', {
                                                         year: 'numeric',
                                                         month: 'short',
                                                         day: 'numeric'
@@ -349,9 +318,9 @@ const TeacherList = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
+                                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                                             <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                            <p>No teachers found</p>
+                                            <p>No students found</p>
                                         </td>
                                     </tr>
                                 )}
@@ -364,7 +333,7 @@ const TeacherList = () => {
                         <div className="px-6 py-4 border-t border-slate-200">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-slate-600">
-                                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredTeachers.length)} of {filteredTeachers.length} teachers
+                                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <button
@@ -424,5 +393,5 @@ const TeacherList = () => {
     );
 };
 
-export default TeacherList;
+export default StudentList;
 

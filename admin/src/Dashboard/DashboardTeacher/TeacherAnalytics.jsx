@@ -17,7 +17,9 @@ import {
     Home,
     BarChart3,
     Clock,
-    Award
+    Award,
+    ArrowRight,
+    RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -531,12 +533,11 @@ const TeacherAnalytics = () => {
                     {/* View All Teachers CTA */}
                     <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
                         <button
-                            onClick={() => navigate('/admin/dashboard/teacherlist')}
+                            onClick={() => window.location.href = '/admin/dashboard/teacher/all'}
                             className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center"
                         >
-                            <Users className="w-5 h-5 mr-2" />
                             View All Teachers
-                            <ChevronRight className="w-5 h-5 ml-2" />
+                            <ArrowRight className="w-4 h-4 ml-2" />
                         </button>
                     </div>
                 </motion.div>
