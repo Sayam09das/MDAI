@@ -105,12 +105,19 @@ export default function TeacherComplaints() {
 
     const fetchRecipients = async () => {
         try {
+            console.log("Fetching recipients for teacher...");
             const res = await fetch(`${BACKEND_URL}/api/complaints/recipients`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
+            console.log("Recipients API response:", data);
+            
             if (data.success) {
                 setRecipients(data.recipients || []);
+                console.log("Recipients loaded:", data.recipients?.length || 0);
+            } else {
+                console.error("Failed to fetch recipients:", data.message);
+                setRecipients([]);
             }
         } catch (err) {
             console.error("Fetch recipients error:", err);
