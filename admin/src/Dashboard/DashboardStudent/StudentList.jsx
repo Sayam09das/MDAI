@@ -54,13 +54,20 @@ const StudentList = () => {
     const fetchStudents = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/students`, getAuthHeaders());
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                search: searchQuery,
+                status: statusFilter
+            });
+            
+            const res = await fetch(`${BACKEND_URL}/api/admin/users/students?${params}`, getAuthHeaders());
             const result = await res.json();
             
             if (result.success) {
                 setStudents(result.users || []);
-                setTotalStudents(result.users?.length || 0);
-                setTotalPages(Math.ceil((result.users?.length || 0) / ITEMS_PER_PAGE));
+                setTotalStudents(result.pagination?.total || 0);
+                setTotalPages(result.pagination?.pages || 0);
             } else {
                 toast.error('Failed to fetch students');
             }
@@ -74,7 +81,7 @@ const StudentList = () => {
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [currentPage, statusFilter]);
 
     // Filter students
     const filteredStudents = students.filter(student => {

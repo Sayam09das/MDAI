@@ -51,16 +51,23 @@ const TeacherList = () => {
     const [totalTeachers, setTotalTeachers] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    const fetchTeachers = async () => {
+const fetchTeachers = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/teachers`, getAuthHeaders());
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                search: searchQuery,
+                status: statusFilter
+            });
+            
+            const res = await fetch(`${BACKEND_URL}/api/admin/users/teachers?${params}`, getAuthHeaders());
             const result = await res.json();
             
             if (result.success) {
                 setTeachers(result.teachers || []);
-                setTotalTeachers(result.teachers?.length || 0);
-                setTotalPages(Math.ceil((result.teachers?.length || 0) / ITEMS_PER_PAGE));
+                setTotalTeachers(result.pagination?.total || 0);
+                setTotalPages(result.pagination?.pages || 0);
             } else {
                 toast.error('Failed to fetch teachers');
             }
@@ -74,7 +81,7 @@ const TeacherList = () => {
 
     useEffect(() => {
         fetchTeachers();
-    }, []);
+    }, [currentPage, statusFilter]);
 
     // Filter teachers
     const filteredTeachers = teachers.filter(teacher => {

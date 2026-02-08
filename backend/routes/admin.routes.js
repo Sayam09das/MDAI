@@ -41,6 +41,9 @@ import {
     getAllTransactionsAdmin,
     getTeacherPaymentsAdmin,
     getRevenueReportsAdmin,
+    // User lists (for paginated pages)
+    getAllStudentsAdmin,
+    getAllTeachersAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -364,6 +367,26 @@ router.get(
     protect,
     adminOnly,
     getRevenueReportsAdmin
+);
+
+/* =====================================
+   ADMIN USER LISTS (PAGINATED)
+===================================== */
+
+// Get all students (paginated)
+router.get(
+    "/users/students",
+    protect,
+    adminOnly,
+    getAllStudentsAdmin
+);
+
+// Get all teachers (paginated)
+router.get(
+    "/users/teachers",
+    protect,
+    adminOnly,
+    getAllTeachersAdmin
 );
 
 export default router;

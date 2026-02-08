@@ -2530,6 +2530,136 @@ export const getTeacherPaymentsAdmin = async (req, res) => {
 };
 
 /* =========================================
+   ADMIN: GET ALL STUDENTS (FOR PAGINATED LIST)
+   ========================================= */
+export const getAllStudentsAdmin = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search = '', status = 'all' } = req.query;
+
+        // Build query
+        let query = {};
+        
+        // Search filter
+        if (search) {
+            query.$or = [
+                { fullName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+        
+        // Status filter
+        if (status === 'active') {
+            query.isSuspended = false;
+        } else if (status === 'suspended') {
+            query.isSuspended = true;
+        }
+
+        // Get total count
+        const total = await User.countDocuments(query);
+
+        // Get students with pagination
+        const users = await User.find(query)
+            .select('fullName email phone isSuspended isVerified createdAt')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        // Transform data
+        const students = users.map(user => ({
+            _id: user._id,
+            id: user._id,
+            fullName: user.fullName,
+            name: user.fullName, // For compatibility
+            email: user.email,
+            phone: user.phone || 'N/A',
+            isSuspended: user.isSuspended || false,
+            isVerified: user.isVerified || false,
+            createdAt: user.createdAt
+        }));
+
+        res.json({
+            success: true,
+            users: students,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error("Get all students error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* =========================================
+   ADMIN: GET ALL TEACHERS (FOR PAGINATED LIST)
+   ========================================= */
+export const getAllTeachersAdmin = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search = '', status = 'all' } = req.query;
+
+        // Build query
+        let query = {};
+        
+        // Search filter
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+        
+        // Status filter
+        if (status === 'active') {
+            query.isSuspended = false;
+        } else if (status === 'suspended') {
+            query.isSuspended = true;
+        }
+
+        // Get total count
+        const total = await Teacher.countDocuments(query);
+
+        // Get teachers with pagination
+        const teachers = await Teacher.find(query)
+            .select('name email phone skills experience isSuspended isVerified createdAt')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        // Transform data
+        const teacherList = teachers.map(teacher => ({
+            _id: teacher._id,
+            id: teacher._id,
+            name: teacher.name,
+            fullName: teacher.name, // For compatibility
+            email: teacher.email,
+            phone: teacher.phone || 'N/A',
+            skills: teacher.skills || [],
+            experience: teacher.experience || 0,
+            isSuspended: teacher.isSuspended || false,
+            isVerified: teacher.isVerified || false,
+            createdAt: teacher.createdAt
+        }));
+
+        res.json({
+            success: true,
+            teachers: teacherList,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error("Get all teachers error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* =========================================
    ADMIN: GET REVENUE REPORTS (REAL-TIME)
    ========================================= */
 export const getRevenueReportsAdmin = async (req, res) => {
