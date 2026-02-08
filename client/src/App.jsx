@@ -61,6 +61,7 @@ import NotFound from "./Pages/NotFound/NotFound"
 
 // Payment Routes
 import PaymentRoutes from "./routes/PaymentRoutes"
+import StudentComplaints from "./Pages/Student/Dashboard/Complaints/StudentComplaints"
 
 const App = () => {
   return (
@@ -124,6 +125,7 @@ const App = () => {
           <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="payments" element={<ReturnStudentPayments />} />
           <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
+          <Route path="complaints" element={<StudentComplaints />} />
         </Route>
 
         {/* Teacher Routes */}
