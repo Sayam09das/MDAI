@@ -2438,116 +2438,89 @@ export const getAllTransactionsAdmin = async (req, res) => {
 };
 
 /* =========================================
-   ADMIN: GET TEACHER PAYMENTS (REAL-TIME)
+   ADMIN: GET TEACHER PAYMENTS (INDIVIDUAL RECORDS)
    ========================================= */
 export const getTeacherPaymentsAdmin = async (req, res) => {
     try {
         const { search, status, page = 1, limit = 50 } = req.query;
 
-        // First, try to get data from FinanceTransaction collection
-        let transactions = await FinanceTransaction.find({ 
-            type: 'PAYMENT',
-            status: 'COMPLETED'
-        })
+        // Build query for FinanceTransaction
+        let query = { type: 'PAYMENT' };
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+
+        // Get individual transactions with proper populate
+        let transactions = await FinanceTransaction.find(query)
             .populate('teacher', 'name email')
             .populate('student', 'fullName email')
             .populate('course', 'title')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
 
-        // If no transactions found, fallback to enrollments
+        // If no FinanceTransaction records, fallback to enrollments
         if (transactions.length === 0) {
-            const enrollments = await Enrollment.find({ paymentStatus: 'PAID' })
+            let enrollmentQuery = { paymentStatus: 'PAID' };
+            
+            const enrollments = await Enrollment.find(enrollmentQuery)
                 .populate({
                     path: 'course',
-                    select: 'title instructor',
+                    select: 'title price instructor',
                     populate: { path: 'instructor', select: 'name email' }
                 })
                 .populate('student', 'fullName email')
-                .sort({ createdAt: -1 });
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(parseInt(limit));
 
             // Convert enrollments to transaction format
             transactions = enrollments.map(e => ({
                 _id: e._id,
-                teacher: e.course?.instructor,
+                teacher: e.course?.instructor || null,
                 student: e.student,
                 course: e.course,
                 teacherAmount: e.teacherAmount || 0,
+                amount: e.amount || 0,
                 status: 'COMPLETED',
-                createdAt: e.createdAt
+                createdAt: e.createdAt,
+                description: `Payment for ${e.course?.title || 'Unknown Course'}`
             }));
         }
 
-        // Group by teacher
-        const teacherPayments = {};
-        
-        transactions.forEach(t => {
-            const teacherId = t.teacher?._id?.toString() || 
-                             t.teacher?.toString() || 
-                             'unknown';
-            
-            // Get teacher name from populated data or fallback
-            const teacherName = t.teacher?.name || 
-                               t.teacher?.fullName || 
-                               'Unknown Teacher';
-            const teacherEmail = t.teacher?.email || 'N/A';
-            
-            if (!teacherPayments[teacherId]) {
-                teacherPayments[teacherId] = {
-                    teacherId,
-                    teacherName,
-                    teacherEmail,
-                    totalPayouts: 0,
-                    completedPayouts: 0,
-                    pendingPayouts: 0,
-                    transactions: []
-                };
-            }
-            
-            const teacherAmount = t.teacherAmount || 0;
-            teacherPayments[teacherId].totalPayouts += teacherAmount;
-            teacherPayments[teacherId].transactions.push({
-                id: t._id,
-                amount: teacherAmount,
-                status: t.status,
-                studentName: t.student?.fullName || 'Unknown',
-                courseName: t.course?.title || 'Unknown',
-                createdAt: t.createdAt
-            });
-            teacherPayments[teacherId].completedPayouts += teacherAmount;
-        });
-
-        // Apply search filter
-        let paymentsList = Object.values(teacherPayments);
+        // Apply search filter on individual transactions
+        let filteredTransactions = transactions;
         
         if (search) {
             const searchLower = search.toLowerCase();
-            paymentsList = paymentsList.filter(p => 
-                p.teacherName?.toLowerCase().includes(searchLower) ||
-                p.teacherId?.toLowerCase().includes(searchLower)
+            filteredTransactions = transactions.filter(t => 
+                t.teacher?.name?.toLowerCase().includes(searchLower) ||
+                t.teacher?.email?.toLowerCase().includes(searchLower) ||
+                t.course?.title?.toLowerCase().includes(searchLower) ||
+                t._id?.toString().includes(searchLower)
             );
         }
 
-        // Sort by total payouts descending
-        paymentsList.sort((a, b) => b.totalPayouts - a.totalPayouts);
-
-        // Pagination
-        const startIndex = (page - 1) * limit;
-        const paginatedPayments = paymentsList.slice(startIndex, startIndex + parseInt(limit));
+        // Calculate stats
+        const totalTransactions = transactions.length;
+        const totalAmount = transactions.reduce((sum, t) => sum + (t.teacherAmount || 0), 0);
+        const uniqueTeachers = new Set(transactions.map(t => t.teacher?._id?.toString() || t.teacher?.toString()).filter(Boolean)).size;
 
         res.json({
             success: true,
-            payments: paginatedPayments,
+            payments: filteredTransactions,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
-                total: paymentsList.length,
-                pages: Math.ceil(paymentsList.length / limit)
+                total: filteredTransactions.length,
+                pages: Math.ceil(filteredTransactions.length / limit)
             },
             stats: {
-                totalTeachers: paymentsList.length,
-                totalPayouts: paymentsList.reduce((sum, p) => sum + p.totalPayouts, 0),
-                completedPayouts: paymentsList.reduce((sum, p) => sum + p.completedPayouts, 0),
-                pendingPayouts: paymentsList.reduce((sum, p) => sum + p.pendingPayouts, 0)
+                totalTransactions: totalTransactions,
+                totalTeachers: uniqueTeachers,
+                totalPayouts: totalAmount,
+                completedPayouts: transactions.filter(t => t.status === 'COMPLETED').reduce((sum, t) => sum + (t.teacherAmount || 0), 0),
+                pendingPayouts: transactions.filter(t => t.status === 'PENDING').reduce((sum, t) => sum + (t.teacherAmount || 0), 0)
             }
         });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, Users, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
+import { DollarSign, Users, CheckCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -18,6 +18,8 @@ const formatDate = (dateString) => {
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
     });
 };
 
@@ -29,6 +31,7 @@ export default function TeacherPayments() {
         totalPaid: 0,
         pending: 0,
         totalTeachers: 0,
+        totalTransactions: 0
     });
     const token = localStorage.getItem("adminToken");
 
@@ -48,24 +51,34 @@ export default function TeacherPayments() {
             const data = await res.json();
             console.log("Teacher payments data:", data);
             
-            // Transform data to include combined teacher info
-            // Each teacher has one row with total earnings across all courses
-            const paymentsArray = (data.payments || []).map(p => ({
-                _id: p.teacherId,
-                teacherName: p.teacherName || "Unknown Teacher",
-                teacherEmail: p.teacherEmail || "N/A",
-                amount: p.totalPayouts || 0,
-                status: p.totalPayouts > 0 ? "COMPLETED" : "PENDING",
-                createdAt: new Date(),
-                totalTransactions: p.transactions?.length || 0,
-                courses: [...new Set(p.transactions?.map(t => t.courseName) || [])].length
-            }));
+            // Transform individual transaction data - one row per payment
+            const paymentsArray = (data.payments || []).map((p, index) => {
+                console.log(`Payment ${index}:`, {
+                    teacher: p.teacher,
+                    course: p.course,
+                    amount: p.teacherAmount
+                });
+                
+                return {
+                    _id: p._id,
+                    teacherId: p.teacher?._id || p.teacher || "unknown",
+                    teacherName: p.teacher?.name || "Unknown Teacher",
+                    teacherEmail: p.teacher?.email || "N/A",
+                    courseName: p.course?.title || "Unknown Course",
+                    studentName: p.student?.fullName || "Unknown Student",
+                    amount: p.teacherAmount || 0,
+                    status: p.status || "COMPLETED",
+                    createdAt: p.createdAt || new Date(),
+                    description: p.description || ""
+                };
+            });
 
             setPayments(paymentsArray);
             setStats({
                 totalPaid: data.stats?.completedPayouts || data.stats?.totalPayouts || 0,
                 pending: data.stats?.pendingPayouts || 0,
-                totalTeachers: data.stats?.totalTeachers || paymentsArray.length,
+                totalTeachers: data.stats?.totalTeachers || 0,
+                totalTransactions: data.stats?.totalTransactions || paymentsArray.length
             });
             setError("");
         } catch (err) {
@@ -80,17 +93,6 @@ export default function TeacherPayments() {
         fetchTeacherPayments();
     }, []);
 
-    if (loading && payments.length === 0) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-600 mb-4 mx-auto"></div>
-                    <p className="text-gray-600">Loading teacher payments...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="p-6">
             {/* Header */}
@@ -101,7 +103,7 @@ export default function TeacherPayments() {
                         Teacher Payments
                     </h1>
                     <p className="text-gray-600 mt-1">
-                        Manage and track payouts to teachers
+                        Individual payout transactions for all teachers
                     </p>
                 </div>
 
@@ -112,7 +114,7 @@ export default function TeacherPayments() {
                     disabled={loading}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    <Clock size={18} className={loading ? "animate-spin" : ""} />
+                    <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
                     Refresh
                 </motion.button>
             </div>
@@ -130,7 +132,7 @@ export default function TeacherPayments() {
             )}
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <motion.div
                     whileHover={{ scale: 1.02 }}
                     className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500"
@@ -173,9 +175,25 @@ export default function TeacherPayments() {
                         </div>
                         <Users className="text-blue-500" size={20} />
                     </div>
-                    <h3 className="text-gray-600 text-sm font-medium mb-1">Total Teachers</h3>
+                    <h3 className="text-gray-600 text-sm font-medium mb-1">Teachers Paid</h3>
                     <p className="text-3xl font-bold text-gray-900">
                         {stats.totalTeachers}
+                    </p>
+                </motion.div>
+
+                <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500"
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-purple-100 p-3 rounded-lg">
+                            <DollarSign className="text-purple-600" size={24} />
+                        </div>
+                        <DollarSign className="text-purple-500" size={20} />
+                    </div>
+                    <h3 className="text-gray-600 text-sm font-medium mb-1">Transactions</h3>
+                    <p className="text-3xl font-bold text-gray-900">
+                        {stats.totalTransactions}
                     </p>
                 </motion.div>
             </div>
@@ -184,40 +202,46 @@ export default function TeacherPayments() {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900">Payment History</h2>
-                    <p className="text-gray-600 text-sm">All teacher payout transactions</p>
+                    <p className="text-gray-600 text-sm">All teacher payout transactions (one per payment)</p>
                 </div>
 
-                {payments.length === 0 ? (
+                {loading && payments.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-600 mb-4 mx-auto"></div>
+                        <p className="text-gray-600">Loading teacher payments...</p>
+                    </div>
+                ) : payments.length === 0 ? (
                     <div className="p-8 text-center">
                         <DollarSign size={48} className="mx-auto text-gray-300 mb-4" />
                         <p className="text-gray-500">No payment records found</p>
+                        <p className="text-gray-400 text-sm mt-2">Payments will appear here once teachers are paid</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
-<thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                                 <tr>
-                                    <th className="p-4 text-left">ID</th>
+                                    <th className="p-4 text-left">Payment ID</th>
                                     <th className="p-4 text-left">Teacher</th>
                                     <th className="p-4 text-left">Email</th>
-                                    <th className="p-4 text-center">Total Earnings</th>
+                                    <th className="p-4 text-left">Course</th>
+                                    <th className="p-4 text-center">Amount</th>
                                     <th className="p-4 text-center">Status</th>
-                                    <th className="p-4 text-center">Courses</th>
-                                    <th className="p-4 text-center">Transactions</th>
+                                    <th className="p-4 text-center">Date</th>
                                 </tr>
                             </thead>
-<tbody>
+                            <tbody>
                                 {payments.map((payment, index) => (
                                     <motion.tr
                                         key={payment._id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
+                                        transition={{ delay: index * 0.03 }}
                                         className="border-b hover:bg-gray-50"
                                     >
                                         <td className="p-4">
                                             <span className="font-mono text-sm text-gray-600">
-                                                {payment._id?.substring(0, 8)}...
+                                                {payment._id?.substring(0, 12)}...
                                             </span>
                                         </td>
                                         <td className="p-4">
@@ -228,6 +252,11 @@ export default function TeacherPayments() {
                                         <td className="p-4">
                                             <span className="text-gray-600">
                                                 {payment.teacherEmail || "N/A"}
+                                            </span>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-gray-700 font-medium">
+                                                {payment.courseName || "N/A"}
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
@@ -249,13 +278,8 @@ export default function TeacherPayments() {
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className="text-gray-600 font-medium">
-                                                {payment.courses || 0}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <span className="text-gray-600">
-                                                {payment.totalTransactions || 0}
+                                            <span className="text-gray-600 text-sm">
+                                                {formatDate(payment.createdAt)}
                                             </span>
                                         </td>
                                     </motion.tr>
