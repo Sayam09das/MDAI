@@ -59,6 +59,7 @@ import TeacherProtectedRoute from "./ProtectedRoute/TeacherProtectedRoute"
 // 404 Page
 import NotFound from "./Pages/NotFound/NotFound"
 import ReturnStudentPayments from "./Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments"
+import StudentPaymentPage from "./Pages/Student/Dashboard/StudentPayments/StudentPaymentPage"
 import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
 
 const App = () => {
@@ -122,8 +123,19 @@ const App = () => {
           <Route path="messages" element={<ReturnStudentMessages />} />
           <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="payments" element={<ReturnStudentPayments />} />
+          <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
 
         </Route>
+
+        {/* Standalone Payment Page Route */}
+        <Route
+          path="/payment/:enrollmentId"
+          element={
+            <StudentProtectedRoute>
+              <StudentPaymentPage />
+            </StudentProtectedRoute>
+          }
+        />
 
         {/* Teacher Routes */}
         <Route
