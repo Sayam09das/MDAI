@@ -87,9 +87,18 @@ export default function TeacherComplaints() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 const token = localStorage.getItem("token");
 
     useEffect(() => {
+        // Check if user is authenticated
+        if (!token) {
+            setError("Please login to view complaints");
+            setLoading(false);
+            setIsAuthenticated(false);
+            return;
+        }
+        setIsAuthenticated(true);
         fetchComplaints();
         fetchRecipients();
     }, []);
