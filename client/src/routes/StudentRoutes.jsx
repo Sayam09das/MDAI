@@ -19,6 +19,7 @@ import ReturnSearch from "../Pages/Student/Dashboard/Search/ReturnSearch";
 import ReturnStudentMessages from "../Pages/Student/Dashboard/Messages/ReturnStudentMessages";
 import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
 import ReturnStudentPayments from "../Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments";
+import StudentPaymentPage from "../Pages/Student/Dashboard/StudentPayments/StudentPaymentPage";
 
 const StudentRoutes = () => {
     return (
@@ -49,6 +50,7 @@ const StudentRoutes = () => {
                     <Route path="messages" element={<ReturnStudentMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="payments" element={<ReturnStudentPayments />} />
+                    <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
                 </Route>
             </Routes>
         </Suspense>
@@ -56,4 +58,3 @@ const StudentRoutes = () => {
 };
 
 export default StudentRoutes;
-
