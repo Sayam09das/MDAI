@@ -118,13 +118,17 @@ financeTransactionSchema.index({ course: 1 });
 
 // Pre-save middleware to calculate netAmount
 financeTransactionSchema.pre('save', function(next) {
-    if (this.grossAmount && this.adminAmount) {
-        this.netAmount = this.grossAmount - this.adminAmount;
-    } else if (this.grossAmount && this.adminPercentage) {
-        this.adminAmount = (this.grossAmount * this.adminPercentage) / 100;
-        this.netAmount = this.grossAmount - this.adminAmount;
+    try {
+        if (this.grossAmount && this.adminAmount) {
+            this.netAmount = this.grossAmount - this.adminAmount;
+        } else if (this.grossAmount && this.adminPercentage) {
+            this.adminAmount = (this.grossAmount * this.adminPercentage) / 100;
+            this.netAmount = this.grossAmount - this.adminAmount;
+        }
+        if (next) next();
+    } catch (error) {
+        if (next) next(error);
     }
-    next();
 });
 
 const FinanceTransaction = mongoose.model("FinanceTransaction", financeTransactionSchema);
