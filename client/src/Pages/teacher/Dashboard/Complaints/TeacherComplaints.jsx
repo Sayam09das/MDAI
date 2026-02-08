@@ -87,7 +87,7 @@ export default function TeacherComplaints() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const token = localStorage.getItem("teacherToken");
+const token = localStorage.getItem("token");
 
     useEffect(() => {
         fetchComplaints();
