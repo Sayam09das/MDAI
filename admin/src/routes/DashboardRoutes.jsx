@@ -29,6 +29,7 @@ import FinanceDashboard from "../Dashboard/DashboardFinance/FinanceDashboard";
 import ReturnManageTransactions from "../Dashboard/DashboardFinance/ReturnManageTransactions";
 import ReturnTeacherPayments from "../Dashboard/DashboardFinance/ReturnTeacherPayments";
 import ReturnRevenueReports from "../Dashboard/DashboardFinance/ReturnRevenueReports";
+import ComplaintManagement from "../Dashboard/DashboardComplaints/ComplaintManagement";
 
 const DashboardRoutes = () => {
     return (
@@ -82,6 +83,9 @@ const DashboardRoutes = () => {
                     
                     {/* System */}
                     <Route path="dashboard/system" element={<SystemHealth />} />
+                    
+                    {/* Complaints */}
+                    <Route path="dashboard/complaints" element={<ComplaintManagement />} />
                 </Route>
             </Route>
         </Routes>

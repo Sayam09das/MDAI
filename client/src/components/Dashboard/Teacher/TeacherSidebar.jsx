@@ -15,6 +15,7 @@ import {
     X,
     Bell,
     DollarSign,
+    AlertCircle,
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -27,6 +28,7 @@ const mainMenu = [
     { icon: Users, label: "Students", path: "/teacher-dashboard/students" },
     { icon: Bell, label: "Announcements", path: "/teacher-dashboard/announcements" },
     { icon: DollarSign, label: "Finance", path: "/teacher-dashboard/finance" },
+    { icon: AlertCircle, label: "Complaints", path: "/teacher-dashboard/complaints" },
 ];
 
 const extraMenu = [

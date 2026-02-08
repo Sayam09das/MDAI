@@ -14,6 +14,7 @@ import {
   X,
   Bell,
   CreditCard,
+  AlertCircle,
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -25,6 +26,7 @@ const mainMenu = [
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
   { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
   { icon: CreditCard, label: "Payments", path: "/student-dashboard/payments" },
+  { icon: AlertCircle, label: "Complaints", path: "/student-dashboard/complaints" },
 ];
 
 const extraMenu = [
