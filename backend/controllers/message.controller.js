@@ -13,19 +13,31 @@ const getUserDetails = async (role, userId) => {
     try {
         if (role === "student") {
             const user = await User.findById(userId).select("fullName email");
-            return user ? { name: user.fullName, email: user.email } : null;
+            return user ? { name: user.fullName, email: user.email, model: "User" } : null;
         } else if (role === "teacher") {
             const teacher = await Teacher.findById(userId).select("fullName email");
-            return teacher ? { name: teacher.fullName, email: teacher.email } : null;
+            return teacher ? { name: teacher.fullName, email: teacher.email, model: "Teacher" } : null;
         } else if (role === "admin") {
             const admin = await Admin.findById(userId).select("name email");
-            return admin ? { name: admin.name, email: admin.email } : null;
+            return admin ? { name: admin.name, email: admin.email, model: "Admin" } : null;
         }
         return null;
     } catch (error) {
         console.error("Error getting user details:", error);
         return null;
     }
+};
+
+// ============================================
+// HELPER: Convert role to model name
+// ============================================
+const roleToModel = (role) => {
+    const modelMap = {
+        "student": "User",
+        "teacher": "Teacher",
+        "admin": "Admin"
+    };
+    return modelMap[role] || "User";
 };
 
 // ============================================
@@ -61,14 +73,24 @@ const getOrCreateConversation = async (participants) => {
     
     let conversation = await Conversation.findOne({
         participantIds: { $all: participants.map(p => p.userId) },
-        isGroup: false
+        conversationType: "direct"
     });
     
     if (!conversation) {
+        // Convert role to model name for participantsModel
+        const participantsWithModel = participants.map(p => ({
+            userId: p.userId,
+            participantsModel: roleToModel(p.role),
+            name: p.name,
+            email: p.email,
+            joinedAt: new Date(),
+            lastSeen: new Date()
+        }));
+        
         conversation = await Conversation.create({
-            participants: participants,
+            participants: participantsWithModel,
             participantIds: participants.map(p => p.userId),
-            isGroup: false
+            conversationType: "direct"
         });
     }
     
