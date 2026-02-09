@@ -22,7 +22,7 @@ export const protect = (req, res, next) => {
 
 /* ================= ROLE GUARDS ================= */
 export const userOnly = (req, res, next) => {
-  if (req.user.role !== "user") {
+  if (req.user.role !== "user" && req.user.role !== "student") {
     return res.status(403).json({ message: "User access only" });
   }
   next();
