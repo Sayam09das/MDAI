@@ -189,12 +189,19 @@ export default function StudentMessages() {
                     recipient = selectedConversation.participants?.find(
                         p => p.userId !== userId
                     );
-                    // Convert userId to string for comparison
+                    // Convert participantsModel to recipientRole
                     if (recipient) {
+                        const modelToRole = {
+                            "User": "student",
+                            "Teacher": "teacher",
+                            "Admin": "admin"
+                        };
                         recipient = {
-                            ...recipient,
                             userId: recipient.userId?.toString ? recipient.userId.toString() : recipient.userId,
-                            role: recipient.participantsModel?.toLowerCase() || recipient.role?.toLowerCase()
+                            role: modelToRole[recipient.participantsModel] || recipient.role?.toLowerCase(),
+                            participantsModel: recipient.participantsModel,
+                            name: recipient.name,
+                            email: recipient.email
                         };
                     }
                 } else {
