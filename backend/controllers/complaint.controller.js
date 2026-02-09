@@ -10,8 +10,8 @@ const getUserDetails = async (role, userId) => {
             const user = await User.findById(userId).select("fullName email");
             return user ? { name: user.fullName, email: user.email } : null;
         } else if (role === "teacher") {
-            const teacher = await Teacher.findById(userId).select("name email");
-            return teacher ? { name: teacher.name, email: teacher.email } : null;
+            const teacher = await Teacher.findById(userId).select("fullName email");
+            return teacher ? { name: teacher.fullName, email: teacher.email } : null;
         } else if (role === "admin") {
             const admin = await Admin.findById(userId).select("name email");
             return admin ? { name: admin.name, email: admin.email } : null;
