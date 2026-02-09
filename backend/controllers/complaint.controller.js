@@ -50,9 +50,17 @@ export const createComplaint = async (req, res) => {
         
         // Get sender ID based on role
         let senderId;
-        if (senderRole === "student") senderId = req.user.id;
-        else if (senderRole === "teacher") senderId = req.user.id;
-        else if (senderRole === "admin") senderId = req.user.id;
+        let senderModel;
+        if (senderRole === "student") {
+            senderId = req.user.id;
+            senderModel = "User";
+        } else if (senderRole === "teacher") {
+            senderId = req.user.id;
+            senderModel = "Teacher";
+        } else if (senderRole === "admin") {
+            senderId = req.user.id;
+            senderModel = "Admin";
+        }
         
         // Validate recipient role
         if (!validateRecipient(senderRole, recipientRole)) {
@@ -80,18 +88,27 @@ export const createComplaint = async (req, res) => {
             });
         }
         
+        // Map role to model name
+        const roleToModel = {
+            student: "User",
+            teacher: "Teacher",
+            admin: "Admin"
+        };
+        
         // Create complaint
         const complaint = await Complaint.create({
             title,
             description,
             sender: {
                 userId: senderId,
+                model: senderModel,
                 role: senderRole,
                 name: senderDetails.name,
                 email: senderDetails.email
             },
             recipient: {
                 userId: recipientId,
+                model: roleToModel[recipientRole] || "User",
                 role: recipientRole,
                 name: recipientDetails.name,
                 email: recipientDetails.email
@@ -113,8 +130,8 @@ export const createComplaint = async (req, res) => {
         });
         
         const populatedComplaint = await Complaint.findById(complaint._id)
-            .populate("sender.userId", "fullName name email")
-            .populate("recipient.userId", "name email")
+            .populate("sender.userId", "fullName email")
+            .populate("recipient.userId", "fullName email")
             .populate("relatedCourse", "title");
         
         res.status(201).json({

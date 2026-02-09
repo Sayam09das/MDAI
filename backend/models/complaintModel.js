@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+// Import models to ensure they're registered
+import User from "./userModel.js";
+import Teacher from "./teacherModel.js";
+import Admin from "./adminModel.js";
+
 const complaintSchema = new mongoose.Schema({
     // Complaint Title
     title: {
@@ -20,7 +25,12 @@ const complaintSchema = new mongoose.Schema({
     sender: {
         userId: {
             type: mongoose.Schema.Types.ObjectId,
-            refPath: "sender.role",
+            refPath: "sender.model",
+            required: true
+        },
+        model: {
+            type: String,
+            enum: ["User", "Teacher", "Admin"],
             required: true
         },
         role: {
@@ -42,7 +52,12 @@ const complaintSchema = new mongoose.Schema({
     recipient: {
         userId: {
             type: mongoose.Schema.Types.ObjectId,
-            refPath: "recipient.role",
+            refPath: "recipient.model",
+            required: true
+        },
+        model: {
+            type: String,
+            enum: ["User", "Teacher", "Admin"],
             required: true
         },
         role: {
@@ -64,16 +79,16 @@ const complaintSchema = new mongoose.Schema({
     category: {
         type: String,
         enum: [
-            "academic",        // Course-related issues
-            "payment",         // Payment/finance issues
-            "harassment",      // Harassment/bullying
-            "technical",       // Platform/technical issues
-            "discrimination",  // Discrimination
-            "course_content",  // Course material issues
-            "assessment",      // Grading/assessment issues
-            "communication",   // Communication issues
-            "facilities",      // Facilities/resources
-            "other"            // Other
+            "academic",
+            "payment",
+            "harassment",
+            "technical",
+            "discrimination",
+            "course_content",
+            "assessment",
+            "communication",
+            "facilities",
+            "other"
         ],
         default: "other"
     },
@@ -111,7 +126,7 @@ const complaintSchema = new mongoose.Schema({
     attachments: [{
         filename: String,
         url: String,
-        type: String, // image, document, etc.
+        type: String,
         uploadedAt: {
             type: Date,
             default: Date.now
