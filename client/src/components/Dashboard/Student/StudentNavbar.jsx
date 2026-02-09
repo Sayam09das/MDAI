@@ -9,6 +9,7 @@ import {
     MessageSquare,
     X,
 } from "lucide-react";
+import { useSocket } from "../../../context/SocketContext";
 import { getBackendURL } from "../../../lib/config";
 
 const BACKEND_URL = getBackendURL();
@@ -59,6 +60,7 @@ const extractImageUrl = (image) => {
 
 const StudentNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
+    const { totalUnread, isConnected: socketConnected, onlineUsers } = useSocket();
     const [currentUser, setCurrentUser] = useState(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -397,28 +399,41 @@ const StudentNavbar = ({ onMenuClick }) => {
                         </div>
 
                         {/* NOTIFICATIONS */}
-                        <button
-                            onClick={() => {
-                                setShowNotifications(prev => !prev);
-                                setIsProfileOpen(false);
-                            }}
-                            className="relative p-2 rounded-md hover:bg-gray-50"
-                        >
-                            <Bell className="w-5 h-5 text-gray-700" />
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setShowNotifications(prev => !prev);
+                                    setIsProfileOpen(false);
+                                }}
+                                className="relative p-2 rounded-md hover:bg-gray-50"
+                            >
+                                <Bell className="w-5 h-5 text-gray-700" />
 
-                            {/* 🔴 Red dot */}
-                            {unreadCount > 0 && (
-                                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-                            )}
-                        </button>
+                                {/* 🔴 Green WhatsApp-style Unread Badge */}
+                                {totalUnread > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-[#25D366] text-white text-xs font-bold rounded-full px-1">
+                                        {totalUnread > 99 ? "99+" : totalUnread}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
 
                         {/* MESSAGES */}
-                        <button
-                            onClick={() => navigate("/teacher/messages")}
-                            className="p-2 rounded-md hover:bg-gray-50"
-                        >
-                            <MessageSquare className="w-5 h-5 text-gray-700" />
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => navigate("/student-dashboard/messages")}
+                                className="p-2 rounded-md hover:bg-gray-50"
+                            >
+                                <MessageSquare className="w-5 h-5 text-gray-700" />
+
+                                {/* 🔵 Blue Message Badge */}
+                                {totalUnread > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-[#34B7F1] text-white text-xs font-bold rounded-full px-1">
+                                        {totalUnread > 99 ? "99+" : totalUnread}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </nav>

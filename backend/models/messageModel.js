@@ -37,6 +37,28 @@ const messageSchema = new mongoose.Schema(
         size: Number,
       },
     ],
+    // WhatsApp-style delivery tracking
+    status: {
+      type: String,
+      enum: ["sending", "sent", "delivered", "read"],
+      default: "sent",
+    },
+    deliveredTo: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          refPath: "deliveredToModel",
+        },
+        deliveredToModel: {
+          type: String,
+          enum: ["User", "Teacher", "Admin"],
+        },
+        deliveredAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     readBy: [
       {
         userId: {
@@ -45,7 +67,7 @@ const messageSchema = new mongoose.Schema(
         },
         readByModel: {
           type: String,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
         },
         readAt: {
           type: Date,
@@ -69,6 +91,8 @@ const messageSchema = new mongoose.Schema(
 // Index for efficient message queries
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ sender: 1 });
+messageSchema.index({ "readBy.userId": 1 });
+messageSchema.index({ "deliveredTo.userId": 1 });
 
 const Message = mongoose.model("Message", messageSchema);
 

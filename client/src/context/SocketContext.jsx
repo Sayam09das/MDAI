@@ -84,7 +84,14 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState({});
+  const [messages, setMessages] = useState({}); // { conversationId: [messages] }
+  const [conversations, setConversations] = useState([]);
+  const [totalUnread, setTotalUnread] = useState(0);
   const reconnectAttempts = useRef(0);
+
+  // Current user info
+  const currentUserId = localStorage.getItem("userId") || localStorage.getItem("teacherId");
+  const userRole = localStorage.getItem("role") || "student";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -140,25 +147,61 @@ export const SocketProvider = ({ children }) => {
       setOnlineUsers(users);
     });
 
+    /* ======================================================
+       REAL-TIME MESSAGE HANDLING (WHATSAPP STYLE)
+    ====================================================== */
+    
     newSocket.on("receive_message", (message) => {
-      // Handle incoming message - normalize sender structure for frontend
       console.log("📩 New message received:", message);
       
-      // Get current user ID for normalization
-      const currentUserId = localStorage.getItem("userId") || localStorage.getItem("teacherId");
-      
-      // Normalize the message to ensure proper sender structure
+      // Normalize the message
       const normalizedMessage = normalizeMessage(message, currentUserId);
       
-      // Emit normalized message to components
-      // The chat components will listen to this event
+      // Add message to conversation
+      setMessages((prev) => {
+        const convId = message.conversationId;
+        const existingMessages = prev[convId] || [];
+        
+        // Check if message already exists
+        if (existingMessages.some(m => m._id === normalizedMessage._id)) {
+          return prev;
+        }
+        
+        return {
+          ...prev,
+          [convId]: [...existingMessages, normalizedMessage]
+        };
+      });
     });
 
     newSocket.on("new_message_notification", (data) => {
-      // Handle new message notification
       console.log("🔔 New message notification:", data);
+      // Increment unread count
+      setTotalUnread((prev) => prev + 1);
     });
 
+    newSocket.on("message_status_update", (data) => {
+      console.log("📬 Message status update:", data);
+      const { messageId, conversationId, status } = data;
+      
+      // Update message status in local state
+      setMessages((prev) => {
+        const convMessages = prev[conversationId];
+        if (!convMessages) return prev;
+        
+        return {
+          ...prev,
+          [conversationId]: convMessages.map(m => 
+            m._id === messageId ? { ...m, status } : m
+          )
+        };
+      });
+    });
+
+    /* ======================================================
+       TYPING INDICATOR
+    ====================================================== */
+    
     newSocket.on("user_typing", (data) => {
       const { conversationId, userId, isTyping } = data;
       setTypingUsers((prev) => {
@@ -172,10 +215,23 @@ export const SocketProvider = ({ children }) => {
       });
     });
 
-    newSocket.on("message_status_update", (data) => {
-      console.log("Message status update:", data);
+    newSocket.on("user_typing_direct", (data) => {
+      const { conversationId, userId, isTyping } = data;
+      setTypingUsers((prev) => {
+        const key = `${conversationId}_${userId}`;
+        if (isTyping) {
+          return { ...prev, [key]: true };
+        } else {
+          const { [key]: _, ...rest } = prev;
+          return rest;
+        }
+      });
     });
 
+    /* ======================================================
+       ERROR HANDLING
+    ====================================================== */
+    
     newSocket.on("error", (error) => {
       console.error("Socket error:", error);
     });
@@ -189,7 +245,19 @@ export const SocketProvider = ({ children }) => {
     };
   }, []);
 
-  /* ================= HELPER FUNCTIONS ================= */
+  /* ======================================================
+     CALCULATE TOTAL UNREAD
+  ====================================================== */
+  
+  useEffect(() => {
+    // Calculate total unread from conversations
+    const total = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+    setTotalUnread(total);
+  }, [conversations]);
+
+  /* ======================================================
+     HELPER FUNCTIONS
+  ====================================================== */
 
   const joinConversation = useCallback(
     (conversationId) => {
@@ -261,11 +329,68 @@ export const SocketProvider = ({ children }) => {
     [onlineUsers]
   );
 
+  const addMessage = useCallback(
+    (conversationId, message) => {
+      const normalized = normalizeMessage(message, currentUserId);
+      setMessages((prev) => ({
+        ...prev,
+        [conversationId]: [...(prev[conversationId] || []), normalized]
+      }));
+    },
+    [currentUserId]
+  );
+
+  const updateMessageStatus = useCallback(
+    (conversationId, messageId, status) => {
+      setMessages((prev) => {
+        const convMessages = prev[conversationId];
+        if (!convMessages) return prev;
+        
+        return {
+          ...prev,
+          [conversationId]: convMessages.map(m => 
+            m._id === messageId ? { ...m, status } : m
+          )
+        };
+      });
+    },
+    []
+  );
+
+  const setConversationsData = useCallback((convs) => {
+    setConversations(convs);
+  }, []);
+
+  const updateConversationUnread = useCallback((conversationId, count) => {
+    setConversations((prev) =>
+      prev.map(c => c._id === conversationId ? { ...c, unreadCount: count } : c)
+    );
+  }, []);
+
+  const clearUnread = useCallback((conversationId) => {
+    setTotalUnread((prev) => {
+      const conv = conversations.find(c => c._id === conversationId);
+      if (conv) {
+        return prev - (conv.unreadCount || 0);
+      }
+      return prev;
+    });
+    
+    setConversations((prev) =>
+      prev.map(c => c._id === conversationId ? { ...c, unreadCount: 0 } : c)
+    );
+  }, [conversations]);
+
   const value = {
     socket,
     isConnected,
     onlineUsers,
     typingUsers,
+    messages,
+    conversations,
+    totalUnread,
+    currentUserId,
+    userRole,
     joinConversation,
     leaveConversation,
     sendTypingStart,
@@ -274,6 +399,11 @@ export const SocketProvider = ({ children }) => {
     markMessageDelivered,
     markMessageRead,
     isUserOnline,
+    addMessage,
+    updateMessageStatus,
+    setConversationsData,
+    updateConversationUnread,
+    clearUnread,
   };
 
   return (
