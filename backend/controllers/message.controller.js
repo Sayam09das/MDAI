@@ -44,13 +44,13 @@ const roleToModel = (role) => {
 // HELPER: Validate role-based permissions
 // ============================================
 const canMessage = (senderRole, targetRole) => {
-    // Student can message: Teacher, Admin
+    // Student can message: Teacher, Admin, AND OTHER STUDENTS (for replies)
     if (senderRole === "student") {
-        return ["teacher", "admin"].includes(targetRole);
+        return ["teacher", "admin", "student"].includes(targetRole);
     }
-    // Teacher can message: Student (individual), Course (broadcast), Admin
+    // Teacher can message: Student (individual), Course (broadcast), Admin, OTHER TEACHERS
     if (senderRole === "teacher") {
-        return ["student", "admin"].includes(targetRole);
+        return ["student", "admin", "teacher"].includes(targetRole);
     }
     // Admin can message anyone
     if (senderRole === "admin") {
@@ -451,9 +451,13 @@ export const getMessageRecipients = async (req, res) => {
         
         // Build recipient list based on sender role
         if (senderRole === "student") {
-            // Students can message: teachers, admins
+            // Students can message: teachers, admins, AND OTHER STUDENTS
+            const students = await User.find({ isSuspended: false, _id: { $ne: senderId } })
+                .select("_id fullName email")
+                .lean();
+            
             recipients = [
-                ...teachers.filter(t => t._id.toString() !== senderId).map(t => ({
+                ...teachers.map(t => ({
                     userId: t._id,
                     role: "teacher",
                     name: t.fullName,
@@ -464,11 +468,21 @@ export const getMessageRecipients = async (req, res) => {
                     role: "admin",
                     name: a.name,
                     email: a.email
+                })),
+                ...students.map(s => ({
+                    userId: s._id,
+                    role: "student",
+                    name: s.fullName,
+                    email: s.email
                 }))
             ];
         } else if (senderRole === "teacher") {
-            // Teachers can message: students, admins
+            // Teachers can message: students, admins, OTHER TEACHERS
             const students = await User.find({ isSuspended: false })
+                .select("_id fullName email")
+                .lean();
+            
+            const otherTeachers = await Teacher.find({ _id: { $ne: senderId } })
                 .select("_id fullName email")
                 .lean();
             
@@ -484,6 +498,12 @@ export const getMessageRecipients = async (req, res) => {
                     role: "admin",
                     name: a.name,
                     email: a.email
+                })),
+                ...otherTeachers.map(t => ({
+                    userId: t._id,
+                    role: "teacher",
+                    name: t.fullName,
+                    email: t.email
                 }))
             ];
         } else if (senderRole === "admin") {
