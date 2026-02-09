@@ -170,14 +170,14 @@ complaintSchema.index({ priority: 1 });
 complaintSchema.index({ isDeleted: 1 });
 
 // Pre-save middleware to add status history
-complaintSchema.pre('save', function(next) {
+complaintSchema.pre('save', function() {
+    // Only add to history if status is modified AND this is NOT a new document
     if (this.isModified('status') && !this.isNew) {
         this.statusHistory.push({
             status: this.status,
             changedAt: new Date()
         });
     }
-    next();
 });
 
 // Static method to get complaints by user
