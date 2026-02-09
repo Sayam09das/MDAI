@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Bell,
@@ -62,6 +62,7 @@ const StudentNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
     const { totalUnread, isConnected: socketConnected, onlineUsers } = useSocket();
     const [currentUser, setCurrentUser] = useState(null);
+    const profileRef = useRef(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -232,6 +233,17 @@ const StudentNavbar = ({ onMenuClick }) => {
 
         fetchCurrentUser();
     }, [navigate]);
+
+    // Close profile dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (profileRef.current && !profileRef.current.contains(e.target)) {
+                setIsProfileOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
 
     const handleLogout = async () => {
