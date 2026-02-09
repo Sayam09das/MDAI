@@ -16,11 +16,13 @@ import {
     Bell,
     DollarSign,
     AlertCircle,
+    Search,
 } from "lucide-react";
 
 /* ================= MENU ================= */
 const mainMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/teacher-dashboard" },
+    { icon: Search, label: "Search", path: "/teacher-dashboard/search" },
     { icon: BookOpen, label: "My Courses", path: "/teacher-dashboard/mycourse" },
     { icon: Plus, label: "Create Course", path: "/teacher-dashboard/create-course" },
     { icon: FolderOpen, label: "Resources", path: "/teacher-dashboard/resources" },
@@ -72,7 +74,7 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
             {/* MOBILE OVERLAY */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
                     onClick={onClose}
                     aria-hidden="true"
                 />
@@ -88,26 +90,31 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
                 flex flex-col`}
             >
                 {/* HEADER */}
-                <div className="flex-shrink-0 h-16 flex items-center justify-between px-4 border-b border-gray-200 lg:border-b-0">
+                <div className="flex-shrink-0 h-16 flex items-center justify-between px-4 border-b border-slate-200 lg:border-b-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-white shadow-md flex items-center justify-center">
                             <img
                                 src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"
                                 alt="MDAI Logo"
                                 className="w-full h-full object-contain"
                             />
                         </div>
-                        <span className="text-lg font-semibold text-gray-900 truncate">
-                            MDAI
+                        <div className="hidden lg:block">
+                            <div className="text-sm font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
+                                MDAI
+                            </div>
+                        </div>
+                        <span className="text-lg font-semibold text-slate-900 truncate">
+                            Teacher
                         </span>
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="lg:hidden p-2 rounded-md hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                        className="lg:hidden p-2 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
                         aria-label="Close sidebar"
                     >
-                        <X className="w-5 h-5 text-gray-700" />
+                        <X className="w-5 h-5 text-slate-700" />
                     </button>
                 </div>
 
@@ -123,7 +130,7 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
 
                     {/* TOOLS SECTION */}
                     <div className="pt-6 space-y-1">
-                        <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                             Tools
                         </p>
                         {extraMenu.map(item => (
@@ -133,7 +140,7 @@ const TeacherSidebar = ({ isOpen, onClose }) => {
 
                     {/* OTHERS SECTION */}
                     <div className="pt-6 pb-4 space-y-1">
-                        <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                             Account
                         </p>
                         {otherMenu.map(item => (
@@ -170,18 +177,18 @@ const SidebarLink = ({ icon: Icon, label, path, onClick: externalOnClick }) => {
         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-left
             transition-all duration-200 group relative overflow-hidden
             ${isActive
-                ? "bg-blue-50 text-blue-700 shadow-sm"
-                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                : "text-slate-700 hover:bg-slate-50 active:bg-slate-100"
             }`
         }
     >
         {/* Active indicator */}
         {isActive && (
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r" />
         )}
 
         <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110
-                    ${isActive ? "text-blue-600" : "text-gray-500"}`}
+                    ${isActive ? "text-indigo-600" : "text-slate-500"}`}
         />
         <span className="truncate">{label}</span>
     </button>

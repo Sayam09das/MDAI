@@ -10,7 +10,7 @@ const TeacherLayout = () => {
     const loading = useRouteLoader(600); // 👈 route-change loader
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-50">
             <TeacherNavbar onMenuClick={() => setSidebarOpen(true)} />
 
             <TeacherSidebar
