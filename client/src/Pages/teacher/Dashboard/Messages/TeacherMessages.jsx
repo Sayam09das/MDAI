@@ -25,6 +25,7 @@ import {
     Globe
 } from "lucide-react";
 import { getBackendURL } from "../../../../lib/config";
+import { useSocket } from "../../../../context/SocketContext";
 
 const BACKEND_URL = getBackendURL();
 
@@ -78,6 +79,9 @@ export default function TeacherMessages() {
     const token = localStorage.getItem("token");
     const userRole = "teacher";
     const userId = localStorage.getItem("teacherId") || localStorage.getItem("userId");
+    
+    // Get SocketContext functions
+    const { setConversationsData } = useSocket();
 
     useEffect(() => {
         fetchConversations();
@@ -108,6 +112,10 @@ export default function TeacherMessages() {
 
             if (data.success) {
                 setConversations(data.conversations || []);
+                // Sync with SocketContext for real-time updates
+                if (setConversationsData) {
+                    setConversationsData(data.conversations || []);
+                }
             } else {
                 setError(data.message || "Failed to fetch conversations");
             }

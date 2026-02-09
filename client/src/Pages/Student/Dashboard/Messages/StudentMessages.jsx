@@ -23,6 +23,7 @@ import {
     BookOpen
 } from "lucide-react";
 import { getBackendURL } from "../../../../lib/config";
+import { useSocket } from "../../../../context/SocketContext";
 
 const BACKEND_URL = getBackendURL();
 
@@ -76,6 +77,9 @@ export default function StudentMessages() {
     const token = localStorage.getItem("token");
     const userRole = "student";
     const userId = localStorage.getItem("userId");
+    
+    // Get SocketContext functions
+    const { setConversationsData } = useSocket();
 
     useEffect(() => {
         fetchConversations();
@@ -106,6 +110,10 @@ export default function StudentMessages() {
 
             if (data.success) {
                 setConversations(data.conversations || []);
+                // Sync with SocketContext for real-time updates
+                if (setConversationsData) {
+                    setConversationsData(data.conversations || []);
+                }
             } else {
                 setError(data.message || "Failed to fetch conversations");
             }
