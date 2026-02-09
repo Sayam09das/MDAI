@@ -59,13 +59,13 @@ export const registerUser = async (req, res) => {
 
     const token = generateToken({
       id: user._id,
-      role: "user",
+      role: "student",  // ✅ Changed from "user" to "student"
     });
 
     res.status(201).json({
       message: "User registered successfully",
       token,
-      role: "user",
+      role: "student",  // ✅ Changed from "user" to "student"
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -73,6 +73,7 @@ export const registerUser = async (req, res) => {
         phone: user.phone,
         address: user.address,
         isVerified: user.isVerified,
+        role: "student",  // ✅ Added role field
       },
     });
   } catch (error) {
@@ -94,7 +95,7 @@ export const login = async (req, res) => {
     const { email, password } = schema.parse(req.body);
 
     let account = await User.findOne({ email }).select("+password");
-    let role = "user";
+    let role = "student";  // ✅ Changed from "user" to "student"
 
     if (!account) {
       account = await Teacher.findOne({ email }).select("+password");
@@ -124,6 +125,7 @@ export const login = async (req, res) => {
         fullName: account.fullName,
         email: account.email,
         isVerified: account.isVerified,
+        role,  // ✅ Include role in response
       },
     });
   } catch (error) {
