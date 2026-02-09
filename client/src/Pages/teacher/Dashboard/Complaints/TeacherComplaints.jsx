@@ -105,22 +105,27 @@ export default function TeacherComplaints() {
 
     const fetchRecipients = async () => {
         try {
-            console.log("Fetching recipients for teacher...");
+            console.log("✅ Fetching recipients for teacher...");
             const res = await fetch(`${BACKEND_URL}/api/complaints/recipients`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
-            console.log("Recipients API response:", data);
+            console.log("✅ Recipients API response:", data);
             
-            if (data.success) {
-                setRecipients(data.recipients || []);
-                console.log("Recipients loaded:", data.recipients?.length || 0);
+            if (data.success && data.recipients) {
+                setRecipients(data.recipients);
+                console.log(`✅ Loaded ${data.recipients.length} recipients`);
+                
+                // Debug: Log sample recipients to verify names
+                if (data.recipients.length > 0) {
+                    console.log("Sample recipient:", data.recipients[0]);
+                }
             } else {
-                console.error("Failed to fetch recipients:", data.message);
+                console.error("❌ Failed to fetch recipients:", data.message);
                 setRecipients([]);
             }
         } catch (err) {
-            console.error("Fetch recipients error:", err);
+            console.error("❌ Fetch recipients error:", err);
             setRecipients([]);
         }
     };

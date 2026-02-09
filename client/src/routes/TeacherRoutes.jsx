@@ -12,7 +12,7 @@ import ReturnTeacherprofile from "../Pages/teacher/Dashboard/TeacherProfile/Retu
 import ReturnTeacherSettings from "../Pages/teacher/Dashboard/MainTeacherSettings/ReturnTeacherSettings";
 import ReturnTeacherResources from "../Pages/teacher/Dashboard/MainResources/ReturnTeacherResources";
 import ReturnSearch from "../Pages/teacher/Dashboard/MainSearch/ReturnSearch";
-import ReturnTeacherMessages from "../Pages/teacher/Dashboard/Messages/ReturnTeacherMessages";
+import TeacherMessages from "../Pages/teacher/Dashboard/Messages/TeacherMessages";
 import ReturnAnnouncements from "../Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
 import ReturnTeacherFinance from "../Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance";
 import TeacherComplaints from "../Pages/teacher/Dashboard/Complaints/TeacherComplaints";
@@ -52,7 +52,7 @@ const TeacherRoutes = () => {
                     <Route path="profile" element={<ReturnTeacherprofile />} />
                     <Route path="settings" element={<ReturnTeacherSettings />} />
                     <Route path="search" element={<ReturnSearch />} />
-                    <Route path="messages" element={<ReturnTeacherMessages />} />
+                    <Route path="messages" element={<TeacherMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="finance" element={<ReturnTeacherFinance />} />
                     <Route path="complaints" element={<TeacherComplaints />} />

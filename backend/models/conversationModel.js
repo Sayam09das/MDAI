@@ -12,7 +12,13 @@ const conversationSchema = new mongoose.Schema(
         participantsModel: {
           type: String,
           required: true,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
+        },
+        name: {
+          type: String, // Store name for easy access
+        },
+        email: {
+          type: String, // Store email for easy access
         },
         joinedAt: {
           type: Date,
@@ -24,9 +30,12 @@ const conversationSchema = new mongoose.Schema(
         },
       },
     ],
+    participantIds: [{
+      type: mongoose.Schema.Types.ObjectId
+    }],
     conversationType: {
       type: String,
-      enum: ["direct", "group"],
+      enum: ["direct", "group", "course", "broadcast"],
       default: "direct",
     },
     groupName: {
@@ -46,7 +55,7 @@ const conversationSchema = new mongoose.Schema(
         },
         groupAdminModel: {
           type: String,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
         },
       },
     ],
@@ -61,9 +70,19 @@ const conversationSchema = new mongoose.Schema(
       senderId: {
         type: mongoose.Schema.Types.ObjectId,
       },
+      senderName: {
+        type: String,
+      },
       createdAt: {
         type: Date,
       },
+    },
+    lastMessageAt: {
+      type: Date,
+      default: Date.now
+    },
+    lastReadAt: {
+      type: Date,
     },
     unreadCount: [
       {
@@ -73,7 +92,7 @@ const conversationSchema = new mongoose.Schema(
         },
         unreadCountModel: {
           type: String,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
         },
         count: {
           type: Number,
@@ -81,6 +100,24 @@ const conversationSchema = new mongoose.Schema(
         },
       },
     ],
+    // Course-specific fields
+    courseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "createdByModel",
+    },
+    createdByModel: {
+      type: String,
+      enum: ["User", "Teacher", "Admin"],
+    },
+    // Global broadcast flag
+    isGlobalBroadcast: {
+      type: Boolean,
+      default: false,
+    },
     isArchived: {
       type: Boolean,
       default: false,
@@ -93,7 +130,7 @@ const conversationSchema = new mongoose.Schema(
         },
         archivedByModel: {
           type: String,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
         },
       },
     ],
@@ -109,7 +146,7 @@ const conversationSchema = new mongoose.Schema(
         },
         mutedByModel: {
           type: String,
-          enum: ["User", "Teacher"],
+          enum: ["User", "Teacher", "Admin"],
         },
       },
     ],
@@ -124,8 +161,15 @@ const conversationSchema = new mongoose.Schema(
       },
       blockedByModel: {
         type: String,
-        enum: ["User", "Teacher"],
+        enum: ["User", "Teacher", "Admin"],
       },
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
     },
     customSettings: {
       type: Map,
@@ -145,9 +189,13 @@ const conversationSchema = new mongoose.Schema(
 );
 
 // Compound index for efficient participant queries
-conversationSchema.index({ "participants.userId": 1, "participants.participantsModel": 1 });
+conversationSchema.index({ "participants.userId": 1 });
+conversationSchema.index({ participantIds: 1 });
 conversationSchema.index({ "lastMessage.createdAt": -1 });
+conversationSchema.index({ lastMessageAt: -1 });
 conversationSchema.index({ updatedAt: -1 });
+conversationSchema.index({ courseId: 1 });
+conversationSchema.index({ isGlobalBroadcast: 1 });
 
 // Static method to find or create conversation
 conversationSchema.statics.findOrCreateConversation = async function (
@@ -158,7 +206,6 @@ conversationSchema.statics.findOrCreateConversation = async function (
 ) {
   try {
     // Check if conversation already exists
-    // We need to check both orderings since participants array order doesn't matter
     const existingConversation = await this.findOne({
       conversationType: "direct",
       "participants.userId": { $all: [new mongoose.Types.ObjectId(userId1), new mongoose.Types.ObjectId(userId2)] },
@@ -175,6 +222,7 @@ conversationSchema.statics.findOrCreateConversation = async function (
         { userId: new mongoose.Types.ObjectId(userId1), participantsModel: model1 },
         { userId: new mongoose.Types.ObjectId(userId2), participantsModel: model2 },
       ],
+      participantIds: [new mongoose.Types.ObjectId(userId1), new mongoose.Types.ObjectId(userId2)],
       conversationType: "direct",
     });
 
@@ -185,48 +233,13 @@ conversationSchema.statics.findOrCreateConversation = async function (
   }
 };
 
-// Method to update last message
-conversationSchema.methods.updateLastMessage = async function (
-  messageId,
-  content,
-  senderId
-) {
-  this.lastMessage = {
-    messageId,
-    content,
-    senderId,
-    createdAt: new Date(),
-  };
-  return await this.save();
-};
-
-// Method to increment unread count
-conversationSchema.methods.incrementUnreadCount = async function (userId, model) {
-  const unreadEntry = this.unreadCount.find(
-    (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === model
-  );
-
-  if (unreadEntry) {
-    unreadEntry.count += 1;
-  } else {
-    this.unreadCount.push({ userId, unreadCountModel: model, count: 1 });
-  }
-
-  return await this.save();
-};
-
-// Method to reset unread count
-conversationSchema.methods.resetUnreadCount = async function (userId, model) {
-  const unreadEntry = this.unreadCount.find(
-    (u) => u.userId.toString() === userId.toString() && u.unreadCountModel === model
-  );
-
-  if (unreadEntry) {
-    unreadEntry.count = 0;
-  }
-
-  return await this.save();
-};
+// Pre-save middleware to update participantIds
+conversationSchema.pre('save', function(next) {
+    if (this.isModified('participants')) {
+        this.participantIds = this.participants.map(p => p.userId);
+    }
+    next();
+});
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 

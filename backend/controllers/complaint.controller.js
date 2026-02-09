@@ -490,14 +490,14 @@ export const getRecipients = async (req, res) => {
         
         let recipients = [];
         
-        // Get teachers
+        // Get teachers - use correct field name (fullName) from Teacher model
         const teachers = await Teacher.find({ isSuspended: false })
-            .select("name email")
+            .select("_id fullName email")
             .lean();
         
-        // Get admins
+        // Get admins - use 'name' field from Admin model
         const admins = await Admin.find()
-            .select("name email")
+            .select("_id name email")
             .lean();
         
         // Build recipient list based on sender role
@@ -507,28 +507,28 @@ export const getRecipients = async (req, res) => {
                 ...teachers.map(t => ({
                     userId: t._id,
                     role: "teacher",
-                    name: t.name,
+                    name: t.fullName, // ✅ FIXED: Use fullName (not name) for Teacher
                     email: t.email
                 })),
                 ...admins.map(a => ({
                     userId: a._id,
                     role: "admin",
-                    name: a.name,
+                    name: a.name, // Admin uses 'name' field
                     email: a.email
                 }))
             ];
         } else if (senderRole === "teacher") {
             // Teachers can complain to: students, admins
-            // Get students (could be filtered further)
+            // Get students - User model uses 'fullName'
             const students = await User.find({ isSuspended: false })
-                .select("fullName email")
+                .select("_id fullName email")
                 .lean();
             
             recipients = [
                 ...students.map(s => ({
                     userId: s._id,
                     role: "student",
-                    name: s.fullName,
+                    name: s.fullName, // User uses 'fullName'
                     email: s.email
                 })),
                 ...admins.map(a => ({
@@ -540,9 +540,9 @@ export const getRecipients = async (req, res) => {
             ];
         } else if (senderRole === "admin") {
             // Admins can complain to anyone
-            // Get students and teachers for admin
+            // Get students - User model uses 'fullName'
             const students = await User.find({ isSuspended: false })
-                .select("fullName email")
+                .select("_id fullName email")
                 .lean();
             
             recipients = [
@@ -555,7 +555,7 @@ export const getRecipients = async (req, res) => {
                 ...teachers.map(t => ({
                     userId: t._id,
                     role: "teacher",
-                    name: t.name,
+                    name: t.fullName, // FIXED: Use fullName
                     email: t.email
                 })),
                 ...admins.map(a => ({
@@ -567,12 +567,18 @@ export const getRecipients = async (req, res) => {
             ];
         }
         
+        // DEBUG: Log the first few recipients to verify names are populated
+        console.log(`✅ getRecipients: Returning ${recipients.length} recipients for ${senderRole}`);
+        if (recipients.length > 0) {
+            console.log("Sample recipient:", recipients[0]);
+        }
+        
         res.json({
             success: true,
             recipients
         });
     } catch (error) {
-        console.error("Get recipients error:", error);
+        console.error("❌ Get recipients error:", error);
         res.status(500).json({
             success: false,
             message: error.message || "Failed to fetch recipients"

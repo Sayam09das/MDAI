@@ -16,7 +16,7 @@ import ReturnStudentProfile from "../Pages/Student/Dashboard/StudentProfile/Retu
 import ReturnAttendence from "../Pages/Student/Dashboard/StudentAttendence/ReturnAttendence";
 import ReturnCalendar from "../Pages/Student/Dashboard/StudentCalendar/ReturnCalendar";
 import ReturnSearch from "../Pages/Student/Dashboard/Search/ReturnSearch";
-import ReturnStudentMessages from "../Pages/Student/Dashboard/Messages/ReturnStudentMessages";
+import StudentMessages from "../Pages/Student/Dashboard/Messages/StudentMessages";
 import ReturnAnnouncements from "../Pages/Student/Dashboard/Announcements/ReturnAnnouncements";
 import ReturnStudentPayments from "../Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments";
 import StudentPaymentPage from "../Pages/Student/Dashboard/StudentPayments/StudentPaymentPage";
@@ -48,7 +48,7 @@ const StudentRoutes = () => {
                     <Route path="attendance" element={<ReturnAttendence />} />
                     <Route path="calendar" element={<ReturnCalendar />} />
                     <Route path="search" element={<ReturnSearch />} />
-                    <Route path="messages" element={<ReturnStudentMessages />} />
+                    <Route path="messages" element={<StudentMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="payments" element={<ReturnStudentPayments />} />
                     <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
