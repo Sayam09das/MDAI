@@ -234,11 +234,10 @@ conversationSchema.statics.findOrCreateConversation = async function (
 };
 
 // Pre-save middleware to update participantIds
-conversationSchema.pre('save', function(next) {
+conversationSchema.pre('save', function() {
     if (this.isModified('participants')) {
         this.participantIds = this.participants.map(p => p.userId);
     }
-    next();
 });
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
