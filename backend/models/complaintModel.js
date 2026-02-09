@@ -30,8 +30,7 @@ const complaintSchema = new mongoose.Schema({
         },
         model: {
             type: String,
-            enum: ["User", "Teacher", "Admin"],
-            required: true
+            enum: ["User", "Teacher", "Admin"]
         },
         role: {
             type: String,
@@ -57,8 +56,7 @@ const complaintSchema = new mongoose.Schema({
         },
         model: {
             type: String,
-            enum: ["User", "Teacher", "Admin"],
-            required: true
+            enum: ["User", "Teacher", "Admin"]
         },
         role: {
             type: String,
