@@ -44,6 +44,11 @@ import {
     // User lists (for paginated pages)
     getAllStudentsAdmin,
     getAllTeachersAdmin,
+    // User management (suspend/resume)
+    suspendStudentAdmin,
+    resumeStudentAdmin,
+    suspendTeacherAdmin,
+    resumeTeacherAdmin,
 } from "../controllers/admin.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
@@ -387,6 +392,42 @@ router.get(
     protect,
     adminOnly,
     getAllTeachersAdmin
+);
+
+/* =====================================
+   ADMIN USER MANAGEMENT (SUSPEND/RESUME)
+===================================== */
+
+// Suspend a student
+router.patch(
+    "/users/students/:studentId/suspend",
+    protect,
+    adminOnly,
+    suspendStudentAdmin
+);
+
+// Resume a student
+router.patch(
+    "/users/students/:studentId/resume",
+    protect,
+    adminOnly,
+    resumeStudentAdmin
+);
+
+// Suspend a teacher
+router.patch(
+    "/users/teachers/:teacherId/suspend",
+    protect,
+    adminOnly,
+    suspendTeacherAdmin
+);
+
+// Resume a teacher
+router.patch(
+    "/users/teachers/:teacherId/resume",
+    protect,
+    adminOnly,
+    resumeTeacherAdmin
 );
 
 export default router;

@@ -646,6 +646,230 @@ export const getUserCountsAdmin = async (req, res) => {
 };
 
 /* =========================================
+   ADMIN: SUSPEND STUDENT
+   ========================================= */
+export const suspendStudentAdmin = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const adminId = req.user.id;
+
+        // Find student
+        const student = await User.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Student not found" 
+            });
+        }
+
+        // Check if already suspended
+        if (student.isSuspended) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Student is already suspended" 
+            });
+        }
+
+        // Suspend the student
+        student.isSuspended = true;
+        await student.save();
+
+        // Create audit log
+        await createAuditLog(
+            adminId,
+            "STUDENT_SUSPENDED",
+            `Student ${student.fullName} (${student.email}) has been suspended`,
+            "success"
+        );
+
+        res.json({
+            success: true,
+            message: "Student suspended successfully",
+            student: {
+                id: student._id,
+                fullName: student.fullName,
+                email: student.email,
+                isSuspended: true
+            }
+        });
+    } catch (error) {
+        console.error("Suspend student error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to suspend student" 
+        });
+    }
+};
+
+/* =========================================
+   ADMIN: RESUME STUDENT
+   ========================================= */
+export const resumeStudentAdmin = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const adminId = req.user.id;
+
+        // Find student
+        const student = await User.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Student not found" 
+            });
+        }
+
+        // Check if already active
+        if (!student.isSuspended) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Student is already active" 
+            });
+        }
+
+        // Resume the student
+        student.isSuspended = false;
+        await student.save();
+
+        // Create audit log
+        await createAuditLog(
+            adminId,
+            "STUDENT_RESUMED",
+            `Student ${student.fullName} (${student.email}) has been activated`,
+            "success"
+        );
+
+        res.json({
+            success: true,
+            message: "Student activated successfully",
+            student: {
+                id: student._id,
+                fullName: student.fullName,
+                email: student.email,
+                isSuspended: false
+            }
+        });
+    } catch (error) {
+        console.error("Resume student error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to activate student" 
+        });
+    }
+};
+
+/* =========================================
+   ADMIN: SUSPEND TEACHER
+   ========================================= */
+export const suspendTeacherAdmin = async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const adminId = req.user.id;
+
+        // Find teacher
+        const teacher = await Teacher.findById(teacherId);
+        if (!teacher) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Teacher not found" 
+            });
+        }
+
+        // Check if already suspended
+        if (teacher.isSuspended) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Teacher is already suspended" 
+            });
+        }
+
+        // Suspend the teacher
+        teacher.isSuspended = true;
+        await teacher.save();
+
+        // Create audit log
+        await createAuditLog(
+            adminId,
+            "TEACHER_SUSPENDED",
+            `Teacher ${teacher.name} (${teacher.email}) has been suspended`,
+            "success"
+        );
+
+        res.json({
+            success: true,
+            message: "Teacher suspended successfully",
+            teacher: {
+                id: teacher._id,
+                name: teacher.name,
+                email: teacher.email,
+                isSuspended: true
+            }
+        });
+    } catch (error) {
+        console.error("Suspend teacher error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to suspend teacher" 
+        });
+    }
+};
+
+/* =========================================
+   ADMIN: RESUME TEACHER
+   ========================================= */
+export const resumeTeacherAdmin = async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const adminId = req.user.id;
+
+        // Find teacher
+        const teacher = await Teacher.findById(teacherId);
+        if (!teacher) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Teacher not found" 
+            });
+        }
+
+        // Check if already active
+        if (!teacher.isSuspended) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Teacher is already active" 
+            });
+        }
+
+        // Resume the teacher
+        teacher.isSuspended = false;
+        await teacher.save();
+
+        // Create audit log
+        await createAuditLog(
+            adminId,
+            "TEACHER_RESUMED",
+            `Teacher ${teacher.name} (${teacher.email}) has been activated`,
+            "success"
+        );
+
+        res.json({
+            success: true,
+            message: "Teacher activated successfully",
+            teacher: {
+                id: teacher._id,
+                name: teacher.name,
+                email: teacher.email,
+                isSuspended: false
+            }
+        });
+    } catch (error) {
+        console.error("Resume teacher error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Failed to activate teacher" 
+        });
+    }
+};
+
+/* =========================================
    ADMIN: GET ANNOUNCEMENTS
    ========================================= */
 export const getAnnouncementsAdmin = async (req, res) => {

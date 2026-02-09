@@ -65,7 +65,11 @@ const Login = () => {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error("Invalid email or password");
+                // Check if account is suspended
+                if (data.isSuspended) {
+                    throw new Error("Your account is suspended. Contact admin");
+                }
+                throw new Error(data.message || "Invalid email or password");
             }
 
             localStorage.setItem("token", data.token);

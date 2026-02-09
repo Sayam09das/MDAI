@@ -111,6 +111,22 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Check if student account is suspended
+    if (role === "student" && account.isSuspended) {
+      return res.status(403).json({ 
+        message: "Your account is suspended. Contact admin",
+        isSuspended: true 
+      });
+    }
+
+    // Check if teacher account is suspended
+    if (role === "teacher" && account.isSuspended) {
+      return res.status(403).json({ 
+        message: "Your account is suspended. Contact admin",
+        isSuspended: true 
+      });
+    }
+
     const token = generateToken({
       id: account._id,
       role,
@@ -125,6 +141,7 @@ export const login = async (req, res) => {
         fullName: account.fullName,
         email: account.email,
         isVerified: account.isVerified,
+        isSuspended: account.isSuspended || false,
         role,  // ✅ Include role in response
       },
     });
