@@ -176,7 +176,20 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("new_message_notification", (data) => {
       console.log("🔔 New message notification:", data);
-      // Increment unread count
+      
+      const { conversationId, message, senderId, senderName, senderRole } = data;
+      
+      // Increment unread count for this conversation
+      setConversations((prev) =>
+        prev.map(c => {
+          if (c._id === conversationId) {
+            return { ...c, unreadCount: (c.unreadCount || 0) + 1 };
+          }
+          return c;
+        })
+      );
+      
+      // Increment total unread
       setTotalUnread((prev) => prev + 1);
     });
 

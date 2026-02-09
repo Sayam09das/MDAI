@@ -5,6 +5,7 @@ import Teacher from "../models/teacherModel.js";
 import Admin from "../models/adminModel.js";
 import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
+import { getIO } from "../utils/socket.js";
 
 // ============================================
 // HELPER: Get user details based on role
@@ -164,6 +165,46 @@ export const createMessage = async (req, res) => {
                 .populate("sender", "fullName name email")
                 .populate("conversationId", "participants");
             
+            // Emit real-time notification via Socket.io
+            try {
+                const io = req.app.get("io");
+                if (io) {
+                    // Get recipient user ID from conversation
+                    const recipientParticipant = conversation.participants.find(
+                        p => p.userId.toString() !== senderId.toString()
+                    );
+                    
+                    if (recipientParticipant) {
+                        // Emit to recipient's personal room
+                        io.to(`user_${recipientParticipant.userId}`).emit("new_message_notification", {
+                            conversationId: conversation._id,
+                            message: {
+                                _id: message._id,
+                                content: message.content,
+                                sender: senderDetails,
+                                createdAt: message.createdAt
+                            },
+                            senderId: senderId,
+                            senderName: senderDetails.name,
+                            senderRole: senderRole
+                        });
+                        
+                        // Emit to conversation room
+                        io.to(`conversation_${conversation._id}`).emit("receive_message", {
+                            _id: message._id,
+                            conversationId: conversation._id,
+                            sender: senderDetails,
+                            content: message.content,
+                            createdAt: message.createdAt
+                        });
+                        
+                        console.log(`📨 Real-time notification sent to user_${recipientParticipant.userId}`);
+                    }
+                }
+            } catch (socketError) {
+                console.error("Socket emit error:", socketError);
+            }
+            
             return res.status(201).json({
                 success: true,
                 message: populatedMessage,
@@ -249,6 +290,44 @@ export const createMessage = async (req, res) => {
                 .populate("sender", "fullName name email")
                 .populate("conversationId");
             
+            // Emit real-time notification to all course participants
+            try {
+                const io = req.app.get("io");
+                if (io) {
+                    // Emit to all students in the course
+                    students.forEach(student => {
+                        io.to(`user_${student._id}`).emit("new_message_notification", {
+                            conversationId: groupConversation._id,
+                            message: {
+                                _id: message._id,
+                                content: message.content,
+                                sender: senderDetails,
+                                createdAt: message.createdAt,
+                                isCourseBroadcast: true
+                            },
+                            senderId: senderId,
+                            senderName: senderDetails.name,
+                            senderRole: senderRole,
+                            courseId: courseId
+                        });
+                    });
+                    
+                    // Emit to conversation room
+                    io.to(`conversation_${groupConversation._id}`).emit("receive_message", {
+                        _id: message._id,
+                        conversationId: groupConversation._id,
+                        sender: senderDetails,
+                        content: message.content,
+                        createdAt: message.createdAt,
+                        isCourseBroadcast: true
+                    });
+                    
+                    console.log(`📨 Course broadcast notification sent to ${students.length} students`);
+                }
+            } catch (socketError) {
+                console.error("Socket emit error:", socketError);
+            }
+            
             return res.status(201).json({
                 success: true,
                 message: populatedMessage,
@@ -309,6 +388,79 @@ export const createMessage = async (req, res) => {
             const populatedMessage = await Message.findById(message._id)
                 .populate("sender", "fullName name email")
                 .populate("conversationId");
+            
+            // Emit real-time notification to ALL users (global broadcast)
+            try {
+                const io = req.app.get("io");
+                if (io) {
+                    // Emit to all students
+                    students.forEach(student => {
+                        io.to(`user_${student._id}`).emit("new_message_notification", {
+                            conversationId: broadcastConversation._id,
+                            message: {
+                                _id: message._id,
+                                content: message.content,
+                                sender: senderDetails,
+                                createdAt: message.createdAt,
+                                isGlobalBroadcast: true
+                            },
+                            senderId: senderId,
+                            senderName: senderDetails.name,
+                            senderRole: senderRole
+                        });
+                    });
+                    
+                    // Emit to all teachers
+                    teachers.forEach(teacher => {
+                        io.to(`user_${teacher._id}`).emit("new_message_notification", {
+                            conversationId: broadcastConversation._id,
+                            message: {
+                                _id: message._id,
+                                content: message.content,
+                                sender: senderDetails,
+                                createdAt: message.createdAt,
+                                isGlobalBroadcast: true
+                            },
+                            senderId: senderId,
+                            senderName: senderDetails.name,
+                            senderRole: senderRole
+                        });
+                    });
+                    
+                    // Emit to all other admins
+                    admins.forEach(admin => {
+                        if (admin._id.toString() !== senderId.toString()) {
+                            io.to(`user_${admin._id}`).emit("new_message_notification", {
+                                conversationId: broadcastConversation._id,
+                                message: {
+                                    _id: message._id,
+                                    content: message.content,
+                                    sender: senderDetails,
+                                    createdAt: message.createdAt,
+                                    isGlobalBroadcast: true
+                                },
+                                senderId: senderId,
+                                senderName: senderDetails.name,
+                                senderRole: senderRole
+                            });
+                        }
+                    });
+                    
+                    // Emit to conversation room
+                    io.to(`conversation_${broadcastConversation._id}`).emit("receive_message", {
+                        _id: message._id,
+                        conversationId: broadcastConversation._id,
+                        sender: senderDetails,
+                        content: message.content,
+                        createdAt: message.createdAt,
+                        isGlobalBroadcast: true
+                    });
+                    
+                    console.log(`📢 Global broadcast notification sent to ${allParticipants.length - 1} users`);
+                }
+            } catch (socketError) {
+                console.error("Socket emit error:", socketError);
+            }
             
             return res.status(201).json({
                 success: true,

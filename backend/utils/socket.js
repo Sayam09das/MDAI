@@ -605,3 +605,18 @@ export const broadcastEnrollmentToTeacher = (io, teacherId, enrollmentData) => {
 
 export default setupSocket;
 
+/* ======================================================
+   HELPER FUNCTIONS FOR USE IN CONTROLLERS
+====================================================== */
+
+// Get the Socket.io instance for use in controllers
+let ioInstance = null;
+
+export const setIO = (io) => {
+  ioInstance = io;
+};
+
+export const getIO = () => {
+  return ioInstance;
+};
+
