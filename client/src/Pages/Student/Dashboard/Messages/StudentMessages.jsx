@@ -180,14 +180,35 @@ export default function StudentMessages() {
                 messageType: newMessageType
             };
 
+            // For individual messages, get recipient from selectedConversation or selectedRecipient
             if (newMessageType === "individual") {
-                if (!selectedRecipient) {
+                let recipient = null;
+
+                // If replying to an existing conversation, get recipient from conversation
+                if (selectedConversation && !showNewMessage) {
+                    recipient = selectedConversation.participants?.find(
+                        p => p.userId !== userId
+                    );
+                    // Convert userId to string for comparison
+                    if (recipient) {
+                        recipient = {
+                            ...recipient,
+                            userId: recipient.userId?.toString ? recipient.userId.toString() : recipient.userId,
+                            role: recipient.participantsModel?.toLowerCase() || recipient.role?.toLowerCase()
+                        };
+                    }
+                } else {
+                    // For new message, use selectedRecipient
+                    recipient = selectedRecipient;
+                }
+
+                if (!recipient || !recipient.userId) {
                     setError("Please select a recipient");
                     setSending(false);
                     return;
                 }
-                payload.recipientId = selectedRecipient.userId;
-                payload.recipientRole = selectedRecipient.role;
+                payload.recipientId = recipient.userId;
+                payload.recipientRole = recipient.role;
             } else if (newMessageType === "course") {
                 if (!selectedCourse) {
                     setError("Please select a course");
