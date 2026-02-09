@@ -140,6 +140,18 @@ export default function StudentComplaints() {
         setRecipientsLoading(true);
         try {
             console.log("✅ Fetching recipients...");
+            
+            // First, let's verify the user's role
+            const storedUser = localStorage.getItem("user");
+            let userRole = "unknown";
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    userRole = user.role || "unknown";
+                    console.log("🔍 User role from localStorage:", userRole);
+                } catch (e) {}
+            }
+            
             const res = await fetch(`${BACKEND_URL}/api/complaints/recipients`, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
@@ -152,13 +164,20 @@ export default function StudentComplaints() {
             
             if (data.success && Array.isArray(data.recipients)) {
                 setRecipients(data.recipients);
-                console.log(`✅ Loaded ${data.recipients.length} recipients`);
+                console.log(`✅ Loaded ${data.recipients.length} recipients for ${userRole} user`);
                 
-                // Debug: Log sample recipients
+                // Debug: Log recipients by role
+                const teachers = data.recipients.filter(r => r.role === "teacher");
+                const admins = data.recipients.filter(r => r.role === "admin");
+                console.log(`   - Teachers: ${teachers.length}`);
+                console.log(`   - Admins: ${admins.length}`);
+                
                 if (data.recipients.length > 0) {
                     console.log("Sample recipients:", data.recipients.slice(0, 3));
                 } else {
-                    console.log("⚠️ Empty recipients array - check backend logic");
+                    console.log("⚠️ No recipients found!");
+                    console.log("   Check: Are there teachers/admins in the database?");
+                    console.log("   Check: Are you logged in as the correct role?");
                 }
             } else {
                 console.error("❌ Failed to fetch recipients:", data.message);
