@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     AlertCircle, 
@@ -12,7 +12,9 @@ import {
     MessageSquare,
     User,
     Calendar,
-    ChevronRight
+    ChevronRight,
+    Users,
+    Shield
 } from "lucide-react";
 import { getBackendURL } from "../../../../lib/config";
 
@@ -74,6 +76,7 @@ export default function StudentComplaints() {
     const [complaints, setComplaints] = useState([]);
     const [recipients, setRecipients] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [recipientsLoading, setRecipientsLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [selectedComplaint, setSelectedComplaint] = useState(null);
     const [filter, setFilter] = useState("all");
@@ -89,37 +92,73 @@ export default function StudentComplaints() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const token = localStorage.getItem("token");
+    const [userRole, setUserRole] = useState(null);
+    const [userId, setUserId] = useState(null);
 
+    // Get token dynamically - this is the KEY FIX!
+    const getToken = useCallback(() => {
+        return localStorage.getItem("token");
+    }, []);
+
+    // Initialize auth state
     useEffect(() => {
-        // Check if user is authenticated
+        const token = getToken();
+        const storedUser = localStorage.getItem("user");
+        
         if (!token) {
             setError("Please login to view complaints");
             setLoading(false);
             setIsAuthenticated(false);
             return;
         }
+        
         setIsAuthenticated(true);
-        fetchComplaints();
-        fetchRecipients();
-    }, []);
+        
+        // Parse user data to get role
+        if (storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                setUserRole(user.role || "student");
+                setUserId(user.id || user._id);
+                console.log("✅ User role:", user.role);
+            } catch (e) {
+                console.error("Error parsing user:", e);
+            }
+        }
+        
+        fetchComplaints(token);
+        fetchRecipients(token);
+    }, [getToken]);
 
-    const fetchRecipients = async () => {
+    // Fetch recipients with the current token
+    const fetchRecipients = async (token) => {
+        if (!token) {
+            console.log("❌ No token available for fetching recipients");
+            return;
+        }
+        
+        setRecipientsLoading(true);
         try {
-            console.log("Fetching recipients...");
+            console.log("✅ Fetching recipients...");
             const res = await fetch(`${BACKEND_URL}/api/complaints/recipients`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
             });
+            
             const data = await res.json();
             console.log("✅ Recipients API response:", data);
             
-            if (data.success && data.recipients) {
+            if (data.success && Array.isArray(data.recipients)) {
                 setRecipients(data.recipients);
                 console.log(`✅ Loaded ${data.recipients.length} recipients`);
                 
-                // Debug: Log sample recipients to verify names
+                // Debug: Log sample recipients
                 if (data.recipients.length > 0) {
-                    console.log("Sample recipient:", data.recipients[0]);
+                    console.log("Sample recipients:", data.recipients.slice(0, 3));
+                } else {
+                    console.log("⚠️ Empty recipients array - check backend logic");
                 }
             } else {
                 console.error("❌ Failed to fetch recipients:", data.message);
@@ -128,10 +167,12 @@ export default function StudentComplaints() {
         } catch (err) {
             console.error("❌ Fetch recipients error:", err);
             setRecipients([]);
+        } finally {
+            setRecipientsLoading(false);
         }
     };
 
-    const fetchComplaints = async () => {
+    const fetchComplaints = async (token) => {
         setLoading(true);
         setError("");
         try {
@@ -153,8 +194,31 @@ export default function StudentComplaints() {
         }
     };
 
+    const handleOpenForm = async () => {
+        // Ensure recipients are loaded before opening form
+        const token = getToken();
+        if (recipients.length === 0 && token) {
+            console.log("⚠️ Recipients empty, fetching now...");
+            await fetchRecipients(token);
+        }
+        setShowForm(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validation
+        if (!formData.recipientId || !formData.recipientRole) {
+            setError("Please select a recipient");
+            return;
+        }
+        
+        const token = getToken();
+        if (!token) {
+            setError("Please login again");
+            return;
+        }
+        
         setSubmitting(true);
         setError("");
         setSuccess("");
@@ -181,7 +245,7 @@ export default function StudentComplaints() {
                     category: "other",
                     priority: "medium"
                 });
-                fetchComplaints();
+                fetchComplaints(token);
             } else {
                 setError(data.message || "Failed to submit complaint");
             }
@@ -191,6 +255,27 @@ export default function StudentComplaints() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    // Handle recipient selection - FIX for key matching
+    const handleRecipientChange = (e) => {
+        const selectedId = e.target.value;
+        console.log("Selected ID:", selectedId);
+        console.log("Available recipients:", recipients.map(r => ({ id: r.userId, name: r.name })));
+        
+        // Find the recipient - handle both string and ObjectId comparison
+        const selected = recipients.find(r => 
+            r.userId === selectedId || 
+            r.userId?.toString() === selectedId
+        );
+        
+        console.log("Selected recipient:", selected);
+        
+        setFormData({
+            ...formData,
+            recipientId: selectedId,
+            recipientRole: selected?.role || ""
+        });
     };
 
     const filteredComplaints = complaints.filter(c => {
@@ -204,6 +289,9 @@ export default function StudentComplaints() {
         inReview: complaints?.filter(c => c.status === "in_review").length || 0,
         resolved: complaints?.filter(c => c.status === "resolved").length || 0
     };
+
+    // Loading state for dropdown
+    const isDropdownLoading = recipientsLoading || recipients.length === 0;
 
     return (
         <div className="p-6">
@@ -222,7 +310,7 @@ export default function StudentComplaints() {
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowForm(true)}
+                    onClick={handleOpenForm}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                 >
                     <Plus size={18} />
@@ -276,7 +364,7 @@ export default function StudentComplaints() {
                 {["all", "pending", "in_review", "resolved", "rejected"].map(status => (
                     <button
                         key={status}
-                        onClick={() => { setFilter(status); fetchComplaints(); }}
+                        onClick={() => { setFilter(status); fetchComplaints(getToken()); }}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                             filter === status 
                                 ? "bg-indigo-600 text-white" 
@@ -412,26 +500,56 @@ export default function StudentComplaints() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Recipient *
                                         </label>
+                                        
+                                        {/* Debug info - remove in production */}
+                                        <div className="text-xs text-gray-400 mb-1">
+                                            Debug: {recipients.length} recipients loaded
+                                        </div>
+                                        
                                         <select
                                             required
                                             value={formData.recipientId}
-                                            onChange={e => {
-                                                const selected = recipients.find(r => r.userId === e.target.value);
-                                                setFormData({
-                                                    ...formData,
-                                                    recipientId: e.target.value,
-                                                    recipientRole: selected?.role || ""
-                                                });
-                                            }}
+                                            onChange={handleRecipientChange}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            disabled={isDropdownLoading}
                                         >
-                                            <option value="">Select recipient</option>
-                                            {recipients.map(r => (
-                                                <option key={r.userId} value={r.userId}>
-                                                    {r.name} ({r.role})
-                                                </option>
-                                            ))}
+                                            <option value="">
+                                                {isDropdownLoading ? "Loading..." : "Select recipient"}
+                                            </option>
+                                            
+                                            {/* Teachers */}
+                                            {recipients.filter(r => r.role === "teacher").length > 0 && (
+                                                <optgroup label="Teachers">
+                                                    {recipients
+                                                        .filter(r => r.role === "teacher")
+                                                        .map(r => (
+                                                            <option key={r.userId} value={r.userId}>
+                                                                🏫 {r.name} (Teacher)
+                                                            </option>
+                                                        ))}
+                                                </optgroup>
+                                            )}
+                                            
+                                            {/* Admins */}
+                                            {recipients.filter(r => r.role === "admin").length > 0 && (
+                                                <optgroup label="Admins">
+                                                    {recipients
+                                                        .filter(r => r.role === "admin")
+                                                        .map(r => (
+                                                            <option key={r.userId} value={r.userId}>
+                                                                🛡️ {r.name} (Admin)
+                                                            </option>
+                                                        ))}
+                                                </optgroup>
+                                            )}
                                         </select>
+                                        
+                                        {/* Show empty state if no recipients */}
+                                        {!isDropdownLoading && recipients.length === 0 && (
+                                            <p className="text-red-500 text-sm mt-1">
+                                                ⚠️ No recipients available. Please check your permissions or try logging out and back in.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div>
@@ -491,7 +609,7 @@ export default function StudentComplaints() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         type="submit"
-                                        disabled={submitting}
+                                        disabled={submitting || isDropdownLoading}
                                         className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {submitting ? (
@@ -598,5 +716,4 @@ export default function StudentComplaints() {
         </div>
     );
 }
-
 
