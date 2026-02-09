@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Bell,
@@ -48,7 +48,6 @@ const TeacherNavbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
     const { totalUnread, isConnected: socketConnected, onlineUsers } = useSocket();
     const [currentUser, setCurrentUser] = useState(null);
-    const profileRef = useRef(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -219,17 +218,6 @@ const TeacherNavbar = ({ onMenuClick }) => {
         fetchCurrentUser();
     }, [navigate]);
 
-    // Close profile dropdown on click outside
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (profileRef.current && !profileRef.current.contains(e.target)) {
-                setIsProfileOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
     const handleLogout = async () => {
         try {
             await fetch(`${BACKEND_URL}/api/auth/logout`, {
@@ -280,20 +268,20 @@ const TeacherNavbar = ({ onMenuClick }) => {
     return (
         <>
             {/* NAVBAR */}
-            <nav className="fixed top-0 left-0 right-0 h-16 bg-white z-50 border-b border-slate-200 shadow-sm backdrop-blur-sm bg-white/95">
+            <nav className="fixed top-0 left-0 right-0 h-16 bg-white z-50 border-b border-gray-200">
                 <div className="h-full max-w-7xl mx-auto px-4 flex items-center justify-between">
 
                     {/* LEFT */}
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onMenuClick}
-                            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                            className="lg:hidden p-2 rounded-md hover:bg-gray-50"
                         >
-                            <Menu className="w-5 h-5" />
+                            <Menu className="w-5 h-5 text-gray-700" />
                         </button>
 
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-md">
+                            <div className="w-9 h-9 rounded-lg overflow-hidden">
                                 <img
                                     src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg"
                                     alt="Logo"
@@ -301,13 +289,7 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                 />
                             </div>
 
-                            <div className="hidden lg:block">
-                                <div className="text-sm font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                                    MDAI
-                                </div>
-                            </div>
-
-                            <span className="font-semibold text-slate-900 hidden sm:block">
+                            <span className="font-semibold text-gray-900">
                                 Teacher Dashboard
                             </span>
                         </div>
@@ -317,19 +299,19 @@ const TeacherNavbar = ({ onMenuClick }) => {
                     <div className="hidden md:flex items-center gap-6">
                         {/* Search */}
                         <div className="relative w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
                                 placeholder="Search courses, students..."
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                                 onKeyDown={handleSearchSubmit}
-                                className="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white border border-slate-200 outline-none hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                className="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white border border-gray-200 outline-none hover:border-gray-300 focus:border-gray-400"
                             />
                             {searchQuery && (
                                 <button
                                     onClick={clearSearch}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -337,13 +319,13 @@ const TeacherNavbar = ({ onMenuClick }) => {
                         </div>
 
                         {/* Time */}
-                        <span className="text-sm text-slate-500">
+                        <span className="text-sm text-gray-500">
                             {time.toLocaleDateString()} • {time.toLocaleTimeString()}
                         </span>
                     </div>
 
                     {/* RIGHT */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
 
                         {/* PROFILE */}
                         <div className="relative">
@@ -352,54 +334,51 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                     setIsProfileOpen(prev => !prev);
                                     setShowNotifications(false);
                                 }}
-                                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
                             >
-                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-500 text-white rounded-full flex items-center justify-center font-semibold text-sm shadow-md">
-                                    {currentUser?.fullName
-                                        ? currentUser.fullName.charAt(0).toUpperCase()
-                                        : "T"}
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center">
+                                    {getProfileImageUrl(currentUser?.profileImage) ? (
+                                        <img
+                                            src={getProfileImageUrl(currentUser.profileImage)}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-white text-sm font-semibold">
+                                            {currentUser?.fullName
+                                                ? currentUser.fullName.charAt(0).toUpperCase()
+                                                : "T"}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <ChevronDown
-                                    className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""} text-slate-600`}
+                                    className={`w-4 h-4 transition ${isProfileOpen ? "rotate-180" : ""}`}
                                 />
                             </button>
 
 
                             {isProfileOpen && (
-                                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                                    <div className="p-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-slate-100">
-                                        <div className="font-semibold text-slate-900 text-sm">
-                                            {currentUser?.fullName || "Teacher"}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            {currentUser?.email || ""}
-                                        </div>
-                                    </div>
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg">
+                                    <button
+                                        onClick={() => navigate("/teacher-dashboard/profile")}
+                                        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
+                                    >
+                                        My Profile
+                                    </button>
+                                    <button
+                                        onClick={() => navigate("/teacher-dashboard/settings")}
+                                        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
+                                    >
+                                        Settings
+                                    </button>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-gray-50"
+                                    >
+                                        Logout
+                                    </button>
 
-                                    <div className="py-2">
-                                        <button
-                                            onClick={() => navigate("/teacher-dashboard/profile")}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                        >
-                                            <span className="text-slate-500">My Profile</span>
-                                        </button>
-                                        <button
-                                            onClick={() => navigate("/teacher-dashboard/settings")}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                        >
-                                            <span className="text-slate-500">Settings</span>
-                                        </button>
-                                    </div>
-
-                                    <div className="py-2 border-t border-slate-100">
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                        >
-                                            <span>Logout</span>
-                                        </button>
-                                    </div>
                                 </div>
                             )}
                         </div>
@@ -411,10 +390,9 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                     setShowNotifications(prev => !prev);
                                     setIsProfileOpen(false);
                                 }}
-                                className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-                                aria-label="Notifications"
+                                className="relative p-2 rounded-md hover:bg-gray-50"
                             >
-                                <Bell className="w-5 h-5" />
+                                <Bell className="w-5 h-5 text-gray-700" />
 
                                 {/* 🔴 Green WhatsApp-style Unread Badge */}
                                 {totalUnread > 0 && (
@@ -429,10 +407,9 @@ const TeacherNavbar = ({ onMenuClick }) => {
                         <div className="relative">
                             <button
                                 onClick={() => navigate("/teacher-dashboard/messages")}
-                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-                                aria-label="Messages"
+                                className="p-2 rounded-md hover:bg-gray-50"
                             >
-                                <MessageSquare className="w-5 h-5" />
+                                <MessageSquare className="w-5 h-5 text-gray-700" />
 
                                 {/* 🔵 Blue Message Badge */}
                                 {totalUnread > 0 && (
@@ -448,14 +425,14 @@ const TeacherNavbar = ({ onMenuClick }) => {
 
             {/* NOTIFICATION DROPDOWN */}
             {showNotifications && (
-                <div className="absolute right-6 top-16 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
-                    <div className="px-4 py-3 font-medium flex justify-between items-center sticky top-0 bg-slate-50 border-b border-slate-100">
+                <div className="absolute right-6 top-16 w-80 bg-white rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+                    <div className="px-4 py-3 font-medium flex justify-between items-center sticky top-0 bg-white">
                         <span>Notifications</span>
                         {notifications.length > 0 && (
                             <div className="flex gap-2">
                                 <button
                                     onClick={markAllAsRead}
-                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                    className="text-xs text-indigo-600 hover:text-indigo-800"
                                 >
                                     Mark all read
                                 </button>
@@ -470,8 +447,8 @@ const TeacherNavbar = ({ onMenuClick }) => {
                     </div>
 
                     {notifications.length === 0 ? (
-                        <div className="px-4 py-8 text-center text-slate-500 text-sm">
-                            <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                            <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                             No notifications yet
                         </div>
                     ) : (
@@ -481,15 +458,15 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                 onClick={() => {
                                     markAsRead(n.id);
                                     if (n.conversationId) {
-                                        navigate(`/teacher-dashboard/messages?conversation=${n.conversationId}`);
+                                        navigate(`/teacher/messages?conversation=${n.conversationId}`);
                                     }
                                     setShowNotifications(false);
                                 }}
-                                className={`px-4 py-3 text-sm hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 ${n.unread ? 'bg-indigo-50/50' : ''}`}
+                                className={`px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 ${n.unread ? 'bg-indigo-50/50' : ''}`}
                             >
                                 <div className="flex gap-3 items-start">
                                     {/* Sender Avatar */}
-                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
                                         {n.senderImage ? (
                                             <img
                                                 src={n.senderImage}
@@ -497,21 +474,21 @@ const TeacherNavbar = ({ onMenuClick }) => {
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <span className="text-xs font-semibold text-slate-600">
+                                            <span className="text-xs font-semibold text-gray-600">
                                                 {n.senderName?.charAt(0)?.toUpperCase() || "U"}
                                             </span>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start gap-2">
-                                            <span className={`truncate ${n.unread ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
+                                            <span className={`truncate ${n.unread ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
                                                 {n.text}
                                             </span>
                                             {n.unread && (
                                                 <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0" />
                                             )}
                                         </div>
-                                        <div className="text-xs text-slate-400 mt-1">{n.time}</div>
+                                        <div className="text-xs text-gray-400 mt-1">{n.time}</div>
                                     </div>
                                 </div>
                             </div>
@@ -535,3 +512,4 @@ const TeacherNavbar = ({ onMenuClick }) => {
 };
 
 export default TeacherNavbar;
+
