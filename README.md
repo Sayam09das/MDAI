@@ -1,41 +1,37 @@
-<div align="center">
-  <img src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg" alt="MDAI Logo" width="200" height="200">
-  
-  # MDAI - Modern Digital Academy Institute
-  
-  **Enterprise-Grade E-Learning Platform**
-  
-  [![Production Status](https://img.shields.io/badge/Production-Live-brightgreen)](https://mdai-self.vercel.app)
-  [![API Status](https://img.shields.io/badge/API-Operational-brightgreen)](https://mdai-0jhi.onrender.com/ping)
-  [![License](https://img.shields.io/badge/License-Proprietary-red)](#license)
-  [![Node.js](https://img.shields.io/badge/Node.js-v18+-green)](https://nodejs.org/)
-  [![React](https://img.shields.io/badge/React-v19-blue)](https://reactjs.org/)
-  [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green)](https://www.mongodb.com/)
-  
-  [🚀 Live Demo](https://mdai-self.vercel.app) • [📖 Documentation](#documentation) • [🔧 API Reference](#api-reference) • [🐛 Report Bug](mailto:support@mdai.com)
-  
-</div>
+# MDAI - Modern Digital Academy Institute
+
+**Enterprise-Grade Learning Management System**
+
+[![Production Status](https://img.shields.io/badge/Production-Live-brightgreen)](https://mdai-self.vercel.app)
+[![API Status](https://img.shields.io/badge/API-Operational-brightgreen)](https://mdai-0jhi.onrender.com/ping)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-green)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-v19-blue)](https://reactjs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green)](https://www.mongodb.com/)
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Technology Stack](#technology-stack)
 - [Features](#features)
-- [Documentation](#documentation)
-- [Deployment](#deployment)
-- [Performance](#performance)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Environment Configuration](#environment-configuration)
+- [Running Locally](#running-locally)
+- [Production Deployment](#production-deployment)
+- [API Documentation](#api-documentation)
+- [User Roles](#user-roles)
 - [Security](#security)
 - [Contributing](#contributing)
-- [Support](#support)
 - [License](#license)
+
+---
 
 ## Overview
 
-MDAI is a production-ready, scalable e-learning platform built with modern web technologies. Designed to handle thousands of concurrent users, it provides a comprehensive learning management system with real-time features, secure payment processing, and advanced analytics.
+MDAI is a full-stack, production-ready Learning Management System (LMS) built using the MERN stack (MongoDB, Express.js, React, Node.js). The platform provides comprehensive course management, role-based access control, real-time messaging, payment processing, and administrative oversight for educational institutions.
 
 ### Key Metrics
 
@@ -44,385 +40,729 @@ MDAI is a production-ready, scalable e-learning platform built with modern web t
 | **Uptime** | 99.9% |
 | **Response Time** | <200ms |
 | **Concurrent Users** | 10,000+ |
-| **Data Processing** | Real-time |
-| **Security Score** | A+ |
+| **Real-time Features** | Socket.io |
+| **Security** | JWT + bcrypt |
 
 ### Core Capabilities
 
-- 🎓 **Learning Management**: Complete course lifecycle management
-- 👥 **Multi-tenant Architecture**: Students, Teachers, and Administrators
-- 💳 **Payment Processing**: Integrated Stripe & Razorpay with fraud detection
-- 📊 **Real-time Analytics**: Advanced reporting and insights
-- 🔒 **Enterprise Security**: JWT, OAuth, and data encryption
-- 📱 **Mobile-First Design**: Responsive across all devices
-- 🌐 **Global CDN**: Optimized content delivery worldwide
+- Complete course lifecycle management
+- Multi-tenant architecture (Admin, Teacher, Student)
+- Integrated payment processing (Stripe, Razorpay)
+- Real-time messaging and notifications
+- Student enrollment and progress tracking
+- Teacher payment history and analytics
+- Complaint management system
+- Audit logging and system monitoring
+- Responsive, mobile-first design
 
-## Architecture
-
-### System Architecture
-
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        A[Student Portal] 
-        B[Teacher Dashboard]
-        C[Admin Panel]
-    end
-    
-    subgraph "API Gateway"
-        D[Load Balancer]
-        E[Rate Limiter]
-        F[Authentication]
-    end
-    
-    subgraph "Application Layer"
-        G[Node.js API Server]
-        H[Socket.io Server]
-        I[Background Jobs]
-    end
-    
-    subgraph "Data Layer"
-        J[(MongoDB Atlas)]
-        K[Redis Cache]
-        L[Cloudinary CDN]
-    end
-    
-    A --> D
-    B --> D
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    G --> I
-    G --> J
-    G --> K
-    G --> L
-```
-
-### Microservices Structure
-
-```
-MDAI/
-├── 🎨 client/              # Student & Teacher Frontend
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Route-based pages
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── utils/          # Utility functions
-│   │   └── services/       # API integration
-│   └── public/             # Static assets
-├── 🛡️ admin/               # Administrative Dashboard
-│   ├── src/
-│   │   ├── Dashboard/      # Admin components
-│   │   ├── Auth/           # Authentication
-│   │   └── routes/         # Route definitions
-│   └── public/             # Admin assets
-├── ⚡ backend/             # Core API Server
-│   ├── controllers/        # Business logic
-│   ├── models/            # Database schemas
-│   ├── routes/            # API endpoints
-│   ├── middlewares/       # Custom middleware
-│   ├── utils/             # Helper functions
-│   └── config/            # Configuration files
-└── 📚 docs/               # Documentation
-```
-
-## Quick Start
-
-### Prerequisites
-
-| Requirement | Version | Purpose |
-|-------------|---------|----------|
-| Node.js | ≥18.0.0 | Runtime environment |
-| MongoDB | ≥5.0 | Primary database |
-| Redis | ≥6.0 | Caching & sessions |
-| Cloudinary | Latest | Media storage |
-
-### One-Command Setup
-
-```bash
-# Clone and setup entire project
-curl -fsSL https://raw.githubusercontent.com/mdai/setup/main/install.sh | bash
-```
-
-### Manual Installation
-
-```bash
-# 1. Clone repository
-git clone https://github.com/your-org/mdai.git
-cd mdai
-
-# 2. Install dependencies (all services)
-npm run install:all
-
-# 3. Setup environment variables
-npm run setup:env
-
-# 4. Initialize database
-npm run db:setup
-
-# 5. Start development environment
-npm run dev:all
-```
-
-
-
-### Environment Configuration
-
-```bash
-# Copy environment templates
-cp .env.example .env
-cp client/.env.example client/.env
-cp admin/.env.example admin/.env
-cp backend/.env.example backend/.env
-
-# Configure required variables
-npm run config:wizard
-```
-
-## Technology Stack
-
-### Frontend Technologies
-
-| Technology | Version | Purpose | Documentation |
-|------------|---------|---------|---------------|
-| React | 19.x | UI Framework | [React Docs](https://react.dev) |
-| Vite | 7.x | Build Tool | [Vite Docs](https://vitejs.dev) |
-| TailwindCSS | 4.x | Styling | [Tailwind Docs](https://tailwindcss.com) |
-| Framer Motion | 12.x | Animations | [Framer Docs](https://www.framer.com/motion) |
-| React Router | 7.x | Routing | [Router Docs](https://reactrouter.com) |
-| Chart.js | 4.x | Data Visualization | [Chart.js Docs](https://www.chartjs.org) |
-
-### Backend Technologies
-
-| Technology | Version | Purpose | Documentation |
-|------------|---------|---------|---------------|
-| Node.js | 18.x | Runtime | [Node.js Docs](https://nodejs.org) |
-| Express.js | 5.x | Web Framework | [Express Docs](https://expressjs.com) |
-| MongoDB | 5.x | Database | [MongoDB Docs](https://docs.mongodb.com) |
-| Mongoose | 9.x | ODM | [Mongoose Docs](https://mongoosejs.com) |
-| Socket.io | 4.x | Real-time | [Socket.io Docs](https://socket.io) |
-| JWT | 9.x | Authentication | [JWT Docs](https://jwt.io) |
-
-### Infrastructure & DevOps
-
-| Service | Purpose | Status |
-|---------|---------|--------|
-| Vercel | Frontend Hosting | ✅ Active |
-| Render | Backend Hosting | ✅ Active |
-| MongoDB Atlas | Database | ✅ Active |
-| Cloudinary | Media Storage | ✅ Active |
-| GitHub Actions | CI/CD | ✅ Active |
+---
 
 ## Features
 
-### 🎓 Student Experience
+### Student Portal
 
-- **Course Discovery**: AI-powered recommendations
-- **Interactive Learning**: Video streaming, quizzes, assignments
-- **Progress Tracking**: Real-time analytics and achievements
-- **Mobile Learning**: Offline content synchronization
-- **Social Features**: Discussion forums and peer interaction
+- **Course Discovery**: Browse and search available courses
+- **Enrollment Management**: Enroll in courses with payment integration
+- **Progress Tracking**: Monitor learning progress and completion status
+- **Resource Access**: Download course materials and resources
+- **Messaging System**: Communicate with teachers and administrators
+- **Event Calendar**: View upcoming classes and events
+- **Profile Management**: Update personal information and preferences
+- **Complaint Submission**: Report issues with recipient selection
 
-### 👨‍🏫 Teacher Tools
+### Teacher Dashboard
 
-- **Course Builder**: Drag-and-drop course creation
-- **Student Analytics**: Detailed performance insights
-- **Live Sessions**: Integrated video conferencing
-- **Assessment Tools**: Automated grading and feedback
-- **Revenue Dashboard**: Earnings and payout tracking
+- **Course Creation**: Create and publish courses with multimedia content
+- **Lesson Management**: Organize course content into structured lessons
+- **Student Analytics**: Track student enrollment and performance
+- **Resource Upload**: Share downloadable materials with students
+- **Payment History**: View earnings and transaction records
+- **Messaging**: Respond to student inquiries
+- **Event Management**: Schedule and manage class sessions
+- **Profile Settings**: Manage credentials and notification preferences
 
-### 🛡️ Administrative Control
+### Admin Panel
 
-- **User Management**: Role-based access control
-- **Content Moderation**: Automated and manual review
-- **Financial Reporting**: Revenue analytics and forecasting
-- **System Monitoring**: Real-time health metrics
-- **Compliance Tools**: GDPR and data protection
+- **User Management**: Manage students, teachers, and administrators
+- **Course Oversight**: Approve, edit, or remove courses
+- **Enrollment Control**: Monitor and manage student enrollments
+- **Financial Reporting**: Track revenue, transactions, and payouts
+- **Complaint Resolution**: Review and respond to user complaints
+- **System Monitoring**: View audit logs and system health metrics
+- **Announcement Management**: Broadcast platform-wide notifications
+- **Suspend/Resume Users**: Control user access and account status
+- **Settings Configuration**: Manage platform-wide settings
 
-## Documentation
+---
 
-### Service Documentation
+## Technology Stack
 
-- 📱 [**Client Application**](./client/README.md) - Frontend user interface
-- 🛡️ [**Admin Dashboard**](./admin/README.md) - Administrative panel
-- ⚡ [**Backend API**](./backend/README.md) - Core server application
+### Frontend
 
-### Additional Resources
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19.x | UI framework |
+| Vite | 7.x | Build tool and dev server |
+| TailwindCSS | 4.x | Utility-first CSS framework |
+| Framer Motion | 12.x | Animation library |
+| React Router | 7.x | Client-side routing |
+| Axios | 1.x | HTTP client |
+| Socket.io Client | 4.x | Real-time communication |
+| Chart.js | 4.x | Data visualization |
+| React Toastify | 11.x | Notification system |
+| Lucide React | Latest | Icon library |
 
-- 🔧 [**API Reference**](./docs/api.md) - Complete API documentation
-- 🏗️ [**Architecture Guide**](./docs/architecture.md) - System design details
-- 🚀 [**Deployment Guide**](./docs/deployment.md) - Production deployment
-- 🔒 [**Security Guide**](./docs/security.md) - Security best practices
-- 🧪 [**Testing Guide**](./docs/testing.md) - Testing strategies
+### Backend
 
-## Deployment
-
-### Production Environment
-
-| Environment | URL | Status | Monitoring |
-|-------------|-----|--------|------------|
-| **Production** | [mdai-self.vercel.app](https://mdai-self.vercel.app) | 🟢 Live | [Status Page](https://status.mdai.com) |
-| **Admin** | [mdai-admin.vercel.app](https://mdai-admin.vercel.app) | 🟢 Live | [Admin Status](https://admin-status.mdai.com) |
-| **API** | [mdai-0jhi.onrender.com](https://mdai-0jhi.onrender.com) | 🟢 Live | [API Health](https://mdai-0jhi.onrender.com/ping) |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Node.js | 18.x | JavaScript runtime |
+| Express.js | 5.x | Web application framework |
+| MongoDB | 5.x | NoSQL database |
+| Mongoose | 9.x | MongoDB ODM |
+| Socket.io | 4.x | WebSocket server |
+| JWT | 9.x | Authentication tokens |
+| bcryptjs | 3.x | Password hashing |
+| Helmet | 8.x | Security headers |
+| Multer | 2.x | File upload handling |
+| Cloudinary | 2.x | Media storage and CDN |
+| Stripe | 20.x | Payment processing |
+| Razorpay | 2.x | Payment gateway |
+| Nodemailer | 7.x | Email service |
+| Winston | 3.x | Logging framework |
+| Redis | 5.x | Caching and session management |
 
 ### Infrastructure
 
-```yaml
-# Production Stack
-Frontend:
-  Platform: Vercel
-  CDN: Global Edge Network
-  SSL: Automatic HTTPS
-  
-Backend:
-  Platform: Render
-  Scaling: Auto-scaling
-  Health Checks: Enabled
-  
-Database:
-  Provider: MongoDB Atlas
-  Tier: M10 (Production)
-  Backup: Automated Daily
-  
-Storage:
-  Provider: Cloudinary
-  CDN: Global Distribution
-  Optimization: Automatic
+| Service | Purpose |
+|---------|---------|
+| Vercel | Frontend hosting (Client & Admin) |
+| Render | Backend API hosting |
+| MongoDB Atlas | Managed database service |
+| Cloudinary | Media storage and optimization |
+| GitHub Actions | CI/CD pipeline |
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Client Layer                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Student    │  │   Teacher    │  │    Admin     │      │
+│  │   Portal     │  │  Dashboard   │  │    Panel     │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      API Gateway Layer                       │
+│         ┌──────────────────────────────────────┐            │
+│         │  CORS │ Helmet │ Rate Limiting │ JWT │            │
+│         └──────────────────────────────────────┘            │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Express    │  │  Socket.io   │  │   Business   │      │
+│  │   REST API   │  │   Server     │  │    Logic     │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       Data Layer                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   MongoDB    │  │    Redis     │  │  Cloudinary  │      │
+│  │    Atlas     │  │    Cache     │  │     CDN      │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Deployment Pipeline
+### Request Flow
 
-```mermaid
-graph LR
-    A[Code Push] --> B[GitHub Actions]
-    B --> C[Tests & Linting]
-    C --> D[Build & Bundle]
-    D --> E[Security Scan]
-    E --> F[Deploy to Staging]
-    F --> G[Integration Tests]
-    G --> H[Deploy to Production]
-    H --> I[Health Checks]
-    I --> J[Monitoring]
+1. **Client Request**: User interacts with React frontend
+2. **Authentication**: JWT token validation via middleware
+3. **Authorization**: Role-based access control (RBAC)
+4. **Business Logic**: Controllers process requests
+5. **Data Access**: Mongoose models interact with MongoDB
+6. **Response**: JSON data returned to client
+7. **Real-time Updates**: Socket.io broadcasts events
+
+---
+
+## Project Structure
+
+```
+MDAI/
+├── client/                      # Student & Teacher Frontend
+│   ├── src/
+│   │   ├── Auth/               # Authentication components
+│   │   ├── components/         # Reusable UI components
+│   │   │   ├── Dashboard/      # Dashboard-specific components
+│   │   │   ├── common/         # Shared components
+│   │   │   └── ui/             # Base UI elements
+│   │   ├── context/            # React Context providers
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── layouts/            # Page layouts
+│   │   ├── lib/                # API clients and utilities
+│   │   ├── Main/               # Landing pages
+│   │   ├── Pages/              # Route pages
+│   │   │   ├── Student/        # Student dashboard pages
+│   │   │   └── teacher/        # Teacher dashboard pages
+│   │   ├── ProtectedRoute/     # Route guards
+│   │   ├── routes/             # Route definitions
+│   │   └── utils/              # Helper functions
+│   ├── public/                 # Static assets
+│   └── package.json
+│
+├── admin/                       # Administrative Dashboard
+│   ├── src/
+│   │   ├── Auth/               # Admin authentication
+│   │   ├── components/         # Admin UI components
+│   │   ├── context/            # Admin context providers
+│   │   ├── Dashboard/          # Admin dashboard modules
+│   │   │   ├── DashboardMain/
+│   │   │   ├── DashboardUser/
+│   │   │   ├── DashboardStudent/
+│   │   │   ├── DashboardTeacher/
+│   │   │   ├── DashboardCourses/
+│   │   │   ├── DashboardFinance/
+│   │   │   ├── DashboardComplaints/
+│   │   │   ├── DashboardAnnouncements/
+│   │   │   ├── DashboardReports/
+│   │   │   ├── DashboardSettings/
+│   │   │   ├── DashboardSystem/
+│   │   │   ├── DashboardAuditLogs/
+│   │   │   └── StudentEnrollment/
+│   │   ├── pages/              # Admin pages
+│   │   ├── routes/             # Admin routing
+│   │   └── utils/              # Admin utilities
+│   └── package.json
+│
+├── backend/                     # Core API Server
+│   ├── config/                 # Configuration files
+│   │   └── cloudinary.js       # Cloudinary setup
+│   ├── controllers/            # Business logic
+│   │   ├── admin.controller.js
+│   │   ├── auth.controller.js
+│   │   ├── complaint.controller.js
+│   │   ├── course.controller.js
+│   │   ├── enrollment.controller.js
+│   │   ├── event.controller.js
+│   │   ├── lesson.controller.js
+│   │   ├── message.controller.js
+│   │   ├── progress.controller.js
+│   │   ├── resource.controller.js
+│   │   ├── student.controller.js
+│   │   └── teacherAuth.controller.js
+│   ├── database/               # Database connection
+│   │   └── db.js
+│   ├── middlewares/            # Custom middleware
+│   │   ├── auth.middleware.js  # JWT verification
+│   │   └── multer.js           # File upload
+│   ├── models/                 # Mongoose schemas
+│   │   ├── adminModel.js
+│   │   ├── announcementModel.js
+│   │   ├── attendanceModel.js
+│   │   ├── auditLogModel.js
+│   │   ├── complaintModel.js
+│   │   ├── conversationModel.js
+│   │   ├── Course.js
+│   │   ├── enrollmentModel.js
+│   │   ├── eventModel.js
+│   │   ├── financeTransactionModel.js
+│   │   ├── lessonModel.js
+│   │   ├── messageModel.js
+│   │   ├── ResourceModel.js
+│   │   ├── teacherModel.js
+│   │   └── userModel.js
+│   ├── routes/                 # API endpoints
+│   │   ├── admin.routes.js
+│   │   ├── auth.routes.js
+│   │   ├── complaint.routes.js
+│   │   ├── course.routes.js
+│   │   ├── enrollment.routes.js
+│   │   ├── event.routes.js
+│   │   ├── lesson.routes.js
+│   │   ├── message.routes.js
+│   │   ├── resource.routes.js
+│   │   ├── student.routes.js
+│   │   └── teacher.routes.js
+│   ├── utils/                  # Helper utilities
+│   │   ├── generateReceiptImage.js
+│   │   ├── generateToken.js
+│   │   ├── migrateComplaints.js
+│   │   ├── seedRecipients.js
+│   │   └── socket.js           # Socket.io setup
+│   ├── app.js                  # Express app configuration
+│   ├── server.js               # Server entry point
+│   └── package.json
+│
+├── api/                         # Serverless functions
+│   └── index.js
+│
+└── package.json                 # Root package configuration
 ```
 
-## Performance
+---
 
-### Benchmarks
+## Installation
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| **Page Load Time** | <2s | 1.2s | ✅ |
-| **API Response** | <200ms | 150ms | ✅ |
-| **Database Query** | <100ms | 75ms | ✅ |
-| **CDN Cache Hit** | >95% | 97% | ✅ |
-| **Uptime** | 99.9% | 99.95% | ✅ |
+### Prerequisites
 
-### Optimization Strategies
+Ensure the following are installed on your system:
 
-- **Code Splitting**: Dynamic imports and lazy loading
-- **Image Optimization**: WebP format with fallbacks
-- **Caching**: Redis for sessions, CDN for static assets
-- **Database**: Indexed queries and connection pooling
-- **Monitoring**: Real-time performance tracking
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+- **MongoDB**: v5.0 or higher (or MongoDB Atlas account)
+- **Git**: Latest version
+
+### Clone Repository
+
+```bash
+git clone https://github.com/your-org/mdai.git
+cd mdai
+```
+
+### Install Dependencies
+
+Install dependencies for all services:
+
+```bash
+# Install backend dependencies
+cd backend
+npm install
+
+# Install client dependencies
+cd ../client
+npm install
+
+# Install admin dependencies
+cd ../admin
+npm install
+```
+
+---
+
+## Environment Configuration
+
+### Backend Environment Variables
+
+Create a `.env` file in the `backend/` directory:
+
+```env
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Database
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/mdai?retryWrites=true&w=majority
+
+# JWT Authentication
+JWT_SECRET=your_jwt_secret_key_here
+JWT_EXPIRE=7d
+JWT_REFRESH_SECRET=your_refresh_token_secret
+JWT_REFRESH_EXPIRE=30d
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Payment Gateways
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+# Email Service
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+FROM_EMAIL=noreply@mdai.com
+FROM_NAME=MDAI Platform
+
+# Redis (Optional - for caching)
+REDIS_URL=redis://localhost:6379
+
+# CORS Origins
+CLIENT_URL=http://localhost:5173
+ADMIN_URL=http://localhost:5174
+
+# Firebase (Optional - for push notifications)
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_PRIVATE_KEY=your_private_key
+FIREBASE_CLIENT_EMAIL=your_client_email
+```
+
+### Client Environment Variables
+
+Create a `.env` file in the `client/` directory:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+
+### Admin Environment Variables
+
+Create a `.env` file in the `admin/` directory:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
+```
+
+---
+
+## Running Locally
+
+### Start Backend Server
+
+```bash
+cd backend
+npm run dev
+```
+
+The API server will start at `http://localhost:3000`
+
+### Start Client Application
+
+```bash
+cd client
+npm run dev
+```
+
+The client application will start at `http://localhost:5173`
+
+### Start Admin Dashboard
+
+```bash
+cd admin
+npm run dev
+```
+
+The admin dashboard will start at `http://localhost:5174`
+
+### Verify Installation
+
+- **API Health Check**: `http://localhost:3000/ping`
+- **Client**: `http://localhost:5173`
+- **Admin**: `http://localhost:5174`
+
+---
+
+## Production Deployment
+
+### Backend Deployment (Render)
+
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Configure build settings:
+   - **Build Command**: `cd backend && npm install`
+   - **Start Command**: `cd backend && node server.js`
+4. Add environment variables from `.env`
+5. Deploy
+
+### Frontend Deployment (Vercel)
+
+#### Client Deployment
+
+```bash
+cd client
+vercel --prod
+```
+
+#### Admin Deployment
+
+```bash
+cd admin
+vercel --prod
+```
+
+### Environment-Specific Configuration
+
+Update environment variables for production:
+
+```env
+# Backend
+NODE_ENV=production
+CLIENT_URL=https://mdai-self.vercel.app
+ADMIN_URL=https://mdai-admin.vercel.app
+
+# Client
+VITE_API_URL=https://mdai-0jhi.onrender.com/api
+VITE_SOCKET_URL=https://mdai-0jhi.onrender.com
+
+# Admin
+VITE_API_URL=https://mdai-0jhi.onrender.com/api
+VITE_SOCKET_URL=https://mdai-0jhi.onrender.com
+```
+
+---
+
+## API Documentation
+
+### Base URL
+
+- **Development**: `http://localhost:3000/api`
+- **Production**: `https://mdai-0jhi.onrender.com/api`
+
+### Authentication Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/auth/register` | Register new student | No |
+| POST | `/auth/login` | Student login | No |
+| POST | `/auth/logout` | Logout user | Yes |
+| GET | `/auth/profile` | Get user profile | Yes |
+| PUT | `/auth/profile` | Update profile | Yes |
+
+### Teacher Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/teacher/register` | Register as teacher | No |
+| POST | `/teacher/login` | Teacher login | No |
+| GET | `/teacher/profile` | Get teacher profile | Yes (Teacher) |
+| PUT | `/teacher/profile` | Update teacher profile | Yes (Teacher) |
+| GET | `/teacher/students` | Get enrolled students | Yes (Teacher) |
+| GET | `/teacher/payments` | Get payment history | Yes (Teacher) |
+
+### Course Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/courses` | Get all courses | No |
+| GET | `/courses/:id` | Get course details | No |
+| POST | `/courses` | Create new course | Yes (Teacher) |
+| PUT | `/courses/:id` | Update course | Yes (Teacher) |
+| DELETE | `/courses/:id` | Delete course | Yes (Teacher/Admin) |
+| GET | `/courses/teacher/:teacherId` | Get teacher courses | Yes |
+
+### Enrollment Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/enrollments` | Enroll in course | Yes (Student) |
+| GET | `/enrollments/student/:studentId` | Get student enrollments | Yes (Student) |
+| GET | `/enrollments/course/:courseId` | Get course enrollments | Yes (Teacher) |
+| PUT | `/enrollments/:id/progress` | Update progress | Yes (Student) |
+
+### Admin Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/admin/login` | Admin login | No |
+| GET | `/admin/users` | Get all users | Yes (Admin) |
+| GET | `/admin/teachers` | Get all teachers | Yes (Admin) |
+| GET | `/admin/students` | Get all students | Yes (Admin) |
+| PUT | `/admin/users/:id/suspend` | Suspend user | Yes (Admin) |
+| PUT | `/admin/users/:id/resume` | Resume user | Yes (Admin) |
+| GET | `/admin/courses` | Get all courses | Yes (Admin) |
+| GET | `/admin/enrollments` | Get all enrollments | Yes (Admin) |
+| GET | `/admin/transactions` | Get financial data | Yes (Admin) |
+| GET | `/admin/complaints` | Get all complaints | Yes (Admin) |
+| PUT | `/admin/complaints/:id` | Update complaint | Yes (Admin) |
+| GET | `/admin/audit-logs` | Get audit logs | Yes (Admin) |
+
+### Message Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/messages/conversations` | Get user conversations | Yes |
+| GET | `/messages/:conversationId` | Get conversation messages | Yes |
+| POST | `/messages` | Send message | Yes |
+| PUT | `/messages/:id/read` | Mark as read | Yes |
+
+### Complaint Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/complaints` | Submit complaint | Yes |
+| GET | `/complaints` | Get user complaints | Yes |
+| GET | `/complaints/:id` | Get complaint details | Yes |
+| PUT | `/complaints/:id` | Update complaint | Yes (Admin) |
+
+### Event Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/events` | Get all events | Yes |
+| POST | `/events` | Create event | Yes (Teacher/Admin) |
+| PUT | `/events/:id` | Update event | Yes (Teacher/Admin) |
+| DELETE | `/events/:id` | Delete event | Yes (Teacher/Admin) |
+
+### Resource Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/resource/course/:courseId` | Get course resources | Yes |
+| POST | `/resource` | Upload resource | Yes (Teacher) |
+| DELETE | `/resource/:id` | Delete resource | Yes (Teacher) |
+
+---
+
+## User Roles
+
+### Student
+
+**Capabilities:**
+- Browse and search courses
+- Enroll in courses with payment
+- Access course content and resources
+- Track learning progress
+- Communicate with teachers
+- Submit complaints
+- View event calendar
+- Manage profile settings
+
+**Restrictions:**
+- Cannot create courses
+- Cannot access teacher or admin features
+- Cannot modify other users' data
+
+### Teacher
+
+**Capabilities:**
+- Create and manage courses
+- Upload course materials and resources
+- View enrolled students
+- Track student progress
+- Manage lessons and content
+- Schedule events and classes
+- View payment history
+- Respond to student messages
+- Update profile and credentials
+
+**Restrictions:**
+- Cannot access admin panel
+- Cannot manage other teachers' courses
+- Cannot suspend users
+- Cannot view system-wide analytics
+
+### Administrator
+
+**Capabilities:**
+- Full system access and control
+- Manage all users (students, teachers, admins)
+- Approve, edit, or remove any course
+- Monitor all enrollments and transactions
+- Review and resolve complaints
+- Access audit logs and system metrics
+- Suspend or resume user accounts
+- Broadcast announcements
+- Configure platform settings
+- Generate financial reports
+
+**Restrictions:**
+- Cannot impersonate users
+- Cannot modify encrypted passwords directly
+
+---
 
 ## Security
 
-### Security Measures
+### Authentication
 
-| Layer | Implementation | Status |
-|-------|----------------|--------|
-| **Authentication** | JWT + Refresh Tokens | ✅ |
-| **Authorization** | Role-based Access Control | ✅ |
-| **Data Encryption** | AES-256 at Rest, TLS 1.3 in Transit | ✅ |
-| **Input Validation** | Joi + Express Validator | ✅ |
-| **Rate Limiting** | Redis-based Throttling | ✅ |
-| **CORS** | Strict Origin Policy | ✅ |
-| **Headers** | Helmet.js Security Headers | ✅ |
+- **JWT Tokens**: Stateless authentication with access and refresh tokens
+- **Password Hashing**: bcrypt with salt rounds for secure password storage
+- **Token Expiration**: Access tokens expire in 7 days, refresh tokens in 30 days
+- **HTTP-Only Cookies**: Secure token storage to prevent XSS attacks
 
-### Compliance
+### Authorization
 
-- 🔒 **GDPR Compliant**: Data protection and privacy
-- 🛡️ **OWASP Top 10**: Security vulnerability protection
-- 📋 **SOC 2 Type II**: Security and availability controls
-- 🔐 **PCI DSS**: Payment card data security
+- **Role-Based Access Control (RBAC)**: Middleware enforces role-specific permissions
+- **Route Protection**: Protected routes verify JWT and user roles
+- **Resource Ownership**: Users can only modify their own resources
+
+### Data Protection
+
+- **Input Validation**: Express-validator and Zod schemas validate all inputs
+- **SQL Injection Prevention**: Mongoose ODM prevents NoSQL injection
+- **XSS Protection**: Helmet.js sets security headers
+- **CORS Configuration**: Strict origin policy for cross-origin requests
+- **Rate Limiting**: Prevents brute-force attacks and API abuse
+- **Data Encryption**: Sensitive data encrypted at rest and in transit (TLS 1.3)
+
+### File Upload Security
+
+- **File Type Validation**: Multer restricts allowed file types
+- **File Size Limits**: Maximum upload size enforced
+- **Cloudinary Integration**: Secure media storage with CDN delivery
+
+### Best Practices
+
+- Environment variables for sensitive configuration
+- Regular dependency updates and security audits
+- Audit logging for administrative actions
+- Session management with Redis
+- HTTPS enforcement in production
+- Content Security Policy (CSP) headers
+
+---
 
 ## Contributing
 
 ### Development Workflow
 
-```bash
-# 1. Fork and clone
-git clone https://github.com/your-username/mdai.git
-
-# 2. Create feature branch
-git checkout -b feature/amazing-feature
-
-# 3. Make changes and test
-npm run test:all
-npm run lint:fix
-
-# 4. Commit with conventional commits
-git commit -m "feat: add amazing feature"
-
-# 5. Push and create PR
-git push origin feature/amazing-feature
-```
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make changes and commit: `git commit -m "Add feature description"`
+4. Push to your fork: `git push origin feature/your-feature-name`
+5. Submit a pull request
 
 ### Code Standards
 
-- **ESLint**: Airbnb configuration
-- **Prettier**: Code formatting
-- **Husky**: Pre-commit hooks
-- **Conventional Commits**: Commit message format
-- **Jest**: Unit and integration testing
+- Follow ESLint configuration
+- Write meaningful commit messages
+- Add comments for complex logic
+- Maintain consistent code formatting
+- Write unit tests for new features
+- Update documentation as needed
 
-### Pull Request Process
+### Pull Request Guidelines
 
-1. ✅ All tests pass
-2. ✅ Code coverage >80%
-3. ✅ Security scan passes
-4. ✅ Performance benchmarks met
-5. ✅ Documentation updated
-6. ✅ Two approvals required
-
-## Support
-
-### Getting Help
-
-| Channel | Response Time | Availability |
-|---------|---------------|-------------|
-| 📧 **Email** | <24 hours | [support@mdai.com](mailto:support@mdai.com) |
-| 💬 **WhatsApp** | <2 hours | [+91 98362 92481](https://wa.me/919836292481) |
-| 🔗 **LinkedIn** | <48 hours | [Professor Profile](https://www.linkedin.com/in/symphorien-pyana/) |
-| 📋 **Issues** | <12 hours | [GitHub Issues](https://github.com/mdai/issues) |
-
-### Enterprise Support
-
-- 🏢 **Dedicated Account Manager**
-- 📞 **24/7 Phone Support**
-- 🔧 **Custom Integration Assistance**
-- 📊 **Priority Feature Requests**
-
-## License
-
-```
-Copyright (c) 2026 Modern Digital Academy Institute
-
-This software is proprietary and confidential. Unauthorized copying,
-transferring or reproduction of this software, via any medium, is
-strictly prohibited.
-
-For licensing inquiries: legal@mdai.com
-```
+- Provide clear description of changes
+- Reference related issues
+- Ensure all tests pass
+- Update README if necessary
+- Request review from maintainers
 
 ---
 
-<div align="center">
-  
-  **Built with ❤️ by the MDAI Engineering Team**
-  
-  [🌟 Star us on GitHub](https://github.com/mdai/mdai) • [🐦 Follow on Twitter](https://twitter.com/mdai) • [💼 LinkedIn](https://linkedin.com/company/mdai)
-  
-</div>
+## License
+
+Copyright (c) 2026 Modern Digital Academy Institute
+
+This software is proprietary and confidential. Unauthorized copying, transferring, or reproduction of this software, via any medium, is strictly prohibited.
+
+For licensing inquiries: legal@mdai.com
+
+---
+
+## Support
+
+### Contact Information
+
+- **Email**: support@mdai.com
+- **WhatsApp**: +91 98362 92481
+- **LinkedIn**: [Professor Profile](https://www.linkedin.com/in/symphorien-pyana/)
+
+### Production URLs
+
+- **Student/Teacher Portal**: [https://mdai-self.vercel.app](https://mdai-self.vercel.app)
+- **Admin Dashboard**: [https://mdai-admin.vercel.app](https://mdai-admin.vercel.app)
+- **API Server**: [https://mdai-0jhi.onrender.com](https://mdai-0jhi.onrender.com)
+- **API Health**: [https://mdai-0jhi.onrender.com/ping](https://mdai-0jhi.onrender.com/ping)
+
+---
+
+**Built with precision and scalability in mind by the MDAI Engineering Team**

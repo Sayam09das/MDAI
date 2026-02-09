@@ -1,679 +1,439 @@
-<div align="center">
-  <img src="https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg" alt="MDAI Admin" width="120" height="120">
-  
-  # MDAI Admin Dashboard
-  
-  **Enterprise Administrative Control Panel**
-  
-  [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/mdai/admin/actions)
-  [![Admin Status](https://img.shields.io/badge/Admin-Live-brightgreen)](https://mdai-admin.vercel.app)
-  [![Security](https://img.shields.io/badge/Security-A+-brightgreen)](https://securityheaders.com/)
-  [![React](https://img.shields.io/badge/React-19.x-blue)](https://reactjs.org/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
-  
-  [🚀 Live Dashboard](https://mdai-admin.vercel.app) • [📊 Analytics](https://analytics.mdai.com) • [🔧 System Status](https://status.mdai.com)
-  
-</div>
+# MDAI Admin Dashboard
+
+**Enterprise Administrative Control Panel**
+
+[![Production](https://img.shields.io/badge/Production-Live-brightgreen)](https://mdai-admin.vercel.app)
+[![React](https://img.shields.io/badge/React-19.x-blue)](https://reactjs.org/)
+[![Security](https://img.shields.io/badge/Security-A+-brightgreen)](https://securityheaders.com/)
 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Features](#features)
-- [Security](#security)
-- [Analytics](#analytics)
-- [User Management](#user-management)
-- [System Monitoring](#system-monitoring)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-
 ## Overview
 
-The MDAI Admin Dashboard is a sophisticated administrative control panel designed for enterprise-level management of the MDAI e-learning platform. Built with modern React architecture, it provides comprehensive oversight, analytics, and control capabilities for platform administrators.
+Enterprise-grade administrative control panel for comprehensive management of the MDAI Learning Management System. Provides real-time monitoring, user management, content oversight, and business intelligence.
 
-### Key Metrics
+### Key Capabilities
 
-| Metric | Value | Target |
-|--------|-------|--------|
-| **Load Time** | 0.9s | <1.5s |
-| **Bundle Size** | 180KB | <250KB |
-| **Admin Actions/Min** | 500+ | 300+ |
-| **Data Refresh Rate** | Real-time | <5s |
-| **Security Score** | A+ | A |
+- Complete user lifecycle management
+- Course approval and moderation
+- Financial reporting and analytics
+- Complaint resolution system
+- Audit logging and compliance
+- System health monitoring
+- Real-time notifications
+- Bulk operations
 
-### Administrative Capabilities
+---
 
-- 👥 **User Management**: Complete user lifecycle management
-- 📚 **Content Oversight**: Course approval and moderation
-- 📊 **Business Intelligence**: Advanced analytics and reporting
-- 💰 **Financial Control**: Revenue tracking and payout management
-- 🔒 **Security Management**: Access control and audit logs
-- 🚨 **System Monitoring**: Real-time health and performance metrics
-- 📧 **Communication Hub**: Automated notifications and messaging
+## Technology Stack
 
-## Architecture
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19.2.0 | UI Framework |
+| Vite | 7.2.4 | Build Tool |
+| TailwindCSS | 4.1.18 | Styling |
+| React Router | 7.12.0 | Routing |
+| Axios | 1.13.2 | HTTP Client |
+| Socket.io Client | 4.8.1 | Real-time Updates |
+| Recharts | 2.15.4 | Data Visualization |
+| Framer Motion | 12.29.0 | Animations |
+| React Toastify | 11.0.5 | Notifications |
 
-### Admin Architecture
+---
 
-```mermaid
-graph TB
-    subgraph "Admin Interface"
-        A[Dashboard Overview]
-        B[User Management]
-        C[Content Management]
-        D[Analytics & Reports]
-        E[System Settings]
-    end
-    
-    subgraph "Data Layer"
-        F[Real-time API]
-        G[Analytics Engine]
-        H[Notification System]
-    end
-    
-    subgraph "Security Layer"
-        I[Role-based Access]
-        J[Audit Logging]
-        K[Session Management]
-    end
-    
-    A --> F
-    B --> F
-    C --> F
-    D --> G
-    E --> F
-    F --> I
-    G --> J
-    H --> K
-```
-
-### Component Structure
+## Project Structure
 
 ```
 admin/
-├── 📁 public/                    # Static assets
-│   ├── icons/                   # Admin-specific icons
-│   ├── images/                  # Dashboard images
-│   └── manifest.json            # PWA manifest
-├── 📁 src/
-│   ├── 📁 Auth/                 # Authentication components
-│   │   └── Login/               # Admin login system
-│   ├── 📁 components/           # Reusable components
-│   │   └── Main/                # Core components
-│   ├── 📁 Dashboard/            # Dashboard modules
-│   │   ├── DashboardMain/       # Overview dashboard
+├── src/
+│   ├── Auth/                    # Admin authentication
+│   │   └── Login/
+│   ├── components/              # Reusable components
+│   │   └── Main/
+│   ├── context/                 # Context providers
+│   │   └── AdminSocketContext.jsx
+│   ├── Dashboard/               # Dashboard modules
+│   │   ├── DashboardMain/       # Overview
+│   │   ├── DashboardUser/       # User management
 │   │   ├── DashboardStudent/    # Student management
 │   │   ├── DashboardTeacher/    # Teacher management
-│   │   └── DashboardUser/       # User analytics
-│   ├── 📁 pages/                # Page layouts
-│   ├── 📁 routes/               # Route definitions
-│   ├── 📁 utils/                # Utility functions
-│   ├── App.jsx                  # Main application
-│   └── main.jsx                 # Entry point
-├── 📁 tests/                    # Test suites
-├── 📁 docs/                     # Documentation
-└── 📁 scripts/                  # Build scripts
+│   │   ├── DashboardCourses/    # Course oversight
+│   │   ├── DashboardFinance/    # Financial reports
+│   │   ├── DashboardComplaints/ # Complaint system
+│   │   ├── DashboardAnnouncements/ # Announcements
+│   │   ├── DashboardReports/    # Analytics
+│   │   ├── DashboardSettings/   # Settings
+│   │   ├── DashboardSystem/     # System monitoring
+│   │   ├── DashboardAuditLogs/  # Audit logs
+│   │   └── StudentEnrollment/   # Enrollment management
+│   ├── pages/                   # Page layouts
+│   │   └── DashboardLayout.jsx
+│   ├── routes/                  # Route definitions
+│   │   ├── AuthRoutes.jsx
+│   │   ├── DashboardRoutes.jsx
+│   │   ├── MainRoutes.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── PublicRoute.jsx
+│   ├── utils/                   # Utilities
+│   │   └── auth.js
+│   └── lib/                     # API clients
+├── public/                      # Static assets
+└── package.json
 ```
 
-## Quick Start
+---
+
+## Installation
 
 ### Prerequisites
 
-| Requirement | Version | Purpose |
-|-------------|---------|---------|
-| Node.js | ≥18.0.0 | Runtime environment |
-| npm | ≥9.0.0 | Package manager |
-| Admin Access | Required | Platform permissions |
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- Admin credentials
 
-### Development Setup
+### Setup
 
 ```bash
-# Clone admin repository
-git clone https://github.com/mdai/admin.git
-cd admin
-
 # Install dependencies
-npm ci
+npm install
 
 # Setup environment
-cp .env.example .env.local
-npm run setup:admin
+cp .env.example .env
 
 # Start development server
 npm run dev
 ```
 
-### Docker Setup
+---
 
-```bash
-# Build admin container
-docker build -t mdai-admin .
-docker run -p 5174:5174 mdai-admin
+## Environment Variables
 
-# Or use Docker Compose
-docker-compose up admin
-```
+Create `.env` file:
 
-### Environment Configuration
-
-```bash
-# .env.local
-# API Configuration
-VITE_BACKEND_URL=https://mdai-0jhi.onrender.com
-VITE_API_VERSION=v1
-VITE_ADMIN_API_KEY=admin_api_key_here
-
-# Authentication
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
 VITE_ADMIN_SESSION_TIMEOUT=3600000
-VITE_ENABLE_2FA=true
 VITE_ENABLE_AUDIT_LOGS=true
-
-# Features
 VITE_ENABLE_REAL_TIME=true
-VITE_ENABLE_NOTIFICATIONS=true
-VITE_ENABLE_ANALYTICS=true
-
-# External Services
-VITE_LOGO_URL=https://res.cloudinary.com/dp4ohisdc/image/upload/v1766995359/logo_odzmqw.jpg
-VITE_SUPPORT_EMAIL=admin@mdai.com
-VITE_SYSTEM_STATUS_URL=https://status.mdai.com
-
-# Security
-VITE_ENABLE_CSP=true
-VITE_ENABLE_RATE_LIMITING=true
-VITE_SESSION_ENCRYPTION=true
 ```
+
+---
+
+## Available Scripts
+
+```bash
+npm run dev          # Start development server (port 5174)
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
+
+---
 
 ## Features
 
-### 🏠 Dashboard Overview
+### Dashboard Overview
 
-#### Executive Summary
-- **Key Performance Indicators**: Revenue, users, courses, engagement
-- **Real-time Metrics**: Live user activity, system performance
-- **Quick Actions**: Most common administrative tasks
-- **Alert Center**: System notifications and urgent items
+- Key performance indicators (KPIs)
+- Real-time user activity
+- Revenue metrics
+- System health status
+- Quick action shortcuts
+- Alert notifications
 
-#### Activity Overview
-```typescript
-interface DashboardMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalCourses: number;
-  publishedCourses: number;
-  totalRevenue: number;
-  monthlyGrowth: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
-  lastUpdated: Date;
-}
-```
-
-### 👥 User Management
+### User Management
 
 #### Student Management
-- **User Profiles**: Complete student information and history
-- **Enrollment Tracking**: Course progress and completion rates
-- **Payment History**: Transaction records and refunds
-- **Support Tickets**: Customer service integration
-- **Behavioral Analytics**: Learning patterns and engagement
+- View all students
+- Student profiles and history
+- Enrollment tracking
+- Payment history
+- Suspend/resume accounts
+- Export student data
+- Bulk operations
 
 #### Teacher Management
-- **Instructor Profiles**: Qualifications and performance metrics
-- **Course Portfolio**: Teaching history and student feedback
-- **Revenue Tracking**: Earnings and payout schedules
-- **Performance Analytics**: Teaching effectiveness metrics
-- **Certification Management**: Credential verification
+- View all teachers
+- Teacher profiles and credentials
+- Course portfolio
+- Revenue tracking
+- Performance metrics
+- Verification status
+- Suspend/resume accounts
 
-#### Bulk Operations
-```typescript
-interface BulkUserOperation {
-  operation: 'activate' | 'deactivate' | 'delete' | 'export';
-  userIds: string[];
-  reason?: string;
-  scheduledAt?: Date;
-  notifyUsers: boolean;
-}
-```
+### Course Management
 
-### 📚 Content Management
+- Course approval workflow
+- Content moderation
+- Category management
+- Pricing control
+- Quality assurance
+- Performance monitoring
+- Bulk course operations
 
-#### Course Oversight
-- **Course Approval Workflow**: Review and publish process
-- **Content Moderation**: Quality assurance and compliance
-- **Category Management**: Course organization and taxonomy
-- **Pricing Control**: Revenue optimization and promotions
+### Financial Management
 
-#### Quality Assurance
-- **Automated Checks**: Content validation and standards compliance
-- **Manual Review**: Expert evaluation and feedback
-- **Performance Monitoring**: Course effectiveness tracking
-- **Student Feedback**: Review aggregation and analysis
+- Revenue dashboard
+- Transaction history
+- Payment analytics
+- Refund management
+- Teacher payouts
+- Financial reports
+- Export capabilities
 
-### 📊 Analytics & Reporting
+### Complaint System
 
-#### Business Intelligence
-```typescript
-interface AnalyticsData {
-  userMetrics: {
-    totalUsers: number;
-    newUsers: number;
-    activeUsers: number;
-    churnRate: number;
-  };
-  courseMetrics: {
-    totalCourses: number;
-    completionRate: number;
-    averageRating: number;
-    popularCategories: string[];
-  };
-  revenueMetrics: {
-    totalRevenue: number;
-    monthlyRecurring: number;
-    averageOrderValue: number;
-    refundRate: number;
-  };
-}
-```
+- View all complaints
+- Complaint categorization
+- Priority management
+- Response tracking
+- Resolution workflow
+- Analytics and trends
 
-#### Custom Reports
-- **Financial Reports**: Revenue, expenses, profit margins
-- **User Reports**: Demographics, behavior, satisfaction
-- **Course Reports**: Performance, engagement, completion
-- **System Reports**: Performance, security, compliance
+### System Monitoring
 
-### 🔒 Security & Compliance
+- API health status
+- Database performance
+- Error tracking
+- User activity logs
+- System resource usage
+- Alert management
 
-#### Access Control
-- **Role-based Permissions**: Granular access management
-- **Multi-factor Authentication**: Enhanced security protocols
-- **Session Management**: Secure session handling
-- **Audit Trails**: Complete action logging
+### Audit Logs
 
-#### Compliance Management
-- **GDPR Compliance**: Data protection and privacy
-- **SOC 2 Controls**: Security and availability standards
-- **PCI DSS**: Payment card data security
-- **Regular Audits**: Automated compliance checking
+- Complete action tracking
+- User activity history
+- Security events
+- Compliance reporting
+- Export audit data
+
+### Announcements
+
+- Create announcements
+- Target specific user groups
+- Schedule announcements
+- Track engagement
+- Archive management
+
+---
 
 ## Security
 
-### Authentication & Authorization
+### Authentication
 
-```typescript
-interface AdminUser {
-  id: string;
-  email: string;
-  role: 'super_admin' | 'admin' | 'moderator';
-  permissions: Permission[];
-  lastLogin: Date;
-  mfaEnabled: boolean;
-  sessionTimeout: number;
-}
+- Admin-only access
+- JWT-based authentication
+- Session management
+- Multi-factor authentication (optional)
+- Secure password policies
 
-interface Permission {
-  resource: string;
-  actions: ('create' | 'read' | 'update' | 'delete')[];
-  conditions?: Record<string, any>;
-}
+### Authorization
+
+- Role-based access control
+- Granular permissions
+- Action-level authorization
+- Resource ownership validation
+
+### Audit Trail
+
+- All admin actions logged
+- Timestamp and user tracking
+- IP address recording
+- Change history
+- Compliance reporting
+
+---
+
+## API Integration
+
+```javascript
+// lib/adminApi.js
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+export const getAdminStats = async () => {
+  const response = await axios.get(`${API_URL}/admin/stats`);
+  return response.data;
+};
+
+export const suspendUser = async (userId, reason) => {
+  const response = await axios.put(`${API_URL}/admin/users/${userId}/suspend`, {
+    reason
+  });
+  return response.data;
+};
+
+export const getAuditLogs = async (filters) => {
+  const response = await axios.get(`${API_URL}/admin/audit-logs`, {
+    params: filters
+  });
+  return response.data;
+};
 ```
 
-### Security Measures
+---
 
-| Layer | Implementation | Status |
-|-------|----------------|--------|
-| **Authentication** | Multi-factor Authentication | ✅ |
-| **Authorization** | Role-based Access Control | ✅ |
-| **Session Security** | Encrypted sessions with timeout | ✅ |
-| **Data Encryption** | End-to-end encryption | ✅ |
-| **Audit Logging** | Complete action tracking | ✅ |
-| **Network Security** | VPN and IP whitelisting | ✅ |
+## Real-time Features
 
-### Audit System
+### Socket.io Integration
 
-```typescript
-interface AuditLog {
-  id: string;
-  userId: string;
-  action: string;
-  resource: string;
-  resourceId?: string;
-  changes?: Record<string, any>;
-  ipAddress: string;
-  userAgent: string;
-  timestamp: Date;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-}
-```
+```javascript
+// context/AdminSocketContext.jsx
+import { createContext, useEffect, useState } from 'react';
+import io from 'socket.io-client';
 
-## Analytics
+export const AdminSocketContext = createContext();
 
-### Real-time Dashboard
+export const AdminSocketProvider = ({ children }) => {
+  const [socket, setSocket] = useState(null);
 
-#### Key Metrics Display
-```typescript
-interface RealTimeMetrics {
-  activeUsers: number;
-  ongoingCourses: number;
-  systemLoad: number;
-  errorRate: number;
-  responseTime: number;
-  revenue: {
-    today: number;
-    thisMonth: number;
-    growth: number;
-  };
-}
-```
+  useEffect(() => {
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
+      auth: { token: localStorage.getItem('adminToken') }
+    });
 
-#### Data Visualization
-- **Interactive Charts**: Revenue trends, user growth, course performance
-- **Heat Maps**: User activity patterns, geographic distribution
-- **Funnel Analysis**: Conversion rates, drop-off points
-- **Cohort Analysis**: User retention and lifetime value
+    newSocket.on('newUser', (data) => {
+      // Handle new user registration
+    });
 
-### Business Intelligence
+    newSocket.on('newEnrollment', (data) => {
+      // Handle new enrollment
+    });
 
-#### Advanced Analytics
-```typescript
-interface BusinessMetrics {
-  customerAcquisition: {
-    cost: number;
-    channels: Record<string, number>;
-    conversion: number;
-  };
-  customerLifetime: {
-    value: number;
-    duration: number;
-    churnPrediction: number;
-  };
-  coursePerformance: {
-    completion: number;
-    satisfaction: number;
-    revenue: number;
-  };
-}
-```
+    setSocket(newSocket);
 
-## User Management
-
-### User Lifecycle Management
-
-#### Student Management Interface
-```typescript
-interface StudentManagement {
-  profile: {
-    personalInfo: UserProfile;
-    enrollments: Enrollment[];
-    payments: Payment[];
-    support: SupportTicket[];
-  };
-  actions: {
-    suspend: (reason: string) => Promise<void>;
-    refund: (amount: number, reason: string) => Promise<void>;
-    sendMessage: (message: string) => Promise<void>;
-    exportData: () => Promise<Blob>;
-  };
-}
-```
-
-#### Teacher Management Interface
-```typescript
-interface TeacherManagement {
-  profile: {
-    qualifications: Certification[];
-    courses: Course[];
-    earnings: EarningsReport;
-    performance: TeacherMetrics;
-  };
-  actions: {
-    verify: () => Promise<void>;
-    suspend: (reason: string) => Promise<void>;
-    payout: (amount: number) => Promise<void>;
-    sendNotification: (message: string) => Promise<void>;
-  };
-}
-```
-
-### Bulk Operations
-
-#### Mass User Actions
-- **Bulk Enrollment**: Enroll multiple users in courses
-- **Bulk Communication**: Send messages to user segments
-- **Bulk Data Export**: Generate user reports
-- **Bulk Status Changes**: Activate/deactivate accounts
-
-## System Monitoring
-
-### Health Monitoring
-
-#### System Health Dashboard
-```typescript
-interface SystemHealth {
-  api: {
-    status: 'healthy' | 'degraded' | 'down';
-    responseTime: number;
-    errorRate: number;
-  };
-  database: {
-    status: 'healthy' | 'degraded' | 'down';
-    connections: number;
-    queryTime: number;
-  };
-  services: {
-    email: ServiceStatus;
-    payments: ServiceStatus;
-    storage: ServiceStatus;
-  };
-}
-```
-
-#### Performance Metrics
-- **Response Times**: API endpoint performance
-- **Error Rates**: System reliability metrics
-- **Resource Usage**: CPU, memory, storage utilization
-- **User Experience**: Page load times, interaction delays
-
-### Alert Management
-
-#### Alert Configuration
-```typescript
-interface AlertRule {
-  id: string;
-  name: string;
-  condition: string;
-  threshold: number;
-  severity: 'info' | 'warning' | 'error' | 'critical';
-  channels: ('email' | 'sms' | 'slack' | 'webhook')[];
-  enabled: boolean;
-}
-```
-
-## Deployment
-
-### Production Environment
-
-```yaml
-# docker-compose.admin.yml
-version: '3.8'
-services:
-  admin:
-    build: .
-    ports:
-      - "5174:5174"
-    environment:
-      - NODE_ENV=production
-      - VITE_BACKEND_URL=https://mdai-0jhi.onrender.com
-    restart: unless-stopped
-    
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "443:443"
-    volumes:
-      - ./nginx.admin.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - admin
-    restart: unless-stopped
-```
-
-### CI/CD Pipeline
-
-```yaml
-# .github/workflows/admin-deploy.yml
-name: Deploy Admin Dashboard
-
-on:
-  push:
-    branches: [main]
-    paths: ['admin/**']
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Security Audit
-        run: |
-          npm audit --audit-level high
-          npm run security:scan
-          
-  build-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm ci
-      - run: npm run test:admin
-      - run: npm run build:admin
-      
-  deploy:
-    needs: [security-scan, build-test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Vercel
-        uses: vercel/action@v1
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-project-id: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-```
-
-### Environment-Specific Configurations
-
-```bash
-# Production
-VITE_NODE_ENV=production
-VITE_BACKEND_URL=https://mdai-0jhi.onrender.com
-VITE_ENABLE_ANALYTICS=true
-VITE_ENABLE_ERROR_REPORTING=true
-
-# Staging
-VITE_NODE_ENV=staging
-VITE_BACKEND_URL=https://staging-api.mdai.com
-VITE_ENABLE_DEBUG=true
-
-# Development
-VITE_NODE_ENV=development
-VITE_BACKEND_URL=http://localhost:3000
-VITE_ENABLE_DEBUG=true
-VITE_ENABLE_HOT_RELOAD=true
-```
-
-## Contributing
-
-### Development Workflow
-
-```bash
-# 1. Create admin feature branch
-git checkout -b feature/admin-user-analytics
-
-# 2. Make changes
-# ... admin-specific changes ...
-
-# 3. Run admin tests
-npm run test:admin
-npm run lint:admin
-npm run security:check
-
-# 4. Commit with admin prefix
-git commit -m "feat(admin): add user analytics dashboard"
-
-# 5. Push and create PR
-git push origin feature/admin-user-analytics
-```
-
-### Admin-Specific Guidelines
-
-1. **Security First**: All admin features must pass security review
-2. **Audit Trail**: Every admin action must be logged
-3. **Permission Checks**: Implement granular permission validation
-4. **Data Protection**: Handle sensitive data with encryption
-5. **Performance**: Optimize for large datasets and real-time updates
-
-### Code Review Checklist
-
-- ✅ **Security**: No sensitive data exposure
-- ✅ **Permissions**: Proper role-based access control
-- ✅ **Audit Logging**: All actions are tracked
-- ✅ **Performance**: Optimized for admin workloads
-- ✅ **UX**: Intuitive admin interface design
-- ✅ **Testing**: Comprehensive test coverage
-- ✅ **Documentation**: Updated admin documentation
-
-### Admin Component Template
-
-```typescript
-// components/admin/UserManagement.tsx
-import React, { useState, useEffect } from 'react';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { useAuditLog } from '@/hooks/useAuditLog';
-
-interface UserManagementProps {
-  permissions: Permission[];
-}
-
-export const UserManagement: React.FC<UserManagementProps> = ({ permissions }) => {
-  const { user, hasPermission } = useAdminAuth();
-  const { logAction } = useAuditLog();
-  const [users, setUsers] = useState<User[]>([]);
-
-  const handleUserAction = async (userId: string, action: string) => {
-    if (!hasPermission('users', action)) {
-      throw new Error('Insufficient permissions');
-    }
-
-    try {
-      await performUserAction(userId, action);
-      await logAction({
-        action,
-        resource: 'user',
-        resourceId: userId,
-        severity: 'medium'
-      });
-    } catch (error) {
-      console.error('User action failed:', error);
-    }
-  };
+    return () => newSocket.close();
+  }, []);
 
   return (
-    <div className="admin-user-management">
-      {/* Admin UI components */}
-    </div>
+    <AdminSocketContext.Provider value={{ socket }}>
+      {children}
+    </AdminSocketContext.Provider>
   );
 };
 ```
 
 ---
 
-<div align="center">
-  
-  **Built with ❤️ for enterprise-grade administration**
-  
-  [🚀 Live Dashboard](https://mdai-admin.vercel.app) • [📊 System Status](https://status.mdai.com) • [🔒 Security Center](https://security.mdai.com)
-  
-</div>
+## Deployment
+
+### Vercel Deployment
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### Build Configuration
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+---
+
+## Performance
+
+- Bundle size: ~180KB (gzipped)
+- Load time: <1s
+- Real-time updates: <100ms latency
+- Dashboard refresh: Every 30s
+- Optimized for large datasets
+
+---
+
+## Admin Workflows
+
+### User Suspension Workflow
+
+1. Navigate to User Management
+2. Select user to suspend
+3. Provide suspension reason
+4. Confirm action
+5. System logs action in audit trail
+6. User receives notification
+7. Access immediately revoked
+
+### Course Approval Workflow
+
+1. Review pending courses
+2. Check content quality
+3. Verify instructor credentials
+4. Approve or reject with feedback
+5. Notify instructor
+6. Publish approved courses
+
+### Complaint Resolution Workflow
+
+1. Review new complaints
+2. Assign priority level
+3. Investigate issue
+4. Communicate with parties
+5. Resolve and document
+6. Close complaint
+7. Track resolution metrics
+
+---
+
+## Monitoring & Analytics
+
+### Dashboard Metrics
+
+- Total users (students, teachers, admins)
+- Active users (daily, weekly, monthly)
+- Total courses (published, draft, pending)
+- Revenue (today, this month, total)
+- Enrollments (new, active, completed)
+- System health (API, database, services)
+
+### Reports
+
+- User growth reports
+- Revenue reports
+- Course performance reports
+- Teacher performance reports
+- System usage reports
+- Compliance reports
+
+---
+
+## Contributing
+
+1. Create feature branch: `git checkout -b feature/admin-feature`
+2. Make changes and test
+3. Commit: `git commit -m "feat(admin): description"`
+4. Push: `git push origin feature/admin-feature`
+5. Create Pull Request
+
+### Admin-Specific Guidelines
+
+- All admin actions must be logged
+- Implement proper permission checks
+- Handle sensitive data securely
+- Optimize for large datasets
+- Maintain audit trail integrity
+
+---
+
+## License
+
+Copyright (c) 2026 MDAI. All rights reserved.
+
+---
+
+**Live Dashboard**: [https://mdai-admin.vercel.app](https://mdai-admin.vercel.app)
