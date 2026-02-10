@@ -15,6 +15,9 @@ import {
   Bell,
   CreditCard,
   AlertCircle,
+  ClipboardList,
+  FileQuestion,
+  HelpCircle
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -24,6 +27,8 @@ const mainMenu = [
   { icon: BookOpen, label: "My Courses", path: "/student-dashboard/student-mycourse" },
   { icon: BarChart3, label: "Course Progress", path: "/student-dashboard/course-progress" },
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
+  { icon: ClipboardList, label: "Assignments", path: "/student-dashboard/assignments" },
+  { icon: FileQuestion, label: "Exams / Quizzes", path: "/student-dashboard/exams" },
   { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
   { icon: CreditCard, label: "Payments", path: "/student-dashboard/payments" },
   { icon: AlertCircle, label: "Complaints", path: "/student-dashboard/complaints" },
@@ -38,6 +43,7 @@ const extraMenu = [
 const otherMenu = [
   { icon: User, label: "Profile", path: "/student-dashboard/profile" },
   { icon: Settings, label: "Settings", path: "/student/settings" },
+  { icon: HelpCircle, label: "Help & Support", path: "/student-dashboard/support" },
 ];
 
 /* ================= SIDEBAR ================= */
@@ -146,44 +152,44 @@ const StudentSidebar = ({ isOpen, onClose }) => {
 
 /* ================= LINK ================= */
 const SidebarLink = ({ icon: Icon, label, path, onClick: externalOnClick }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    
-    const handleClick = (e) => {
-        // Call external onClick if provided
-        if (externalOnClick) {
-            externalOnClick(e);
-        }
-        // Navigate to the path
-        if (path) {
-            navigate(path);
-        }
-    };
-    
-    const isActive = location.pathname === path || location.pathname.startsWith(path + '/');
-    
-    return (
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleClick = (e) => {
+    // Call external onClick if provided
+    if (externalOnClick) {
+      externalOnClick(e);
+    }
+    // Navigate to the path
+    if (path) {
+      navigate(path);
+    }
+  };
+
+  const isActive = location.pathname === path || location.pathname.startsWith(path + '/');
+
+  return (
     <button
-        onClick={handleClick}
-        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-left
+      onClick={handleClick}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-left
             transition-all duration-200 group relative overflow-hidden
             ${isActive
-                ? "bg-blue-50 text-blue-700 shadow-sm"
-                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-            }`
-        }
+          ? "bg-blue-50 text-blue-700 shadow-sm"
+          : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+        }`
+      }
     >
-        {/* Active indicator */}
-        {isActive && (
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
-        )}
+      {/* Active indicator */}
+      {isActive && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r" />
+      )}
 
-        <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110
+      <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110
                     ${isActive ? "text-blue-600" : "text-gray-500"}`}
-        />
-        <span className="truncate">{label}</span>
+      />
+      <span className="truncate">{label}</span>
     </button>
-);
+  );
 };
 
 export default StudentSidebar;
