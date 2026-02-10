@@ -7,13 +7,16 @@ import {
     CheckCircle,
     AlertCircle,
     BookOpen,
-    ArrowRight
+    ArrowRight,
+    Shield,
+    MonitorPlay
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const ReturnStudentAssignments = () => {
+    const navigate = useNavigate();
     const token = localStorage.getItem("token");
 
     const [assignments, setAssignments] = useState([]);
@@ -366,6 +369,7 @@ const ReturnStudentAssignments = () => {
                                                 </div>
                                             )}
 
+                                            {/* Regular Submit Button */}
                                             <Link
                                                 to={`/student-dashboard/assignments/${assignment._id}/submit`}
                                                 className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
@@ -379,6 +383,16 @@ const ReturnStudentAssignments = () => {
                                                 {statusInfo.actionLabel}
                                                 <ArrowRight className="w-4 h-4" />
                                             </Link>
+
+                                            {/* Exam Button (for exam-type assignments) */}
+                                            <button
+                                                onClick={() => navigate(`/student-dashboard/exam/${assignment._id}`)}
+                                                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg"
+                                            >
+                                                <Shield className="w-5 h-5" />
+                                                Start Secure Exam
+                                                <MonitorPlay className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </motion.div>
                                 );

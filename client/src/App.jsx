@@ -34,6 +34,9 @@ import StudentAnnouncements from "./Pages/Student/Dashboard/Announcements/Return
 import ReturnStudentPayments from "./Pages/Student/Dashboard/StudentPayments/ReturnStudentPayments"
 import StudentPaymentPage from "./Pages/Student/Dashboard/StudentPayments/StudentPaymentPage"
 
+// Exam Page
+import ExamPage from "./Pages/Student/Exam/ExamPage"
+
 // Teacher Pages
 import TeacherLayout from "./components/Dashboard/Teacher/TeacherLayout"
 import ReturnDashboard from "./Pages/teacher/Dashboard/MainHeaderDashboard/ReturnDashboard"
@@ -143,6 +146,9 @@ const App = () => {
           <Route path="assignments" element={<ReturnStudentAssignments />} />
           <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
           <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
+          
+          {/* Exam Route - Protected by StudentProtectedRoute */}
+          <Route path="exam/:assignmentId" element={<ExamPage />} />
         </Route>
 
         {/* Teacher Routes */}

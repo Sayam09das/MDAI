@@ -24,6 +24,7 @@ import StudentComplaints from "../Pages/Student/Dashboard/Complaints/StudentComp
 import ReturnStudentAssignments from "../Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments";
 import SubmitAssignment from "../Pages/Student/Dashboard/SubmitAssignment/SubmitAssignment";
 import SubmissionDetail from "../Pages/Student/Dashboard/SubmissionDetail/SubmissionDetail";
+import ExamPage from "../Pages/Student/Exam/ExamPage";
 
 const StudentRoutes = () => {
     return (
@@ -59,6 +60,9 @@ const StudentRoutes = () => {
 <Route path="assignments" element={<ReturnStudentAssignments />} />
                     <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
                     <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
+                    
+                    {/* Exam Routes */}
+                    <Route path="exam/:assignmentId" element={<ExamPage />} />
                 </Route>
             </Routes>
         </Suspense>

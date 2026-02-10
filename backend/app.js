@@ -18,6 +18,7 @@ import messageRoutes from "./routes/message.routes.js";
 import complaintRoutes from "./routes/complaint.routes.js";
 import assignmentRoutes from "./routes/assignment.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
+import examRoutes from "./routes/exam.routes.js";
 import database from "./database/db.js";
 
 dotenv.config();
@@ -90,6 +91,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/exams", examRoutes);
 
 
 app.get("/ping", (req, res) => {
