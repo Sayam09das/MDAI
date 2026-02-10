@@ -72,6 +72,8 @@ import TeacherComplaints from "./Pages/teacher/Dashboard/Complaints/TeacherCompl
 import ReturnStudentAssignments from "./Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments"
 import ReturnTeacherAssignments from "./Pages/teacher/Dashboard/MainAssignments/ReturnTeacherAssignments"
 import CreateAssignment from "./Pages/teacher/Dashboard/CreateAssignment/CreateAssignment"
+import SubmitAssignment from "./Pages/Student/Dashboard/SubmitAssignment/SubmitAssignment"
+import SubmissionDetail from "./Pages/Student/Dashboard/SubmissionDetail/SubmissionDetail"
 
 const App = () => {
   return (
@@ -137,6 +139,8 @@ const App = () => {
           <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
           <Route path="complaints" element={<StudentComplaints />} />
           <Route path="assignments" element={<ReturnStudentAssignments />} />
+          <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
+          <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
         </Route>
 
         {/* Teacher Routes */}
