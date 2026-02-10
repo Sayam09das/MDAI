@@ -63,6 +63,8 @@ import NotFound from "./Pages/NotFound/NotFound"
 import PaymentRoutes from "./routes/PaymentRoutes"
 import StudentComplaints from "./Pages/Student/Dashboard/Complaints/StudentComplaints"
 import TeacherComplaints from "./Pages/teacher/Dashboard/Complaints/TeacherComplaints"
+import ReturnStudentAssignments from "./Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments"
+import ReturnTeacherAssignments from "./Pages/teacher/Dashboard/MainAssignments/ReturnTeacherAssignments"
 
 const App = () => {
   return (
@@ -127,6 +129,7 @@ const App = () => {
           <Route path="payments" element={<ReturnStudentPayments />} />
           <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
           <Route path="complaints" element={<StudentComplaints />} />
+          <Route path="assignments" element={<ReturnStudentAssignments />} />
         </Route>
 
         {/* Teacher Routes */}
@@ -153,6 +156,7 @@ const App = () => {
           <Route path="announcements" element={<TeacherAnnouncements />} />
           <Route path="finance" element={<ReturnTeacherFinance />} />
           <Route path="complaints" element={<TeacherComplaints />} />
+          <Route path="assignments" element={<ReturnTeacherAssignments />} />
         </Route>
 
         {/* Payment Routes */}
