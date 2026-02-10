@@ -53,6 +53,9 @@ export const createAssignment = async (req, res) => {
             maxFileSize: parseInt(maxFileSize) || 10,
             reminderDaysBeforeDue: parseInt(reminderDaysBeforeDue) || 1,
             attachments,
+            isPublished: true, // Auto-publish so students can see it immediately
+            publishedAt: new Date(),
+            status: "active",
         });
 
         res.status(201).json({

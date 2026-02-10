@@ -110,7 +110,12 @@ const CreateAssignment = () => {
             const data = await res.json();
 
             if (data.success) {
-                alert("Assignment created successfully!");
+                // Show success message with publication status
+                if (data.assignment.isPublished) {
+                    alert("✅ Assignment created successfully! It is now visible to all enrolled students.");
+                } else {
+                    alert("Assignment created successfully! (Draft mode - not yet visible to students)");
+                }
                 navigate("/teacher-dashboard/assignments");
             } else {
                 alert(data.message || "Failed to create assignment");
