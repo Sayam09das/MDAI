@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     FileText,
     Calendar,
@@ -18,6 +18,7 @@ const ReturnStudentAssignments = () => {
 
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [filter, setFilter] = useState("all");
 
     useEffect(() => {
@@ -26,11 +27,16 @@ const ReturnStudentAssignments = () => {
 
     const fetchAssignments = async () => {
         try {
+            setError(null);
             const res = await fetch(`${BACKEND_URL}/api/assignments/student`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
 
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to fetch assignments");
+            }
+            
             if (data.success) {
                 setAssignments(data.assignments || []);
                 
@@ -38,9 +44,12 @@ const ReturnStudentAssignments = () => {
                 if (data.message) {
                     console.log("Assignment info:", data.message);
                 }
+            } else {
+                throw new Error(data.message || "Failed to fetch assignments");
             }
-        } catch (error) {
-            console.error("Error fetching assignments:", error);
+        } catch (err) {
+            console.error("Error fetching assignments:", err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -145,6 +154,24 @@ const ReturnStudentAssignments = () => {
                     </h1>
                     <p className="text-gray-600">View and submit your course assignments</p>
                 </motion.div>
+
+                {/* Error Display */}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-3"
+                    >
+                        <AlertCircle className="w-5 h-5" />
+                        <span>{error}</span>
+                        <button 
+                            onClick={fetchAssignments}
+                            className="ml-auto bg-red-100 hover:bg-red-200 px-3 py-1 rounded text-sm font-medium transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
