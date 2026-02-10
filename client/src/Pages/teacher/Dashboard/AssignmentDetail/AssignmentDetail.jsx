@@ -44,6 +44,7 @@ const AssignmentDetail = () => {
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState("all");
     const [showMenu, setShowMenu] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -51,6 +52,8 @@ const AssignmentDetail = () => {
 
     const fetchData = async () => {
         try {
+            setError(null);
+            
             // Fetch assignment details
             const assignmentRes = await fetch(`${BACKEND_URL}/api/assignments/${assignmentId}`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -59,6 +62,8 @@ const AssignmentDetail = () => {
 
             if (assignmentData.success) {
                 setAssignment(assignmentData.assignment);
+            } else {
+                setError(assignmentData.message || "Failed to load assignment");
             }
 
             // Fetch submissions with stats
@@ -68,18 +73,18 @@ const AssignmentDetail = () => {
             const submissionsData = await submissionsRes.json();
 
             if (submissionsData.success) {
-                setSubmissions(submissionsData.submissions);
+                setSubmissions(submissionsData.submissions || []);
                 
                 // Calculate additional stats
-                const gradedSubmissions = submissionsData.submissions.filter(s => s.status === "graded");
+                const gradedSubmissions = (submissionsData.submissions || []).filter(s => s.status === "graded");
                 const scores = gradedSubmissions.map(s => s.marks || 0);
                 
                 setStats({
-                    total: submissionsData.submissions.length,
-                    submitted: submissionsData.stats.submitted || 0,
-                    graded: submissionsData.stats.graded || 0,
-                    late: submissionsData.stats.late || 0,
-                    pending: submissionsData.stats.submitted - submissionsData.stats.graded || 0,
+                    total: submissionsData.submissions?.length || 0,
+                    submitted: submissionsData.stats?.submitted || 0,
+                    graded: submissionsData.stats?.graded || 0,
+                    late: submissionsData.stats?.late || 0,
+                    pending: (submissionsData.stats?.submitted || 0) - (submissionsData.stats?.graded || 0),
                     averageScore: gradedSubmissions.length > 0 
                         ? (gradedSubmissions.reduce((sum, s) => sum + (s.marks || 0), 0) / gradedSubmissions.length).toFixed(1)
                         : 0,
@@ -89,6 +94,7 @@ const AssignmentDetail = () => {
             }
         } catch (error) {
             console.error("Error fetching data:", error);
+            setError("Failed to connect to server. Please check your internet connection.");
         } finally {
             setLoading(false);
         }
@@ -189,6 +195,34 @@ const AssignmentDetail = () => {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (error && !assignment) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-6">
+                    <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Unable to Load Assignment</h2>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <div className="flex gap-4 justify-center">
+                        <button
+                            onClick={() => navigate("/teacher-dashboard/assignments")}
+                            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        >
+                            Back to Assignments
+                        </button>
+                        <button
+                            onClick={() => fetchData()}
+                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
