@@ -65,6 +65,7 @@ import StudentComplaints from "./Pages/Student/Dashboard/Complaints/StudentCompl
 import TeacherComplaints from "./Pages/teacher/Dashboard/Complaints/TeacherComplaints"
 import ReturnStudentAssignments from "./Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments"
 import ReturnTeacherAssignments from "./Pages/teacher/Dashboard/MainAssignments/ReturnTeacherAssignments"
+import CreateAssignment from "./Pages/teacher/Dashboard/CreateAssignment/CreateAssignment"
 
 const App = () => {
   return (
@@ -157,6 +158,8 @@ const App = () => {
           <Route path="finance" element={<ReturnTeacherFinance />} />
           <Route path="complaints" element={<TeacherComplaints />} />
           <Route path="assignments" element={<ReturnTeacherAssignments />} />
+          <Route path="create-assignment" element={<CreateAssignment />} />
+          
         </Route>
 
         {/* Payment Routes */}
