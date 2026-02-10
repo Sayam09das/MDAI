@@ -367,13 +367,13 @@ const TeacherCourses = () => {
                                                     Publish
                                                 </button>
                                             ) : (
-                                                <Link
-                                                    to={`/course/${course._id}`}
-                                                    className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 active:scale-95 transition-all"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                    View
-                                                </Link>
+                                            <Link
+                                                to={`/teacher-dashboard/course/${course._id}`}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 active:scale-95 transition-all"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                View
+                                            </Link>
                                             )}
                                             <Link
                                                 to={`/teacher-dashboard/edit-course/${course._id}`}

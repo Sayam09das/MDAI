@@ -40,6 +40,7 @@ import ReturnDashboard from "./Pages/teacher/Dashboard/MainHeaderDashboard/Retur
 import ReturnCoursedashboard from "./Pages/teacher/Dashboard/MainCoursesDashboard/ReturnCoursedashboard"
 import ReturnCreateCourse from "./Pages/teacher/Dashboard/MainCreateCourseDashboard/ReturnCreateCourse"
 import EditCourse from "./Pages/teacher/Dashboard/MainCoursesDashboard/EditCourse"
+import TeacherCourseView from "./Pages/teacher/Dashboard/MainCoursesDashboard/TeacherCourseView"
 import ReturneacherLiveSessions from "./Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions"
 import ReturnEnrolledStudents from "./Pages/teacher/Dashboard/MainEnrolledStudents/ReturnEnrolledStudents"
 import ReturnStudentAttendance from "./Pages/teacher/Dashboard/MainAttendance/ReturnStudentAttendance"
@@ -155,6 +156,7 @@ const App = () => {
         >
           <Route index element={<ReturnDashboard />} />
           <Route path="mycourse" element={<ReturnCoursedashboard />} />
+          <Route path="course/:courseId" element={<TeacherCourseView />} />
           <Route path="create-course" element={<ReturnCreateCourse />} />
           <Route path="edit-course/:courseId" element={<EditCourse />} />
           <Route path="resources" element={<ReturnTeacherResources />} />
