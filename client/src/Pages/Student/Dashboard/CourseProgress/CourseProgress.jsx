@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { 
   BookOpen, 
@@ -14,7 +14,63 @@ import {
   Circle
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import studentApi from "../../../lib/api/studentApi";
+
+// Get backend URL
+const getBackendURL = () => {
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  if (envUrl && envUrl.trim() !== '' && envUrl !== 'undefined') {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (import.meta.env.PROD || import.meta.env.NODE_ENV === 'production') {
+    return 'https://mdai-self.vercel.app';
+  }
+  return 'http://localhost:5000';
+};
+
+const API_BASE_URL = getBackendURL();
+
+// Get auth token
+const getAuthToken = () => {
+  const token = localStorage.getItem("token");
+  return token ? `Bearer ${token}` : null;
+};
+
+// Generic fetch wrapper
+const fetchAPI = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+  
+  const token = getAuthToken();
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  const response = await fetch(url, { ...options, headers });
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || "API request failed");
+  }
+  return data;
+};
+
+// API functions inline
+const studentApi = {
+  getStudentCourseProgress: () => fetchAPI("/api/student/course-progress"),
+  getCourseProgress: (courseId) => fetchAPI(`/api/student/course-progress/${courseId}`),
+  markLessonComplete: (courseId, lessonId, timeSpent = 0) => 
+    fetchAPI(`/api/student/course-progress/${courseId}/complete-lesson/${lessonId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ timeSpent }),
+    }),
+  unmarkLessonComplete: (courseId, lessonId) => 
+    fetchAPI(`/api/student/course-progress/${courseId}/uncomplete-lesson/${lessonId}`, {
+      method: "PATCH",
+    }),
+};
 
 export default function CourseProgress() {
   const [courses, setCourses] = useState([]);
@@ -31,9 +87,10 @@ export default function CourseProgress() {
   const [updatingLesson, setUpdatingLesson] = useState(null);
 
   // Fetch all course progress
-  const fetchCourseProgress = async () => {
+  const fetchCourseProgress = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await studentApi.getStudentCourseProgress();
       
       if (data.success) {
@@ -44,21 +101,30 @@ export default function CourseProgress() {
           averageProgress: 0,
           totalLessonsCompleted: 0,
         });
-        setError("");
       } else {
         throw new Error(data.message || "Failed to fetch progress");
       }
     } catch (err) {
+      console.error("Fetch progress error:", err);
       setError(err.message);
+      // Set empty state on error to prevent infinite loading
+      setCourses([]);
+      setStats({
+        totalCourses: 0,
+        completedCourses: 0,
+        averageProgress: 0,
+        totalLessonsCompleted: 0,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch detailed progress for a specific course
-  const fetchCourseDetails = async (courseId) => {
+  const fetchCourseDetails = useCallback(async (courseId) => {
     try {
       setUpdatingLesson(courseId);
+      setError("");
       const data = await studentApi.getCourseProgress(courseId);
       
       if (data.success) {
@@ -68,11 +134,12 @@ export default function CourseProgress() {
         throw new Error(data.message || "Failed to fetch course details");
       }
     } catch (err) {
+      console.error("Fetch course details error:", err);
       setError(err.message);
     } finally {
       setUpdatingLesson(null);
     }
-  };
+  }, []);
 
   // Mark lesson as complete
   const handleMarkLessonComplete = async (courseId, lessonId) => {
@@ -81,14 +148,11 @@ export default function CourseProgress() {
       const data = await studentApi.markLessonComplete(courseId, lessonId);
       
       if (data.success) {
-        // Refresh course details
         await fetchCourseDetails(courseId);
-        // Refresh overall progress
         await fetchCourseProgress();
-      } else {
-        throw new Error(data.message || "Failed to mark lesson as complete");
       }
     } catch (err) {
+      console.error("Mark lesson complete error:", err);
       setError(err.message);
     } finally {
       setUpdatingLesson(null);
@@ -102,23 +166,21 @@ export default function CourseProgress() {
       const data = await studentApi.unmarkLessonComplete(courseId, lessonId);
       
       if (data.success) {
-        // Refresh course details
         await fetchCourseDetails(courseId);
-        // Refresh overall progress
         await fetchCourseProgress();
-      } else {
-        throw new Error(data.message || "Failed to unmark lesson");
       }
     } catch (err) {
+      console.error("Unmark lesson error:", err);
       setError(err.message);
     } finally {
       setUpdatingLesson(null);
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchCourseProgress();
-  }, []);
+  }, [fetchCourseProgress]);
 
   const getProgressColor = (progress) => {
     if (progress >= 80) return "bg-green-500";
@@ -133,25 +195,23 @@ export default function CourseProgress() {
     return { text: "Just Started", color: "text-orange-600", bg: "bg-orange-100" };
   };
 
+  // Loading state
   if (loading && courses.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
+        <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full mx-auto mb-3"
           />
           <p className="text-gray-700 font-medium">Loading your progress...</p>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
+  // Error state
   if (error && courses.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -278,7 +338,6 @@ export default function CourseProgress() {
                   {courses.map((course, index) => {
                     const status = getProgressStatus(course.progress);
                     const isSelected = selectedCourse === course.courseId;
-                    const isUpdating = updatingLesson === course.courseId;
 
                     return (
                       <motion.button
@@ -287,7 +346,6 @@ export default function CourseProgress() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                         onClick={() => fetchCourseDetails(course.courseId)}
-                        disabled={isUpdating}
                         className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
                           isSelected ? "bg-indigo-50 border-l-4 border-indigo-500" : ""
                         }`}
