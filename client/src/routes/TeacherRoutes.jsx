@@ -22,6 +22,7 @@ import GradeSubmission from "../Pages/teacher/Dashboard/AssignmentSubmissions/Gr
 import AssignmentDetail from "../Pages/teacher/Dashboard/AssignmentDetail/AssignmentDetail";
 import EditAssignment from "../Pages/teacher/Dashboard/EditAssignment/EditAssignment";
 import AssignmentAnalytics from "../Pages/teacher/Dashboard/AssignmentAnalytics/AssignmentAnalytics";
+import EditCourse from "../Pages/teacher/Dashboard/MainCoursesDashboard/EditCourse";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -50,6 +51,7 @@ const TeacherRoutes = () => {
                     <Route index element={<ReturnDashboard />} />
                     <Route path="mycourse" element={<ReturnCoursedashboard />} />
                     <Route path="create-course" element={<ReturnCreateCourse />} />
+                    <Route path="edit-course/:courseId" element={<EditCourse />} />
                     <Route path="resources" element={< ReturnTeacherResources />} />
                     <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
                     <Route path="students" element={<ReturnEnrolledStudents />} />
@@ -61,7 +63,7 @@ const TeacherRoutes = () => {
                     <Route path="messages" element={<TeacherMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="finance" element={<ReturnTeacherFinance />} />
-<Route path="complaints" element={<TeacherComplaints />} />
+                    <Route path="complaints" element={<TeacherComplaints />} />
                     <Route path="assignments" element={<ReturnTeacherAssignments />} />
                     <Route path="create-assignment" element={<CreateAssignment />} />
                     <Route path="assignments/:assignmentId/detail" element={<AssignmentDetail />} />

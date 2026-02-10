@@ -39,6 +39,7 @@ import TeacherLayout from "./components/Dashboard/Teacher/TeacherLayout"
 import ReturnDashboard from "./Pages/teacher/Dashboard/MainHeaderDashboard/ReturnDashboard"
 import ReturnCoursedashboard from "./Pages/teacher/Dashboard/MainCoursesDashboard/ReturnCoursedashboard"
 import ReturnCreateCourse from "./Pages/teacher/Dashboard/MainCreateCourseDashboard/ReturnCreateCourse"
+import EditCourse from "./Pages/teacher/Dashboard/MainCoursesDashboard/EditCourse"
 import ReturneacherLiveSessions from "./Pages/teacher/Dashboard/MaineacherLiveSessions/ReturneacherLiveSessions"
 import ReturnEnrolledStudents from "./Pages/teacher/Dashboard/MainEnrolledStudents/ReturnEnrolledStudents"
 import ReturnStudentAttendance from "./Pages/teacher/Dashboard/MainAttendance/ReturnStudentAttendance"
@@ -155,6 +156,7 @@ const App = () => {
           <Route index element={<ReturnDashboard />} />
           <Route path="mycourse" element={<ReturnCoursedashboard />} />
           <Route path="create-course" element={<ReturnCreateCourse />} />
+          <Route path="edit-course/:courseId" element={<EditCourse />} />
           <Route path="resources" element={<ReturnTeacherResources />} />
           <Route path="live-sessions" element={<ReturneacherLiveSessions />} />
           <Route path="students" element={<ReturnEnrolledStudents />} />
@@ -173,11 +175,10 @@ const App = () => {
           <Route path="assignments/:assignmentId/edit" element={<EditAssignment />} />
           <Route path="assignments/:assignmentId/submissions" element={<GradeSubmission />} />
           <Route path="assignments/:assignmentId/analytics" element={<AssignmentAnalytics />} />
-          
         </Route>
 
-        {/* Payment Routes */}
-        <Route path="*" element={<PaymentRoutes />} />
+        {/* Payment Routes - Specific paths only */}
+        <Route path="/payment/*" element={<PaymentRoutes />} />
 
         {/* 404 - Catch-all route (MUST be last) */}
         <Route path="*" element={<NotFound />} />

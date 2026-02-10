@@ -100,9 +100,20 @@ export const publishCourse = async (req, res) => {
 
 export const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findById(req.params.id)
+      .populate("instructor", "name email");
 
-    if (!course || !course.isPublished) {
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Check if user is the instructor - if so, allow access even if not published
+    const isInstructor = req.user && 
+      course.instructor && 
+      course.instructor._id.toString() === req.user.id;
+
+    // If not the instructor, only show published courses
+    if (!isInstructor && !course.isPublished) {
       return res.status(404).json({ message: "Course not found" });
     }
 
@@ -144,6 +155,58 @@ export const searchCourses = async (req, res) => {
         res.status(200).json({
             success: true,
             courses,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* =====================================================
+   UPDATE COURSE
+===================================================== */
+export const updateCourse = async (req, res) => {
+    try {
+        const course = await Course.findOne({
+            _id: req.params.id,
+            instructor: req.user.id,
+        });
+
+        if (!course) {
+            return res.status(404).json({ message: "Course not found or unauthorized" });
+        }
+
+        // Update basic fields
+        const allowedFields = [
+            'title', 'description', 'price', 'category', 
+            'duration', 'level', 'language', 'requirements', 
+            'learningOutcomes', 'thumbnail'
+        ];
+
+        // Handle JSON fields
+        if (req.body.requirements) {
+            req.body.requirements = typeof req.body.requirements === 'string' 
+                ? JSON.parse(req.body.requirements) 
+                : req.body.requirements;
+        }
+        if (req.body.learningOutcomes) {
+            req.body.learningOutcomes = typeof req.body.learningOutcomes === 'string' 
+                ? JSON.parse(req.body.learningOutcomes) 
+                : req.body.learningOutcomes;
+        }
+
+        // Update fields
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                course[field] = req.body[field];
+            }
+        });
+
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Course updated successfully",
+            course,
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

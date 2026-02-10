@@ -6,6 +6,7 @@ import {
   publishCourse,
   getCourseById,
   searchCourses,
+  updateCourse,
 } from "../controllers/course.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -19,6 +20,14 @@ router.post(
   teacherOnly,
   upload.single("thumbnail"),
   createCourse
+);
+
+// UPDATE COURSE
+router.put(
+  "/:id",
+  protect,
+  teacherOnly,
+  updateCourse
 );
 
 // GET COURSES FOR TEACHER
