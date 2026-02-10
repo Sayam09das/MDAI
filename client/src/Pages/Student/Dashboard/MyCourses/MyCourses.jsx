@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, CheckCircle, Clock, AlertCircle, Play, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import studentApi from "../../../../lib/api/studentApi";
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
@@ -22,20 +21,9 @@ export default function MyCourses() {
     }
 
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/enrollments/my-courses`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const data = await studentApi.getMyEnrollments();
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (!data.success) {
         throw new Error(data.message || "Unauthorized or session expired");
       }
 
@@ -65,19 +53,9 @@ export default function MyCourses() {
         if (!enrollment.course?._id) return null;
         
         try {
-          const res = await fetch(
-            `${BACKEND_URL}/api/student/course-progress/${enrollment.course._id}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (res.ok) {
-            const data = await res.json();
+          const data = await studentApi.getCourseProgress(enrollment.course._id);
+          
+          if (data.success) {
             return { courseId: enrollment.course._id, progress: data.progress };
           }
         } catch (err) {
