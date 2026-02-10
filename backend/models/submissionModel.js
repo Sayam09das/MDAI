@@ -137,14 +137,13 @@ submissionSchema.virtual("canEdit").get(function () {
 });
 
 // Pre-save hook to calculate late penalty and final marks
-submissionSchema.pre("save", function (next) {
+submissionSchema.pre("save", function () {
     if (this.isLate && this.latePenalty > 0 && this.marks !== null) {
         this.finalMarks = this.marks - (this.marks * this.latePenalty / 100);
         if (this.finalMarks < 0) this.finalMarks = 0;
     } else {
         this.finalMarks = this.marks;
     }
-    next();
 });
 
 // Static method to get submission with student details

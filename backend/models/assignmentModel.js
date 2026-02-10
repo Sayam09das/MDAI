@@ -139,11 +139,10 @@ assignmentSchema.virtual("submissionStats").get(function () {
 });
 
 // Pre-save hook to set publishedAt when first published
-assignmentSchema.pre("save", function (next) {
+assignmentSchema.pre("save", function () {
     if (this.isModified("isPublished") && this.isPublished && !this.publishedAt) {
         this.publishedAt = new Date();
     }
-    next();
 });
 
 // Static method to get assignments for a course
