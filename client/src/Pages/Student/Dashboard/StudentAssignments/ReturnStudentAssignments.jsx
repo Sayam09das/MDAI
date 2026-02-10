@@ -7,18 +7,18 @@ import {
     CheckCircle,
     AlertCircle,
     BookOpen,
-    ArrowRight,
-    RefreshCw,
-    Link as LinkIcon
+    ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getStudentAssignments } from "../../../../lib/api/assignmentApi.js";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const ReturnStudentAssignments = () => {
+    const token = localStorage.getItem("token");
+
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchAssignments();
@@ -26,19 +26,16 @@ const ReturnStudentAssignments = () => {
 
     const fetchAssignments = async () => {
         try {
-            setError(null);
-            const data = await getStudentAssignments();
-            
+            const res = await fetch(`${BACKEND_URL}/api/assignments/student`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+
             if (data.success) {
-                // Filter out any assignments without course info
-                const validAssignments = data.assignments.filter(a => a.course);
-                setAssignments(validAssignments);
-            } else {
-                setError(data.message || "Failed to fetch assignments");
+                setAssignments(data.assignments);
             }
         } catch (error) {
             console.error("Error fetching assignments:", error);
-            setError(error.message || "Network error occurred");
         } finally {
             setLoading(false);
         }
@@ -255,49 +252,19 @@ const ReturnStudentAssignments = () => {
                 </div>
 
                 {/* Assignments List */}
-                {error ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center py-20 bg-white rounded-xl shadow-lg"
-                    >
-                        <AlertCircle className="w-16 h-16 mx-auto text-red-400 mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">Error loading assignments</h3>
-                        <p className="text-gray-500 mb-4">{error}</p>
-                        <button
-                            onClick={() => fetchAssignments()}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 mx-auto"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            Try Again
-                        </button>
-                    </motion.div>
-                ) : filteredAssignments.length === 0 ? (
+                {filteredAssignments.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="text-center py-20 bg-white rounded-xl shadow-lg"
                     >
                         <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                            {filter === "all" ? "No assignments yet" : `No ${filter} assignments`}
-                        </h3>
-                        <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                            {filter === "all" 
-                                ? "Your enrolled courses don't have any assignments at the moment. Assignments will appear here when your teachers create them."
-                                : `You don't have any ${filter} assignments.`}
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">No assignments found</h3>
+                        <p className="text-gray-500">
+                            {filter === "all"
+                                ? "You don't have any assignments yet"
+                                : `No ${filter} assignments`}
                         </p>
-                        {filter === "all" && (
-                            <div className="flex gap-4 justify-center">
-                                <Link
-                                    to="/student-dashboard/my-courses"
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
-                                >
-                                    <BookOpen className="w-4 h-4" />
-                                    View My Courses
-                                </Link>
-                            </div>
-                        )}
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
