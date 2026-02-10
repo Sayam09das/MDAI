@@ -18,8 +18,8 @@ import {
     WifiOff,
     Timer
 } from 'lucide-react';
-import useExamSecurity from '../../hooks/useExamSecurity';
-import { getAssignment } from '../../lib/api/assignmentApi';
+import useExamSecurity from '../../../hooks/useExamSecurity';
+import { getAssignment } from '../../../lib/api/assignmentApi';
 
 // Sample questions - in real app, these would come from the assignment
 const sampleQuestions = [
