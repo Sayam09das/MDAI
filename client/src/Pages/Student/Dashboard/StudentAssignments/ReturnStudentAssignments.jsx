@@ -32,7 +32,12 @@ const ReturnStudentAssignments = () => {
             const data = await res.json();
 
             if (data.success) {
-                setAssignments(data.assignments);
+                setAssignments(data.assignments || []);
+                
+                // Log helpful message if backend provides enrollment info
+                if (data.message) {
+                    console.log("Assignment info:", data.message);
+                }
             }
         } catch (error) {
             console.error("Error fetching assignments:", error);

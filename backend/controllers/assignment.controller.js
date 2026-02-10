@@ -308,12 +308,26 @@ export const getStudentAssignments = async (req, res) => {
     try {
         const Enrollment = (await import("../models/enrollmentModel.js")).default;
 
+        // Get student's enrollments - include ACTIVE status OR PAID/LATER payment status
+        // This ensures students can see assignments if they have verified payments
         const enrollments = await Enrollment.find({
             student: req.user.id,
-            status: "ACTIVE",
+            $or: [
+                { status: "ACTIVE" },
+                { paymentStatus: { $in: ["PAID", "LATER"] } }
+            ]
         }).select("course");
 
         const courseIds = enrollments.map((e) => e.course);
+
+        // If no enrollments, return empty array
+        if (courseIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                assignments: [],
+                message: "No enrollments found. Enroll in courses to see assignments."
+            });
+        }
 
         const assignments = await Assignment.find({
             course: { $in: courseIds },
