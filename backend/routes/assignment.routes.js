@@ -9,6 +9,7 @@ import {
     getCourseAssignments,
     getAssignmentStats,
     getStudentAssignments,
+    downloadAssignmentAttachment,
 } from "../controllers/assignment.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -47,7 +48,6 @@ router.patch("/:id/toggle-publish", teacherOnly, togglePublish);
 router.delete("/:id/attachments/:publicId", teacherOnly, async (req, res) => {
     try {
         const Assignment = (await import("../models/assignmentModel.js")).default;
-        const cloudinary = (await import("../config/cloudinary.js")).default;
         
         const assignment = await Assignment.findById(req.params.id);
         
@@ -59,14 +59,14 @@ router.delete("/:id/attachments/:publicId", teacherOnly, async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
         
-        // Delete from Cloudinary
-        await cloudinary.uploader.destroy(req.params.publicId);
-        
-        // Remove from database
-        assignment.attachments = assignment.attachments.filter(
-            att => att.public_id !== req.params.publicId
-        );
-        await assignment.save();
+        // Remove attachment by index (now using filename as identifier)
+        const index = parseInt(req.params.publicId);
+        if (!isNaN(index) && index >= 0 && index < assignment.attachments.length) {
+            assignment.attachments.splice(index, 1);
+            await assignment.save();
+        } else {
+            return res.status(404).json({ message: "Attachment not found" });
+        }
         
         res.status(200).json({
             success: true,
@@ -75,6 +75,34 @@ router.delete("/:id/attachments/:publicId", teacherOnly, async (req, res) => {
         });
     } catch (error) {
         console.error("Delete attachment error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Download assignment attachment
+router.get("/:assignmentId/download", protect, async (req, res) => {
+    try {
+        const { attachmentIndex } = req.query;
+        const Assignment = (await import("../models/assignmentModel.js")).default;
+        
+        const assignment = await Assignment.findById(req.params.assignmentId);
+
+        if (!assignment) {
+            return res.status(404).json({ message: "Assignment not found" });
+        }
+
+        const index = parseInt(attachmentIndex);
+        if (isNaN(index) || index < 0 || index >= assignment.attachments.length) {
+            return res.status(404).json({ message: "Attachment not found" });
+        }
+
+        const attachment = assignment.attachments[index];
+
+        res.setHeader("Content-Type", attachment.contentType);
+        res.setHeader("Content-Disposition", `attachment; filename="${attachment.originalName}"`);
+        res.send(attachment.data);
+    } catch (error) {
+        console.error("Download attachment error:", error);
         res.status(500).json({ message: error.message });
     }
 });

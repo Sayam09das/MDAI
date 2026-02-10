@@ -28,6 +28,18 @@ export const createAssignment = async (req, res) => {
             return res.status(404).json({ message: "Course not found or unauthorized" });
         }
 
+        // Handle attachments - store file data directly in MongoDB
+        let attachments = [];
+        if (req.files && req.files.length > 0) {
+            attachments = req.files.map((file) => ({
+                filename: file.originalname,
+                contentType: file.mimetype,
+                size: file.size,
+                data: file.buffer, // Store binary data directly
+                originalName: file.originalname,
+            }));
+        }
+
         const assignment = await Assignment.create({
             title,
             description,
@@ -40,20 +52,8 @@ export const createAssignment = async (req, res) => {
             allowedFileTypes: allowedFileTypes || [".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png"],
             maxFileSize: parseInt(maxFileSize) || 10,
             reminderDaysBeforeDue: parseInt(reminderDaysBeforeDue) || 1,
+            attachments,
         });
-
-        // Handle attachments if any
-        if (req.files && req.files.length > 0) {
-            const attachments = req.files.map((file) => ({
-                public_id: file.public_id,
-                url: file.secure_url,
-                format: file.format,
-                size: file.size,
-                originalName: file.originalname,
-            }));
-            assignment.attachments = attachments;
-            await assignment.save();
-        }
 
         res.status(201).json({
             success: true,
@@ -164,13 +164,13 @@ export const updateAssignment = async (req, res) => {
             }
         });
 
-        // Handle new attachments
+        // Handle new attachments - store file data directly in MongoDB
         if (req.files && req.files.length > 0) {
             const newAttachments = req.files.map((file) => ({
-                public_id: file.public_id,
-                url: file.secure_url,
-                format: file.format,
+                filename: file.originalname,
+                contentType: file.mimetype,
                 size: file.size,
+                data: file.buffer,
                 originalName: file.originalname,
             }));
             assignment.attachments = [...assignment.attachments, ...newAttachments];
@@ -357,6 +357,33 @@ export const getStudentAssignments = async (req, res) => {
         });
     } catch (error) {
         console.error("Get student assignments error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Download assignment attachment
+export const downloadAssignmentAttachment = async (req, res) => {
+    try {
+        const { assignmentId } = req.params;
+        const { attachmentIndex } = req.query;
+
+        const assignment = await Assignment.findById(assignmentId);
+
+        if (!assignment) {
+            return res.status(404).json({ message: "Assignment not found" });
+        }
+
+        const attachment = assignment.attachments[attachmentIndex];
+
+        if (!attachment) {
+            return res.status(404).json({ message: "Attachment not found" });
+        }
+
+        res.setHeader("Content-Type", attachment.contentType);
+        res.setHeader("Content-Disposition", `attachment; filename="${attachment.originalName}"`);
+        res.send(attachment.data);
+    } catch (error) {
+        console.error("Download attachment error:", error);
         res.status(500).json({ message: error.message });
     }
 };

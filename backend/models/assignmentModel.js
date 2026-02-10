@@ -1,22 +1,33 @@
 import mongoose from "mongoose";
 
 const attachmentSchema = new mongoose.Schema({
-    public_id: {
+    filename: {
         type: String,
-        required: true,
+        default: undefined,
     },
-    url: {
+    contentType: {
         type: String,
-        required: true,
-    },
-    format: {
-        type: String,
+        default: undefined,
     },
     size: {
         type: Number,
+        default: undefined,
+    },
+    data: {
+        type: Buffer, // Store file binary data directly in MongoDB
+        default: undefined,
     },
     originalName: {
         type: String,
+        default: undefined,
+    },
+    public_id: {
+        type: String,
+        default: undefined,
+    },
+    url: {
+        type: String,
+        default: undefined,
     },
 }, { _id: false });
 

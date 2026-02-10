@@ -1,6 +1,5 @@
 import Submission from "../models/submissionModel.js";
 import Assignment from "../models/assignmentModel.js";
-import cloudinary from "../config/cloudinary.js";
 
 // Submit or update an assignment
 export const submitAssignment = async (req, res) => {
@@ -31,11 +30,12 @@ export const submitAssignment = async (req, res) => {
             student: req.user.id,
         });
 
+        // Handle files - store file data directly in MongoDB
         const files = req.files ? req.files.map((file) => ({
-            public_id: file.public_id,
-            url: file.secure_url,
-            format: file.format,
+            filename: file.originalname,
+            contentType: file.mimetype,
             size: file.size,
+            data: file.buffer, // Store binary data directly
             originalName: file.originalname,
         })) : [];
 
@@ -369,6 +369,34 @@ export const getCourseSubmissionStats = async (req, res) => {
         });
     } catch (error) {
         console.error("Get course stats error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Download submission file
+export const downloadSubmissionFile = async (req, res) => {
+    try {
+        const { submissionId } = req.params;
+        const { fileIndex } = req.query;
+
+        const submission = await Submission.findById(submissionId);
+
+        if (!submission) {
+            return res.status(404).json({ message: "Submission not found" });
+        }
+
+        const index = parseInt(fileIndex);
+        if (isNaN(index) || index < 0 || index >= submission.files.length) {
+            return res.status(404).json({ message: "File not found" });
+        }
+
+        const file = submission.files[index];
+
+        res.setHeader("Content-Type", file.contentType);
+        res.setHeader("Content-Disposition", `attachment; filename="${file.originalName}"`);
+        res.send(file.data);
+    } catch (error) {
+        console.error("Download submission file error:", error);
         res.status(500).json({ message: error.message });
     }
 };
