@@ -1,8 +1,12 @@
 import app from "../backend/app.js";
 
 export default function handler(req, res) {
-  // Don't modify the URL - let the Express app handle the full path
-  // The Express app already has routes prefixed with /api
+  // Remove the /api prefix from the request path
+  const path = req.url.replace(/^\/api/, "");
+  
+  // Rewrite the URL and use the Express app
+  req.url = path;
+  
   return app(req, res);
 }
 
