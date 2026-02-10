@@ -591,6 +591,51 @@ export const getStudentAnnouncements = async (req, res) => {
 };
 
 /* ======================================================
+   GET STUDENT ENROLLMENTS
+====================================================== */
+export const getStudentEnrollments = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Get all enrollments (including PENDING, PAID, LATER)
+    const enrollments = await Enrollment.find({
+      student: studentId,
+    })
+      .populate("course", "title thumbnail description duration instructor")
+      .sort({ createdAt: -1 });
+
+    // Filter out null courses and format response
+    const validEnrollments = enrollments
+      .filter(e => e.course !== null)
+      .map((enrollment) => ({
+        _id: enrollment._id,
+        course: {
+          _id: enrollment.course._id,
+          title: enrollment.course.title,
+          thumbnail: enrollment.course.thumbnail,
+          description: enrollment.course.description,
+          duration: enrollment.course.duration,
+          instructor: enrollment.course.instructor,
+        },
+        paymentStatus: enrollment.paymentStatus,
+        status: enrollment.status,
+        progress: enrollment.progress || 0,
+        enrolledAt: enrollment.createdAt,
+        completedAt: enrollment.completedAt,
+        lastAccessedAt: enrollment.lastAccessedAt,
+      }));
+
+    res.json({
+      success: true,
+      enrollments: validEnrollments,
+    });
+  } catch (error) {
+    console.error("Get Student Enrollments Error:", error);
+    res.status(500).json({ message: "Failed to fetch enrollments" });
+  }
+};
+
+/* ======================================================
    HELPER FUNCTIONS
 ====================================================== */
 function formatPerformanceData(performanceByDate, range, now) {

@@ -91,6 +91,12 @@ export const getStudentDashboardStats = () => {
   );
 };
 
+export const getMyEnrollments = () => {
+  return fetchAPI(
+    "/api/student/enrollments"
+  );
+};
+
 /* ================= COURSE PROGRESS APIs ================= */
 
 export const getStudentCourseProgress = () => {
@@ -210,6 +216,7 @@ export default {
   getStudentOverview,
   getStudentActivityHours,
   getStudentDashboardStats,
+  getMyEnrollments,
   getStudentCourseProgress,
   getCourseProgress,
   markLessonComplete,
