@@ -18,7 +18,9 @@ export const getBackendURL = () => {
   
   // Fallback URLs based on the deployment environment
   if (import.meta.env.PROD || import.meta.env.NODE_ENV === 'production') {
-    return 'https://mdai-self.vercel.app';
+    // Use the Render backend URL in production (NOT the Vercel frontend URL)
+    // The backend is deployed at mdai-0jhi.onrender.com
+    return 'https://mdai-0jhi.onrender.com';
   }
   
   // Development fallback

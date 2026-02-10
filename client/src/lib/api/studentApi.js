@@ -1,21 +1,7 @@
 /* ================= CONFIG ================= */
 
-// Get backend URL from environment variable or use fallback for development
-const getBackendURL = () => {
-  const envUrl = import.meta.env.VITE_BACKEND_URL;
-  // Return the environment URL if it exists and is valid, otherwise use fallback
-  if (envUrl && envUrl.trim() !== '' && envUrl !== 'undefined') {
-    return envUrl.replace(/\/+$/, ''); // Remove trailing slashes
-  }
-  // Fallback URLs based on the deployment
-  if (import.meta.env.PROD || import.meta.env.NODE_ENV === 'production') {
-    return 'https://mdai-self.vercel.app';
-  }
-  // Development fallback
-  return 'http://localhost:5000';
-};
-
-const API_BASE_URL = getBackendURL();
+// Import centralized configuration
+import { API_BASE_URL } from '../config.js';
 
 /* ================= TOKEN HELPER ================= */
 
