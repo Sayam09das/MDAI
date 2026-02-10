@@ -36,12 +36,20 @@ const corsOptions = {
       const allowedOrigins = [
          "https://mdai-self.vercel.app",
          "https://mdai-admin.vercel.app",
+         "https://mdai-client.vercel.app",
+         "http://localhost:5173",
+         "http://localhost:3000",
       ];
       
-      if (allowedOrigins.includes(origin) || origin.includes('vercel.app') || origin.includes('localhost')) {
+      // Allow all origins for now to debug the issue
+      // In production, restrict to specific domains
+      if (allowedOrigins.includes(origin) || 
+          origin.includes('vercel.app') || 
+          origin.includes('localhost') ||
+          origin.includes('render')) {
          callback(null, true);
       } else {
-         callback(new Error('Not allowed by CORS'));
+         callback(null, true); // Allow all for now
       }
    },
    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
