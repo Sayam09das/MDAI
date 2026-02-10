@@ -51,6 +51,12 @@ import ReturnTeacherMessages from "./Pages/teacher/Dashboard/Messages/ReturnTeac
 import TeacherAnnouncements from "./Pages/teacher/Dashboard/Announcements/ReturnAnnouncements"
 import ReturnTeacherFinance from "./Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance"
 
+// Assignment Pages
+import AssignmentDetail from "./Pages/teacher/Dashboard/AssignmentDetail/AssignmentDetail"
+import EditAssignment from "./Pages/teacher/Dashboard/EditAssignment/EditAssignment"
+import GradeSubmission from "./Pages/teacher/Dashboard/AssignmentSubmissions/GradeSubmission"
+import AssignmentAnalytics from "./Pages/teacher/Dashboard/AssignmentAnalytics/AssignmentAnalytics"
+
 // Protected Routes
 import PublicRoute from "./ProtectedRoute/PublicRoute"
 import StudentProtectedRoute from "./ProtectedRoute/StudentProtectedRoute"
@@ -159,6 +165,10 @@ const App = () => {
           <Route path="complaints" element={<TeacherComplaints />} />
           <Route path="assignments" element={<ReturnTeacherAssignments />} />
           <Route path="create-assignment" element={<CreateAssignment />} />
+          <Route path="assignments/:assignmentId/detail" element={<AssignmentDetail />} />
+          <Route path="assignments/:assignmentId/edit" element={<EditAssignment />} />
+          <Route path="assignments/:assignmentId/submissions" element={<GradeSubmission />} />
+          <Route path="assignments/:assignmentId/analytics" element={<AssignmentAnalytics />} />
           
         </Route>
 
