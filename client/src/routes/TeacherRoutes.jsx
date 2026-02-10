@@ -16,6 +16,12 @@ import TeacherMessages from "../Pages/teacher/Dashboard/Messages/TeacherMessages
 import ReturnAnnouncements from "../Pages/teacher/Dashboard/Announcements/ReturnAnnouncements";
 import ReturnTeacherFinance from "../Pages/teacher/Dashboard/MainTeacherFinance/ReturnTeacherFinance";
 import TeacherComplaints from "../Pages/teacher/Dashboard/Complaints/TeacherComplaints";
+import ReturnTeacherAssignments from "../Pages/teacher/Dashboard/MainAssignments/ReturnTeacherAssignments";
+import CreateAssignment from "../Pages/teacher/Dashboard/CreateAssignment/CreateAssignment";
+import GradeSubmission from "../Pages/teacher/Dashboard/AssignmentSubmissions/GradeSubmission";
+import AssignmentDetail from "../Pages/teacher/Dashboard/AssignmentDetail/AssignmentDetail";
+import EditAssignment from "../Pages/teacher/Dashboard/EditAssignment/EditAssignment";
+import AssignmentAnalytics from "../Pages/teacher/Dashboard/AssignmentAnalytics/AssignmentAnalytics";
 
 // 🔥 Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -55,7 +61,13 @@ const TeacherRoutes = () => {
                     <Route path="messages" element={<TeacherMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="finance" element={<ReturnTeacherFinance />} />
-                    <Route path="complaints" element={<TeacherComplaints />} />
+<Route path="complaints" element={<TeacherComplaints />} />
+                    <Route path="assignments" element={<ReturnTeacherAssignments />} />
+                    <Route path="create-assignment" element={<CreateAssignment />} />
+                    <Route path="assignments/:assignmentId/detail" element={<AssignmentDetail />} />
+                    <Route path="assignments/:assignmentId/edit" element={<EditAssignment />} />
+                    <Route path="assignments/:assignmentId/submissions" element={<GradeSubmission />} />
+                    <Route path="assignments/:assignmentId/analytics" element={<AssignmentAnalytics />} />
                 </Route>
             </Routes>
         </Suspense>

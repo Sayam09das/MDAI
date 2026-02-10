@@ -16,6 +16,8 @@ import studentRoutes from "./routes/student.routes.js";
 import eventRoutes from "./routes/event.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import complaintRoutes from "./routes/complaint.routes.js";
+import assignmentRoutes from "./routes/assignment.routes.js";
+import submissionRoutes from "./routes/submission.routes.js";
 import database from "./database/db.js";
 
 dotenv.config();
@@ -78,6 +80,8 @@ app.use("/api/student", studentRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/complaints", complaintRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/submissions", submissionRoutes);
 
 
 app.get("/ping", (req, res) => {
