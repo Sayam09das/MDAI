@@ -26,6 +26,7 @@ const SubmitAssignment = () => {
     const [assignment, setAssignment] = useState(null);
     const [submission, setSubmission] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
     const [textAnswer, setTextAnswer] = useState("");
@@ -37,6 +38,7 @@ const SubmitAssignment = () => {
 
     const fetchData = async () => {
         try {
+            setError(null);
             // Fetch assignment details
             const assignmentRes = await fetch(`${BACKEND_URL}/api/assignments/${assignmentId}`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -45,6 +47,20 @@ const SubmitAssignment = () => {
 
             if (assignmentData.success) {
                 setAssignment(assignmentData.assignment);
+            } else {
+                // Handle enrollment/auth errors
+                if (assignmentData.message === "You are not enrolled in this course") {
+                    setError("You are not enrolled in this course. Please enroll to access this assignment.");
+                } else if (assignmentData.message === "Assignment is not published") {
+                    setError("This assignment is not yet published by the teacher.");
+                } else if (assignmentData.message === "Unauthorized - Not your assignment") {
+                    setError("You are not authorized to view this assignment.");
+                } else if (assignmentRes.status === 404) {
+                    setError("Assignment not found.");
+                } else {
+                    setError(assignmentData.message || "Failed to load assignment");
+                }
+                // Don't return here, still try to fetch submissions
             }
 
             // Fetch existing submission if any
@@ -55,15 +71,16 @@ const SubmitAssignment = () => {
 
             if (submissionsData.success) {
                 const mySubmission = submissionsData.submissions.find(
-                    (s) => s.assignment._id === assignmentId
+                    (s) => s.assignment && s.assignment._id === assignmentId
                 );
                 if (mySubmission) {
                     setSubmission(mySubmission);
                     setTextAnswer(mySubmission.textAnswer || "");
                 }
             }
-        } catch (error) {
-            console.error("Error fetching data:", error);
+        } catch (err) {
+            console.error("Error fetching data:", err);
+            setError("Failed to load assignment. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -161,6 +178,27 @@ const SubmitAssignment = () => {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    // Show error message if there's an error
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Cannot Access Assignment</h2>
+                    <p className="text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => navigate("/student-dashboard/assignments")}
+                        className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                        Back to Assignments
+                    </button>
+                </div>
             </div>
         );
     }

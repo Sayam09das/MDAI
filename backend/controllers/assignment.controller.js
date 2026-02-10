@@ -113,8 +113,33 @@ export const getAssignmentById = async (req, res) => {
         }
 
         // Check authorization for teachers
-        if (req.user.role === "teacher" && assignment.instructor._id.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized" });
+        if (req.user.role === "teacher") {
+            if (assignment.instructor._id.toString() !== req.user.id) {
+                return res.status(403).json({ message: "Unauthorized - Not your assignment" });
+            }
+        }
+
+        // Check authorization for students - must be enrolled in the course
+        if (req.user.role === "student") {
+            // Check if assignment is published
+            if (!assignment.isPublished) {
+                return res.status(403).json({ message: "Assignment is not published" });
+            }
+
+            // Check if student is enrolled in the course
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const enrollment = await Enrollment.findOne({
+                student: req.user.id,
+                course: assignment.course._id,
+                $or: [
+                    { status: "ACTIVE" },
+                    { paymentStatus: { $in: ["PAID", "LATER"] } }
+                ]
+            });
+
+            if (!enrollment) {
+                return res.status(403).json({ message: "You are not enrolled in this course" });
+            }
         }
 
         res.status(200).json({
