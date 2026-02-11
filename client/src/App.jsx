@@ -62,6 +62,7 @@ import EditAssignment from "./Pages/teacher/Dashboard/EditAssignment/EditAssignm
 import GradeSubmission from "./Pages/teacher/Dashboard/AssignmentSubmissions/GradeSubmission"
 import AssignmentAnalytics from "./Pages/teacher/Dashboard/AssignmentAnalytics/AssignmentAnalytics"
 import ReturnTeacherExams from "./Pages/teacher/Dashboard/TeacherExams/ReturnTeacherExams"
+import CreateExam from "./Pages/teacher/Dashboard/CreateExam/CreateExam"
 
 // Protected Routes
 import PublicRoute from "./ProtectedRoute/PublicRoute"
@@ -187,6 +188,7 @@ const App = () => {
           
           {/* Exam Management Route */}
           <Route path="exams" element={<ReturnTeacherExams />} />
+          <Route path="create-exam" element={<CreateExam />} />
         </Route>
 
         {/* Payment Routes - Specific paths only */}
