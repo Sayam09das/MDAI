@@ -31,6 +31,7 @@ router.post("/", teacherOnly, createExam);
 router.get("/teacher", teacherOnly, getTeacherExams);
 router.get("/teacher/stats", teacherOnly, getExamStats);
 router.get("/:id", getExamById);
+router.get("/:id/stats", teacherOnly, getExamStats);
 router.put("/:id", teacherOnly, updateExam);
 router.delete("/:id", teacherOnly, deleteExam);
 router.patch("/:id/publish", teacherOnly, togglePublishExam);
