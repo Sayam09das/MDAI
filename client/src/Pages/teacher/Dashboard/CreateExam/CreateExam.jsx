@@ -250,7 +250,7 @@ const CreateExam = () => {
             if (response.success) {
                 setSuccess(publish ? 'Exam published successfully!' : 'Exam saved as draft!');
                 setTimeout(() => {
-                    navigate('/teacher-exams');
+                    navigate('/teacher-dashboard/exams');
                 }, 2000);
             } else {
                 setError(response.message || 'Failed to create exam');

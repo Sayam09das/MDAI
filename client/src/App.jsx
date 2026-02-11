@@ -2,7 +2,7 @@ import React from "react"
 import "./App.css"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { SocketProvider } from "./context/SocketContext"
 
 // Main Layout Pages
@@ -193,6 +193,9 @@ const App = () => {
 
         {/* Payment Routes - Specific paths only */}
         <Route path="/payment/*" element={<PaymentRoutes />} />
+
+        {/* Redirect old exam route to new route */}
+        <Route path="/teacher-exams" element={<Navigate to="/teacher-dashboard/exams" replace />} />
 
         {/* 404 - Catch-all route (MUST be last) */}
         <Route path="*" element={<NotFound />} />
