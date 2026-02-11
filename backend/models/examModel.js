@@ -1,52 +1,57 @@
 import mongoose from "mongoose";
 
-const violationSchema = new mongoose.Schema({
+const optionSchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true
+    },
+    isCorrect: {
+        type: Boolean,
+        default: false
+    }
+}, { _id: true });
+
+const questionSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: [
-            "TAB_SWITCH",
-            "WINDOW_BLUR",
-            "FULLSCREEN_EXIT",
-            "COPY_ATTEMPT",
-            "PASTE_ATTEMPT",
-            "RIGHT_CLICK",
-            "TEXT_SELECTION",
-            "KEYBOARD_SHORTCUT",
-            "DEV_TOOLS_OPEN",
-            "PAGE_REFRESH",
-            "BACK_BUTTON",
-            "TIME_OUTSIDE_EXCEEDED",
-            "HEARTBEAT_MISSED"
-        ],
+        enum: ["multiple_choice", "true_false", "short_answer", "essay"],
         required: true
     },
-    timestamp: {
-        type: Date,
-        default: Date.now,
+    question: {
+        type: String,
         required: true
     },
-    details: {
+    options: [optionSchema],
+    correctAnswer: {
+        type: String, // For short answer
+        default: ""
+    },
+    marks: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    explanation: {
         type: String,
         default: ""
     },
-    duration: {
-        type: Number, // in milliseconds
+    order: {
+        type: Number,
         default: 0
     }
-}, { _id: false });
+}, { _id: true });
 
-const examSessionSchema = new mongoose.Schema(
+const examSchema = new mongoose.Schema(
     {
-        assignment: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Assignment",
-            required: true
+        title: {
+            type: String,
+            required: true,
+            trim: true
         },
 
-        student: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true
+        description: {
+            type: String,
+            default: ""
         },
 
         course: {
@@ -55,215 +60,180 @@ const examSessionSchema = new mongoose.Schema(
             required: true
         },
 
-        // Timing
-        startTime: {
-            type: Date,
+        instructor: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Teacher",
             required: true
         },
 
-        endTime: {
-            type: Date,
-            required: true
-        },
-
+        // Exam Configuration
         duration: {
             type: Number, // in minutes
             required: true
         },
 
-        // Status
-        status: {
-            type: String,
-            enum: ["NOT_STARTED", "IN_PROGRESS", "SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED", "EXPIRED"],
-            default: "NOT_STARTED"
+        totalMarks: {
+            type: Number,
+            required: true
         },
 
-        // Security tracking
-        violations: [violationSchema],
-
-        totalViolations: {
+        passingMarks: {
             type: Number,
             default: 0
         },
 
-        tabSwitchCount: {
-            type: Number,
-            default: 0
+        // Questions
+        questions: [questionSchema],
+
+        // Settings
+        shuffleQuestions: {
+            type: Boolean,
+            default: false
         },
 
-        timeOutside: {
-            type: Number, // total milliseconds spent outside exam tab
-            default: 0
+        shuffleOptions: {
+            type: Boolean,
+            default: false
         },
 
-        fullscreenExits: {
-            type: Number,
-            default: 0
+        showResults: {
+            type: Boolean,
+            default: false
         },
 
-        // Heartbeat tracking
-        lastHeartbeat: {
-            type: Date
+        allowReview: {
+            type: Boolean,
+            default: true
         },
 
-        heartbeatMissed: {
-            type: Number,
-            default: 0
-        },
-
-        // Answers (for auto-submit)
-        answers: {
-            type: Map,
-            of: mongoose.Schema.Types.Mixed,
-            default: new Map()
-        },
-
-        // Submission reference (after submit)
-        submission: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Submission"
-        },
-
-        // Auto-submit reason
-        autoSubmitReason: {
-            type: String,
-            enum: ["TIME_EXPIRED", "DISQUALIFIED", "HEARTBEAT_TIMEOUT", "SYSTEM_ERROR"],
+        // Availability
+        startDate: {
+            type: Date,
             default: null
         },
 
-        // Disqualification details
-        disqualifiedAt: {
+        endDate: {
+            type: Date,
+            default: null
+        },
+
+        // Duration - can be set in minutes or hours:minutes format
+        duration: {
+            type: Number, // in minutes
+            required: true
+        },
+
+        durationHours: {
+            type: Number, // hours portion (0-23)
+            default: 0
+        },
+
+        durationMinutes: {
+            type: Number, // minutes portion (0-59)
+            default: 0
+        },
+
+        isPublished: {
+            type: Boolean,
+            default: false
+        },
+
+        publishedAt: {
             type: Date
         },
 
-        disqualifiedReason: {
+        status: {
             type: String,
-            default: ""
+            enum: ["draft", "scheduled", "active", "closed", "archived"],
+            default: "draft"
         },
 
-        // Metadata
-        ipAddress: {
-            type: String
+        // Attempt Settings
+        maxAttempts: {
+            type: Number,
+            default: 1
         },
 
-        userAgent: {
-            type: String
+        // Security Settings
+        security: {
+            preventTabSwitch: { type: Boolean, default: true },
+            preventCopyPaste: { type: Boolean, default: true },
+            requireFullscreen: { type: Boolean, default: true },
+            maxTimeOutside: { type: Number, default: 5 }, // in minutes
+            autoSubmitOnViolation: { type: Boolean, default: false }
+        },
+
+        // Statistics
+        totalAttempts: {
+            type: Number,
+            default: 0
+        },
+
+        averageScore: {
+            type: Number,
+            default: 0
+        },
+
+        highestScore: {
+            type: Number,
+            default: 0
+        },
+
+        lowestScore: {
+            type: Number,
+            default: 0
         }
     },
-    {
-        timestamps: true
-    }
+    { timestamps: true }
 );
 
-// Indexes for efficient queries
-examSessionSchema.index({ assignment: 1, student: 1 });
-examSessionSchema.index({ student: 1, status: 1 });
-examSessionSchema.index({ assignment: 1, status: 1 });
-examSessionSchema.index({ startTime: 1 });
-examSessionSchema.index({ lastHeartbeat: 1 });
+// Indexes
+examSchema.index({ course: 1, instructor: 1 });
+examSchema.index({ course: 1, status: 1 });
+examSchema.index({ isPublished: 1, status: 1 });
 
-// Virtual to check if exam is expired
-examSessionSchema.virtual("isExpired").get(function () {
-    return new Date() > this.endTime;
+// Virtual for question count
+examSchema.virtual("questionCount").get(function () {
+    return this.questions.length;
 });
 
-// Virtual to get remaining time in minutes
-examSessionSchema.virtual("remainingTime").get(function () {
-    if (this.status !== "IN_PROGRESS") return 0;
-    const now = new Date();
-    const remaining = this.endTime - now;
-    return remaining > 0 ? Math.ceil(remaining / 60000) : 0;
-});
-
-// Virtual to check if student is currently outside exam
-examSessionSchema.virtual("isOutside").get(function () {
-    // This would be calculated based on last activity
-    return false;
-});
-
-// Pre-save hook to update total violations
-examSessionSchema.pre("save", function () {
-    if (this.isModified("violations")) {
-        this.totalViolations = this.violations.length;
+// Pre-save hook to calculate total marks
+examSchema.pre("save", function () {
+    if (this.isModified("questions")) {
+        this.totalMarks = this.questions.reduce((sum, q) => sum + (q.marks || 0), 0);
+    }
+    if (this.isModified("isPublished") && this.isPublished && !this.publishedAt) {
+        this.publishedAt = new Date();
     }
 });
 
-// Method to add violation
-examSessionSchema.methods.addViolation = function (type, details = "", duration = 0) {
-    this.violations.push({
-        type,
-        timestamp: new Date(),
-        details,
-        duration
-    });
-    this.totalViolations = this.violations.length;
+// Static method to get published exams for a course
+examSchema.statics.getPublishedExams = async function (courseId) {
+    return this.find({
+        course: courseId,
+        isPublished: true,
+        status: { $in: ["scheduled", "active"] }
+    })
+        .populate("instructor", "name email")
+        .sort({ createdAt: -1 });
+};
 
-    // Auto-update specific counters
-    if (type === "TAB_SWITCH" || type === "WINDOW_BLUR") {
-        this.tabSwitchCount += 1;
-    } else if (type === "FULLSCREEN_EXIT") {
-        this.fullscreenExits += 1;
-    } else if (type === "TIME_OUTSIDE_EXCEEDED") {
-        this.timeOutside += duration;
-    } else if (type === "HEARTBEAT_MISSED") {
-        this.heartbeatMissed += 1;
+// Static method to get teacher's exams
+examSchema.statics.getTeacherExams = async function (teacherId, filters = {}) {
+    const query = { instructor: teacherId };
+    
+    if (filters.status) query.status = filters.status;
+    if (filters.course) query.course = filters.course;
+    if (filters.search) {
+        query.$or = [
+            { title: { $regex: filters.search, $options: "i" } },
+            { description: { $regex: filters.search, $options: "i" } }
+        ];
     }
-};
-
-// Method to check if should be disqualified
-examSessionSchema.methods.shouldDisqualify = function (maxTimeOutside = 300000) {
-    return this.timeOutside > maxTimeOutside;
-};
-
-// Method to calculate score from answers (for objective questions)
-examSessionSchema.methods.calculateScore = function (questionAnswers = {}) {
-    let correct = 0;
-    let total = 0;
-
-    this.answers.forEach((answer, questionId) => {
-        if (questionAnswers[questionId]) {
-            total += 1;
-            if (answer === questionAnswers[questionId]) {
-                correct += 1;
-            }
-        }
-    });
-
-    return {
-        correct,
-        total,
-        percentage: total > 0 ? Math.round((correct / total) * 100) : 0
-    };
-};
-
-// Static method to get active session
-examSessionSchema.statics.getActiveSession = async function (assignmentId, studentId) {
-    return this.findOne({
-        assignment: assignmentId,
-        student: studentId,
-        status: { $in: ["NOT_STARTED", "IN_PROGRESS"] }
-    });
-};
-
-// Static method to get student's exam sessions
-examSessionSchema.statics.getStudentSessions = async function (studentId, status = null) {
-    const query = { student: studentId };
-    if (status) query.status = status;
 
     return this.find(query)
-        .populate("assignment", "title maxMarks")
         .populate("course", "title")
         .sort({ createdAt: -1 });
 };
 
-// Static method to cleanup expired sessions
-examSessionSchema.statics.cleanupExpired = async function (maxAge = 24 * 60 * 60 * 1000) {
-    const threshold = new Date(Date.now() - maxAge);
-    return this.deleteMany({
-        status: "NOT_STARTED",
-        createdAt: { $lt: threshold }
-    });
-};
-
-export default mongoose.model("ExamSession", examSessionSchema);
-
+export default mongoose.model("Exam", examSchema);

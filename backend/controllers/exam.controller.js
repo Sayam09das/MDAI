@@ -1,36 +1,436 @@
-import ExamSession from "../models/examModel.js";
-import Assignment from "../models/assignmentModel.js";
-import Submission from "../models/submissionModel.js";
+import Exam from "../models/examModel.js";
+import ExamAttempt from "../models/examAttemptModel.js";
+import Course from "../models/Course.js";
 
-// Configuration constants
-const EXAM_CONFIG = {
-    MAX_TIME_OUTSIDE: 5 * 60 * 1000, // 5 minutes in milliseconds
-    HEARTBEAT_TIMEOUT: 2 * 60 * 1000, // 2 minutes timeout
-    WARNING_THRESHOLDS: [1, 3, 5], // Warning at 1st, 3rd, 5th violation
-    AUTO_SUBMIT_VIOLATIONS: 5 // Auto-submit after 5 violations
+// ==================== TEACHER EXAM MANAGEMENT ====================
+
+/**
+ * Create a new exam
+ * POST /api/exams
+ */
+export const createExam = async (req, res) => {
+    try {
+        const {
+            title,
+            description,
+            course,
+            duration,
+            questions,
+            passingMarks,
+            shuffleQuestions,
+            shuffleOptions,
+            showResults,
+            allowReview,
+            startDate,
+            endDate,
+            maxAttempts,
+            security
+        } = req.body;
+
+        // Verify course belongs to teacher
+        const courseDoc = await Course.findOne({
+            _id: course,
+            instructor: req.user.id
+        });
+
+        if (!courseDoc) {
+            return res.status(404).json({ message: "Course not found or unauthorized" });
+        }
+
+        // Calculate total marks from questions
+        const totalMarks = questions.reduce((sum, q) => sum + (q.marks || 0), 0);
+
+        const exam = await Exam.create({
+            title,
+            description,
+            course,
+            instructor: req.user.id,
+            duration,
+            totalMarks,
+            passingMarks: passingMarks || 0,
+            questions,
+            shuffleQuestions: shuffleQuestions || false,
+            shuffleOptions: shuffleOptions || false,
+            showResults: showResults || false,
+            allowReview: allowReview !== false,
+            startDate: startDate || null,
+            endDate: endDate || null,
+            maxAttempts: maxAttempts || 1,
+            security: security || {
+                preventTabSwitch: true,
+                preventCopyPaste: true,
+                requireFullscreen: true,
+                maxTimeOutside: 5,
+                autoSubmitOnViolation: false
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Exam created successfully",
+            exam
+        });
+    } catch (error) {
+        console.error("Create exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
 };
 
 /**
- * Start an exam session
- * POST /api/exams/:assignmentId/start
+ * Get all exams for teacher
+ * GET /api/exams/teacher
  */
-export const startExam = async (req, res) => {
+export const getTeacherExams = async (req, res) => {
     try {
-        const { assignmentId } = req.params;
-        const { duration } = req.body;
+        const { status, course, search } = req.query;
 
-        // Get assignment details
-        const assignment = await Assignment.findById(assignmentId);
+        const query = { instructor: req.user.id };
 
-        if (!assignment) {
-            return res.status(404).json({ message: "Assignment not found" });
+        if (status && status !== "all") query.status = status;
+        if (course && course !== "all") query.course = course;
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } }
+            ];
         }
 
-        // Verify student is enrolled
+        const exams = await Exam.find(query)
+            .populate("course", "title")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({ success: true, exams });
+    } catch (error) {
+        console.error("Get teacher exams error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get single exam by ID
+ * GET /api/exams/:id
+ */
+export const getExamById = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id)
+            .populate("course", "title description")
+            .populate("instructor", "name email");
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        // Check authorization
+        const isTeacher = exam.instructor._id.toString() === req.user.id || req.user.role === "admin";
+        
+        if (req.user.role === "student") {
+            // Students can only see published exams
+            if (!exam.isPublished) {
+                return res.status(403).json({ message: "Exam not available" });
+            }
+
+            // Check enrollment
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const enrollment = await Enrollment.findOne({
+                student: req.user.id,
+                course: exam.course._id,
+                $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
+            });
+
+            if (!enrollment) {
+                return res.status(403).json({ message: "You are not enrolled in this course" });
+            }
+
+            // For students, don't send correct answers
+            const examForStudent = exam.toObject();
+            if (!isTeacher) {
+                examForStudent.questions = examForStudent.questions.map(q => ({
+                    _id: q._id,
+                    type: q.type,
+                    question: q.question,
+                    options: q.options.map(o => ({ _id: o._id, text: o.text })),
+                    marks: q.marks,
+                    order: q.order
+                }));
+            }
+
+            return res.status(200).json({ success: true, exam: examForStudent });
+        }
+
+        res.status(200).json({ success: true, exam });
+    } catch (error) {
+        console.error("Get exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Update exam
+ * PUT /api/exams/:id
+ */
+export const updateExam = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const allowedUpdates = [
+            "title", "description", "duration", "passingMarks",
+            "shuffleQuestions", "shuffleOptions", "showResults",
+            "allowReview", "startDate", "endDate", "maxAttempts", "security"
+        ];
+
+        allowedUpdates.forEach(field => {
+            if (req.body[field] !== undefined) {
+                exam[field] = req.body[field];
+            }
+        });
+
+        // Handle questions update
+        if (req.body.questions) {
+            exam.questions = req.body.questions;
+            exam.totalMarks = req.body.questions.reduce((sum, q) => sum + (q.marks || 0), 0);
+        }
+
+        await exam.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Exam updated successfully",
+            exam
+        });
+    } catch (error) {
+        console.error("Update exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Delete exam
+ * DELETE /api/exams/:id
+ */
+export const deleteExam = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Delete all attempts
+        await ExamAttempt.deleteMany({ exam: exam._id });
+
+        await exam.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            message: "Exam deleted successfully"
+        });
+    } catch (error) {
+        console.error("Delete exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Publish/Unpublish exam
+ * PATCH /api/exams/:id/publish
+ */
+export const togglePublishExam = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        exam.isPublished = !exam.isPublished;
+        
+        if (exam.isPublished) {
+            exam.publishedAt = new Date();
+            exam.status = exam.startDate && new Date(exam.startDate) > new Date() ? "scheduled" : "active";
+        } else {
+            exam.status = "draft";
+        }
+
+        await exam.save();
+
+        res.status(200).json({
+            success: true,
+            message: exam.isPublished ? "Exam published" : "Exam unpublished",
+            exam
+        });
+    } catch (error) {
+        console.error("Toggle publish exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get exam results/attempts
+ * GET /api/exams/:id/results
+ */
+export const getExamResults = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id)
+            .populate("course", "title");
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const attempts = await ExamAttempt.find({ exam: exam._id })
+            .populate("student", "name email profileImage")
+            .sort({ submittedAt: -1 });
+
+        // Calculate statistics
+        const stats = {
+            totalAttempts: attempts.length,
+            submitted: attempts.filter(a => a.status === "SUBMITTED").length,
+            disqualified: attempts.filter(a => a.status === "DISQUALIFIED").length,
+            autoSubmitted: attempts.filter(a => a.status === "AUTO_SUBMITTED").length,
+            avgScore: 0,
+            highestScore: 0,
+            lowestScore: 0,
+            passRate: 0
+        };
+
+        const submittedAttempts = attempts.filter(a => a.status === "SUBMITTED");
+        if (submittedAttempts.length > 0) {
+            const scores = submittedAttempts.map(a => a.percentage);
+            stats.avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+            stats.highestScore = Math.max(...scores);
+            stats.lowestScore = Math.min(...scores);
+            stats.passRate = Math.round((submittedAttempts.filter(a => a.passed).length / submittedAttempts.length) * 100);
+        }
+
+        res.status(200).json({
+            success: true,
+            exam: {
+                id: exam._id,
+                title: exam.title,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks
+            },
+            stats,
+            attempts: attempts.map(a => ({
+                id: a._id,
+                student: a.student,
+                status: a.status,
+                marks: a.obtainedMarks,
+                totalMarks: a.totalMarks,
+                percentage: a.percentage,
+                passed: a.passed,
+                timeTaken: a.timeTaken,
+                totalViolations: a.totalViolations,
+                tabSwitchCount: a.tabSwitchCount,
+                timeOutside: a.timeOutside,
+                submittedAt: a.submittedAt,
+                attemptNumber: a.attemptNumber
+            }))
+        });
+    } catch (error) {
+        console.error("Get exam results error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get exam statistics
+ * GET /api/exams/:id/stats
+ */
+export const getExamStats = async (req, res) => {
+    try {
+        const exam = await Exam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const dbStats = await ExamAttempt.getExamStats(exam._id);
+
+        res.status(200).json({
+            success: true,
+            stats: dbStats,
+            exam: {
+                id: exam._id,
+                title: exam.title,
+                totalMarks: exam.totalMarks,
+                status: exam.status,
+                isPublished: exam.isPublished
+            }
+        });
+    } catch (error) {
+        console.error("Get exam stats error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ==================== STUDENT EXAM ATTEMPTS ====================
+
+/**
+ * Start exam attempt
+ * POST /api/exams/:examId/start
+ * 
+ * IMPORTANT: Timer starts from server time when student clicks start
+ * Timer continues even after page refresh, internet disconnect, or re-login
+ * Server calculates remaining time from stored startTime and endTime
+ */
+export const startExamAttempt = async (req, res) => {
+    try {
+        const { examId } = req.params;
+
+        const exam = await Exam.findById(examId)
+            .populate("course", "title");
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        // Check if exam is published
+        if (!exam.isPublished) {
+            return res.status(403).json({ message: "Exam is not available" });
+        }
+
+        // Check dates
+        const now = new Date();
+        if (exam.startDate && now < new Date(exam.startDate)) {
+            return res.status(400).json({ 
+                message: "Exam has not started yet",
+                startsAt: exam.startDate
+            });
+        }
+        if (exam.endDate && now > new Date(exam.endDate)) {
+            return res.status(400).json({ message: "Exam has ended" });
+        }
+
+        // Check enrollment
         const Enrollment = (await import("../models/enrollmentModel.js")).default;
         const enrollment = await Enrollment.findOne({
             student: req.user.id,
-            course: assignment.course,
+            course: exam.course._id,
             $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
         });
 
@@ -38,261 +438,312 @@ export const startExam = async (req, res) => {
             return res.status(403).json({ message: "You are not enrolled in this course" });
         }
 
-        // Check if assignment is published
-        if (!assignment.isPublished) {
-            return res.status(403).json({ message: "Assignment is not published" });
-        }
-
-        // Check if assignment is still open
-        const now = new Date();
-        const dueDate = new Date(assignment.dueDate);
-        
-        if (now > dueDate) {
-            return res.status(400).json({ message: "Assignment deadline has passed" });
-        }
-
-        // Check for existing active session
-        const existingSession = await ExamSession.findOne({
-            assignment: assignmentId,
+        // Check for existing active attempt
+        const existingAttempt = await ExamAttempt.findOne({
+            exam: examId,
             student: req.user.id,
-            status: { $in: ["NOT_STARTED", "IN_PROGRESS"] }
+            status: "IN_PROGRESS"
         });
 
-        if (existingSession) {
-            // Return existing session
+        if (existingAttempt) {
+            // Calculate remaining time from server
+            const remainingMs = new Date(existingAttempt.endTime) - new Date();
+            const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+
+            // Return existing attempt with server-calculated remaining time
             return res.status(200).json({
                 success: true,
-                message: existingSession.status === "NOT_STARTED" ? 
-                    "Exam session exists but not started" : 
-                    "Continuing existing exam session",
-                examSession: existingSession,
-                resuming: existingSession.status === "IN_PROGRESS"
+                message: "Resuming existing attempt",
+                attempt: {
+                    id: existingAttempt._id,
+                    startTime: existingAttempt.startTime,
+                    endTime: existingAttempt.endTime,
+                    duration: exam.duration,
+                    remainingTime: remainingSeconds,
+                    remainingMs: remainingMs
+                },
+                resuming: true
             });
         }
 
-        // Calculate exam duration
-        const examDuration = duration || 60; // Default 60 minutes
-        const startTime = new Date();
-        const endTime = new Date(startTime.getTime() + examDuration * 60 * 1000);
-
-        // Create new exam session
-        const examSession = await ExamSession.create({
-            assignment: assignmentId,
+        // Check max attempts
+        const attemptCount = await ExamAttempt.countDocuments({
+            exam: examId,
             student: req.user.id,
-            course: assignment.course,
+            status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"] }
+        });
+
+        if (attemptCount >= exam.maxAttempts) {
+            return res.status(403).json({ message: "Maximum attempts reached" });
+        }
+
+        // Calculate server-side timer
+        const startTime = new Date();
+        const endTime = new Date(startTime.getTime() + exam.duration * 60 * 1000);
+
+        // Create new attempt with server timestamps
+        const attempt = await ExamAttempt.create({
+            exam: examId,
+            student: req.user.id,
+            course: exam.course._id,
             startTime,
             endTime,
-            duration: examDuration,
             status: "IN_PROGRESS",
+            attemptNumber: attemptCount + 1,
             ipAddress: req.ip,
             userAgent: req.headers['user-agent']
         });
 
-        // Check for any existing submission
-        const existingSubmission = await Submission.findOne({
-            assignment: assignmentId,
-            student: req.user.id
-        });
+        // Update exam statistics
+        exam.totalAttempts += 1;
+        await exam.save();
 
-        if (existingSubmission) {
-            // Delete existing submission if resubmission is allowed
-            if (assignment.status === "active") {
-                await Submission.findByIdAndDelete(existingSubmission._id);
-            }
-        }
-
-        res.status(201).json({
-            success: true,
-            message: "Exam session started successfully",
-            examSession: {
-                id: examSession._id,
-                startTime: examSession.startTime,
-                endTime: examSession.endTime,
-                duration: examSession.duration,
-                status: examSession.status
-            }
-        });
-    } catch (error) {
-        console.error("Start exam error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Submit exam with answers
- * POST /api/exams/:examId/submit
- */
-export const submitExam = async (req, res) => {
-    try {
-        const { examId } = req.params;
-        const { answers, timeSpent } = req.body;
-
-        // Get exam session
-        const examSession = await ExamSession.findById(examId);
-
-        if (!examSession) {
-            return res.status(404).json({ message: "Exam session not found" });
-        }
-
-        // Verify ownership
-        if (examSession.student.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized access to exam session" });
-        }
-
-        // Check if already submitted
-        if (["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"].includes(examSession.status)) {
-            return res.status(400).json({ 
-                message: "Exam has already been submitted or disqualified",
-                status: examSession.status
-            });
-        }
-
-        // Get assignment for max marks
-        const assignment = await Assignment.findById(examSession.assignment);
-
-        if (!assignment) {
-            return res.status(404).json({ message: "Assignment not found" });
-        }
-
-        // Validate server-side time
-        const now = new Date();
-        const isLate = now > examSession.endTime;
-
-        // Update exam session
-        examSession.status = isLate ? "AUTO_SUBMITTED" : "SUBMITTED";
-        examSession.answers = new Map(Object.entries(answers || {}));
-        
-        if (timeSpent) {
-            examSession.endTime = new Date();
-        }
-
-        await examSession.save();
-
-        // Create submission
-        const submission = await Submission.create({
-            assignment: examSession.assignment,
-            student: req.user.id,
-            course: examSession.course,
-            submissionType: "exam",
-            textAnswer: JSON.stringify(answers || {}),
-            status: isLate ? "submitted" : "submitted",
-            isLate,
-            submittedAt: now,
-            maxMarks: assignment.maxMarks
-        });
-
-        // Update exam session with submission reference
-        examSession.submission = submission._id;
-        await examSession.save();
-
-        // Update assignment submission count
-        assignment.totalSubmissions += 1;
-        await assignment.save();
+        // Return exam with server-calculated timer
+        const questionsForStudent = exam.questions.map((q, index) => ({
+            _id: q._id,
+            type: q.type,
+            question: q.question,
+            options: q.options.map(o => ({ _id: o._id, text: o.text })),
+            marks: q.marks,
+            order: q.order
+        }));
 
         res.status(200).json({
             success: true,
-            message: isLate ? "Exam submitted late" : "Exam submitted successfully",
-            submission: {
-                id: submission._id,
-                status: submission.status,
-                isLate: submission.isLate,
-                submittedAt: submission.submittedAt
+            message: "Exam started successfully. Timer has started.",
+            attempt: {
+                id: attempt._id,
+                startTime: attempt.startTime,
+                endTime: attempt.endTime,
+                duration: exam.duration,
+                remainingTime: exam.duration * 60, // in seconds
+                remainingMs: exam.duration * 60 * 1000
             },
-            examSession: {
-                id: examSession._id,
-                status: examSession.status,
-                violations: examSession.violations.length,
-                timeOutside: examSession.timeOutside
+            exam: {
+                id: exam._id,
+                title: exam.title,
+                description: exam.description,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks,
+                questions: questionsForStudent,
+                shuffleQuestions: exam.shuffleQuestions,
+                showResults: exam.showResults,
+                security: exam.security
+            },
+            timer: {
+                startTime: attempt.startTime,
+                endTime: attempt.endTime,
+                duration: exam.duration,
+                serverTime: now
             }
         });
     } catch (error) {
-        console.error("Submit exam error:", error);
+        console.error("Start exam attempt error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Send heartbeat to keep exam active
- * POST /api/exams/:examId/heartbeat
+ * Submit exam
+ * POST /api/exams/attempt/:attemptId/submit
  */
-export const heartbeat = async (req, res) => {
+export const submitExamAttempt = async (req, res) => {
     try {
-        const { examId } = req.params;
-        const { status, timeOutside, pageStatus } = req.body;
+        const { attemptId } = req.params;
+        const { answers } = req.body;
 
-        const examSession = await ExamSession.findById(examId);
+        const attempt = await ExamAttempt.findById(attemptId)
+            .populate("exam");
 
-        if (!examSession) {
-            return res.status(404).json({ message: "Exam session not found" });
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
         }
 
-        if (examSession.student.toString() !== req.user.id) {
+        if (attempt.student.toString() !== req.user.id) {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        if (!["IN_PROGRESS"].includes(examSession.status)) {
-            return res.status(400).json({ 
-                message: "Exam is not in progress",
-                status: examSession.status
-            });
+        if (!["IN_PROGRESS", "NOT_STARTED"].includes(attempt.status)) {
+            return res.status(400).json({ message: "Exam already submitted" });
         }
 
-        // Update time outside if provided
-        if (timeOutside !== undefined) {
-            examSession.timeOutside = timeOutside;
+        // Get exam for correct answers
+        const exam = await Exam.findById(attempt.exam._id);
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
         }
 
-        // Update page status if provided
-        if (pageStatus) {
-            examSession.violations.push({
-                type: "TAB_SWITCH",
-                timestamp: new Date(),
-                details: `Page status: ${pageStatus}`
-            });
+        // Calculate score
+        let obtainedMarks = 0;
+        const processedAnswers = answers.map(answer => {
+            const question = exam.questions.find(q => q._id.toString() === answer.questionId);
+            let isCorrect = false;
+            let marksObtained = 0;
+
+            if (question) {
+                if (question.type === "multiple_choice" || question.type === "true_false") {
+                    const selectedOption = question.options.find(o => o._id.toString() === answer.selectedOption);
+                    isCorrect = selectedOption?.isCorrect || false;
+                    marksObtained = isCorrect ? question.marks : 0;
+                } else if (question.type === "short_answer") {
+                    isCorrect = answer.textAnswer?.toLowerCase().trim() === question.correctAnswer?.toLowerCase().trim();
+                    marksObtained = isCorrect ? question.marks : 0;
+                } else {
+                    // Essay/short answer - needs manual grading
+                    marksObtained = 0;
+                }
+            }
+
+            if (isCorrect) {
+                obtainedMarks += marksObtained;
+            }
+
+            return {
+                questionId: answer.questionId,
+                selectedOption: answer.selectedOption || "",
+                textAnswer: answer.textAnswer || "",
+                isCorrect,
+                marksObtained,
+                answeredAt: new Date()
+            };
+        });
+
+        // Update attempt
+        attempt.answers = processedAnswers;
+        attempt.obtainedMarks = obtainedMarks;
+        attempt.totalMarks = exam.totalMarks;
+        attempt.percentage = Math.round((obtainedMarks / exam.totalMarks) * 100 * 100) / 100;
+        attempt.passed = attempt.percentage >= exam.passingMarks;
+        attempt.status = "SUBMITTED";
+        attempt.submittedAt = new Date();
+        attempt.timeTaken = Math.round((attempt.submittedAt - attempt.startTime) / 1000);
+
+        await attempt.save();
+
+        // Update exam statistics
+        if (exam.averageScore === 0) {
+            exam.averageScore = attempt.percentage;
+            exam.highestScore = attempt.percentage;
+            exam.lowestScore = attempt.percentage;
+        } else {
+            const totalScore = exam.averageScore * (exam.totalAttempts - 1) + attempt.percentage;
+            exam.averageScore = Math.round(totalScore / exam.totalAttempts * 100) / 100;
+            if (attempt.percentage > exam.highestScore) exam.highestScore = attempt.percentage;
+            if (attempt.percentage < exam.lowestScore || exam.lowestScore === 0) exam.lowestScore = attempt.percentage;
         }
-
-        // Update last heartbeat
-        examSession.lastHeartbeat = new Date();
-        examSession.heartbeatMissed = 0;
-
-        // Check if time outside exceeds limit
-        if (examSession.timeOutside > EXAM_CONFIG.MAX_TIME_OUTSIDE) {
-            // Auto-disqualify
-            examSession.status = "DISQUALIFIED";
-            examSession.disqualifiedAt = new Date();
-            examSession.disqualifiedReason = "Exceeded maximum time outside exam window";
-            examSession.autoSubmitReason = "TIME_OUTSIDE_EXCEEDED";
-
-            await examSession.save();
-
-            return res.status(200).json({
-                success: true,
-                message: "Exam session ended due to time outside limit",
-                disqualified: true,
-                reason: "Exceeded 5 minutes outside exam window"
-            });
-        }
-
-        // Check if exam has expired
-        const now = new Date();
-        if (now > examSession.endTime) {
-            examSession.status = "EXPIRED";
-            await examSession.save();
-
-            return res.status(200).json({
-                success: true,
-                message: "Exam time has expired",
-                expired: true
-            });
-        }
-
-        await examSession.save();
+        await exam.save();
 
         res.status(200).json({
             success: true,
-            message: "Heartbeat received",
-            remainingTime: Math.max(0, examSession.endTime - now),
-            violations: examSession.totalViolations
+            message: "Exam submitted successfully",
+            result: {
+                marks: obtainedMarks,
+                totalMarks: exam.totalMarks,
+                percentage: attempt.percentage,
+                passed: attempt.passed,
+                timeTaken: attempt.timeTaken,
+                showResults: exam.showResults
+            }
+        });
+    } catch (error) {
+        console.error("Submit exam attempt error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Send heartbeat - Server calculates remaining time
+ * POST /api/exams/attempt/:attemptId/heartbeat
+ * 
+ * IMPORTANT: Timer is calculated from server, not client
+ * This prevents timer manipulation and ensures strict timing
+ */
+export const sendHeartbeat = async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const { timeOutside, status } = req.body;
+
+        const attempt = await ExamAttempt.findById(attemptId);
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        if (attempt.student.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        if (!["IN_PROGRESS"].includes(attempt.status)) {
+            return res.status(400).json({ message: "Exam not in progress" });
+        }
+
+        // Update time outside
+        if (timeOutside !== undefined) {
+            attempt.timeOutside = timeOutside;
+        }
+
+        // Get exam for security settings
+        const exam = await Exam.findById(attempt.exam);
+        const maxTimeOutside = exam?.security?.maxTimeOutside || 5;
+        const maxTimeMs = maxTimeOutside * 60 * 1000;
+
+        // Calculate remaining time from SERVER (not client)
+        const now = new Date();
+        const remainingMs = new Date(attempt.endTime) - now;
+        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+
+        // Check for disqualification due to time outside
+        if (attempt.timeOutside > maxTimeMs) {
+            attempt.status = "DISQUALIFIED";
+            attempt.disqualifiedAt = new Date();
+            attempt.disqualifiedReason = "Exceeded maximum time outside exam window";
+            attempt.autoSubmitReason = "TIME_OUTSIDE_EXCEEDED";
+            await attempt.save();
+
+            return res.status(200).json({
+                success: true,
+                disqualified: true,
+                message: "Disqualified for exceeding time outside limit",
+                remainingTime: 0,
+                timerExpired: true
+            });
+        }
+
+        // Check if timer expired (server-side check)
+        if (remainingMs <= 0) {
+            // Auto-submit expired exam
+            attempt.status = "AUTO_SUBMITTED";
+            attempt.autoSubmitReason = "TIME_EXPIRED";
+            attempt.submittedAt = now;
+            attempt.timeTaken = Math.round((now - new Date(attempt.startTime)) / 1000);
+            await attempt.save();
+
+            return res.status(200).json({
+                success: true,
+                expired: true,
+                message: "Exam time expired",
+                remainingTime: 0,
+                timerExpired: true
+            });
+        }
+
+        // Update heartbeat
+        attempt.lastHeartbeat = now;
+        await attempt.save();
+
+        // Return server-calculated remaining time
+        res.status(200).json({
+            success: true,
+            remainingTime: remainingSeconds,
+            remainingMs: remainingMs,
+            serverTime: now,
+            timer: {
+                startTime: attempt.startTime,
+                endTime: attempt.endTime,
+                elapsed: Math.round((now - new Date(attempt.startTime)) / 1000),
+                remaining: remainingSeconds
+            },
+            violations: attempt.totalViolations
         });
     } catch (error) {
         console.error("Heartbeat error:", error);
@@ -301,89 +752,66 @@ export const heartbeat = async (req, res) => {
 };
 
 /**
- * Report a violation
- * POST /api/exams/:examId/violation
+ * Report violation
+ * POST /api/exams/attempt/:attemptId/violation
  */
 export const reportViolation = async (req, res) => {
     try {
-        const { examId } = req.params;
+        const { attemptId } = req.params;
         const { type, details, duration } = req.body;
 
-        const examSession = await ExamSession.findById(examId);
+        const attempt = await ExamAttempt.findById(attemptId)
+            .populate("exam");
 
-        if (!examSession) {
-            return res.status(404).json({ message: "Exam session not found" });
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
         }
 
-        if (examSession.student.toString() !== req.user.id) {
+        if (attempt.student.toString() !== req.user.id) {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        if (!["IN_PROGRESS"].includes(examSession.status)) {
-            return res.status(400).json({ 
-                message: "Exam is not in progress",
-                status: examSession.status
-            });
+        if (!["IN_PROGRESS"].includes(attempt.status)) {
+            return res.status(400).json({ message: "Exam not in progress" });
         }
 
         // Add violation
-        examSession.violations.push({
-            type,
-            timestamp: new Date(),
-            details: details || "",
-            duration: duration || 0
-        });
+        attempt.addViolation(type, details, duration);
+        await attempt.save();
 
-        // Update specific counters
-        if (type === "TAB_SWITCH" || type === "WINDOW_BLUR") {
-            examSession.tabSwitchCount += 1;
-        } else if (type === "TIME_OUTSIDE_EXCEEDED") {
-            examSession.timeOutside += (duration || 0);
-        } else if (type === "FULLSCREEN_EXIT") {
-            examSession.fullscreenExits += 1;
-        }
-
-        const totalViolations = examSession.violations.length;
-
-        // Check for disqualification thresholds
-        let warningLevel = null;
-        if (EXAM_CONFIG.WARNING_THRESHOLDS.includes(totalViolations)) {
-            warningLevel = totalViolations;
-        }
-
-        // Check if should auto-submit due to violations
-        if (totalViolations >= EXAM_CONFIG.AUTO_SUBMIT_VIOLATIONS) {
-            examSession.status = "DISQUALIFIED";
-            examSession.disqualifiedAt = new Date();
-            examSession.disqualifiedReason = `Exceeded maximum violations (${totalViolations})`;
-            examSession.autoSubmitReason = "DISQUALIFIED";
-
-            await examSession.save();
+        // Check for auto-submit on violation
+        const exam = attempt.exam;
+        if (exam.security?.autoSubmitOnViolation && attempt.totalViolations >= 5) {
+            attempt.status = "DISQUALIFIED";
+            attempt.disqualifiedAt = new Date();
+            attempt.disqualifiedReason = "Too many violations";
+            attempt.autoSubmitReason = "VIOLATION_LIMIT";
+            await attempt.save();
 
             return res.status(200).json({
                 success: true,
-                message: "Exam disqualified due to violations",
                 disqualified: true,
-                reason: `Too many violations (${totalViolations})`,
-                violationCount: totalViolations
+                message: "Disqualified due to violations",
+                violationCount: attempt.totalViolations
             });
         }
 
-        await examSession.save();
+        // Determine warning message
+        let warningMessage = null;
+        if (attempt.totalViolations === 1) {
+            warningMessage = "First warning: Do not leave the exam window";
+        } else if (attempt.totalViolations === 3) {
+            warningMessage = "Second warning: Multiple violations recorded";
+        } else if (attempt.totalViolations === 5) {
+            warningMessage = "Final warning: One more violation and you'll be disqualified";
+        }
 
         res.status(200).json({
             success: true,
             message: "Violation recorded",
-            violationCount: totalViolations,
-            warning: warningLevel ? {
-                level: warningLevel,
-                message: warningLevel === 1 
-                    ? "First warning: Do not leave the exam window"
-                    : warningLevel === 3
-                    ? "Second warning: Multiple violations recorded"
-                    : "Final warning: One more violation and you'll be disqualified"
-            } : null,
-            timeOutside: examSession.timeOutside
+            violationCount: attempt.totalViolations,
+            warning: warningMessage,
+            timeOutside: attempt.timeOutside
         });
     } catch (error) {
         console.error("Report violation error:", error);
@@ -392,227 +820,186 @@ export const reportViolation = async (req, res) => {
 };
 
 /**
- * Get exam session status
- * GET /api/exams/:examId/status
+ * Get student's exam attempts
+ * GET /api/exams/my-attempts
  */
-export const getExamStatus = async (req, res) => {
+export const getMyAttempts = async (req, res) => {
+    try {
+        const { courseId } = req.query;
+
+        const query = { student: req.user.id };
+        if (courseId) query.course = courseId;
+
+        const attempts = await ExamAttempt.find(query)
+            .populate("exam", "title totalMarks passingMarks")
+            .populate("course", "title")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            attempts: attempts.map(a => ({
+                id: a._id,
+                exam: a.exam,
+                course: a.course,
+                status: a.status,
+                marks: a.obtainedMarks,
+                totalMarks: a.totalMarks,
+                percentage: a.percentage,
+                passed: a.passed,
+                timeTaken: a.timeTaken,
+                totalViolations: a.totalViolations,
+                submittedAt: a.submittedAt,
+                attemptNumber: a.attemptNumber
+            }))
+        });
+    } catch (error) {
+        console.error("Get my attempts error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get student's attempts for specific exam
+ * GET /api/exams/:examId/my-attempts
+ */
+export const getMyExamAttempts = async (req, res) => {
     try {
         const { examId } = req.params;
 
-        const examSession = await ExamSession.findById(examId)
-            .populate("assignment", "title description maxMarks duration")
-            .populate("course", "title");
+        const attempts = await ExamAttempt.find({
+            exam: examId,
+            student: req.user.id
+        })
+            .populate("exam", "title totalMarks passingMarks")
+            .sort({ attemptNumber: 1 });
 
-        if (!examSession) {
-            return res.status(404).json({ message: "Exam session not found" });
+        res.status(200).json({
+            success: true,
+            attempts: attempts.map(a => ({
+                id: a._id,
+                status: a.status,
+                marks: a.obtainedMarks,
+                totalMarks: a.totalMarks,
+                percentage: a.percentage,
+                passed: a.passed,
+                timeTaken: a.timeTaken,
+                totalViolations: a.tabSwitchCount,
+                submittedAt: a.submittedAt,
+                attemptNumber: a.attemptNumber
+            }))
+        });
+    } catch (error) {
+        console.error("Get my exam attempts error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get student's available exams
+ * GET /api/exams/student/available
+ */
+export const getStudentExams = async (req, res) => {
+    try {
+        const { courseId } = req.query;
+
+        // Get student's enrollments
+        const Enrollment = (await import("../models/enrollmentModel.js")).default;
+        const enrollments = await Enrollment.find({
+            student: req.user.id,
+            $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
+        }).select("course");
+
+        const courseIds = enrollments.map(e => e.course);
+
+        if (courseIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                exams: [],
+                message: "No enrollments found"
+            });
         }
 
-        // Check authorization
-        const isStudent = examSession.student.toString() === req.user.id;
-        const isTeacher = req.user.role === "teacher" || req.user.role === "admin";
+        const query = {
+            course: { $in: courseIds },
+            isPublished: true,
+            status: { $in: ["active", "scheduled"] }
+        };
 
-        if (!isStudent && !isTeacher) {
-            return res.status(403).json({ message: "Unauthorized" });
+        if (courseId) {
+            query.course = courseId;
         }
 
-        // Calculate remaining time
-        const now = new Date();
-        const remainingTime = Math.max(0, examSession.endTime - now);
+        const exams = await Exam.find(query)
+            .populate("course", "title")
+            .populate("instructor", "name")
+            .sort({ createdAt: -1 });
 
-        // Format violations for response
-        const violations = examSession.violations.map(v => ({
-            type: v.type,
-            timestamp: v.timestamp,
-            details: v.details
+        // Get student's attempts for each exam
+        const examsWithAttempts = await Promise.all(exams.map(async (exam) => {
+            const attemptCount = await ExamAttempt.countDocuments({
+                exam: exam._id,
+                student: req.user.id,
+                status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"] }
+            });
+
+            const activeAttempt = await ExamAttempt.findOne({
+                exam: exam._id,
+                student: req.user.id,
+                status: "IN_PROGRESS"
+            });
+
+            return {
+                id: exam._id,
+                title: exam.title,
+                description: exam.description,
+                course: exam.course,
+                instructor: exam.instructor,
+                duration: exam.duration,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks,
+                questionCount: exam.questions.length,
+                startDate: exam.startDate,
+                endDate: exam.endDate,
+                maxAttempts: exam.maxAttempts,
+                attemptsUsed: attemptCount,
+                hasActiveAttempt: !!activeAttempt,
+                activeAttemptId: activeAttempt?._id,
+                canAttempt: attemptCount < exam.maxAttempts,
+                status: exam.status
+            };
         }));
 
         res.status(200).json({
             success: true,
-            examSession: {
-                id: examSession._id,
-                status: examSession.status,
-                startTime: examSession.startTime,
-                endTime: examSession.endTime,
-                remainingTime,
-                duration: examSession.duration,
-                totalViolations: examSession.totalViolations,
-                tabSwitchCount: examSession.tabSwitchCount,
-                timeOutside: examSession.timeOutside,
-                fullscreenExits: examSession.fullscreenExits,
-                violations,
-                disqualifiedReason: examSession.disqualifiedReason,
-                autoSubmitReason: examSession.autoSubmitReason,
-                assignment: examSession.assignment ? {
-                    id: examSession.assignment._id,
-                    title: examSession.assignment.title,
-                    maxMarks: examSession.assignment.maxMarks
-                } : null,
-                course: examSession.course
-            }
+            exams: examsWithAttempts
         });
     } catch (error) {
-        console.error("Get exam status error:", error);
+        console.error("Get student exams error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Get student's active exams
- * GET /api/exams/student/active
- */
-export const getActiveExams = async (req, res) => {
-    try {
-        const sessions = await ExamSession.find({
-            student: req.user.id,
-            status: { $in: ["NOT_STARTED", "IN_PROGRESS"] }
-        })
-            .populate("assignment", "title dueDate duration maxMarks")
-            .populate("course", "title");
-
-        res.status(200).json({
-            success: true,
-            sessions: sessions.map(s => ({
-                id: s._id,
-                status: s.status,
-                assignment: s.assignment,
-                course: s.course,
-                startTime: s.startTime,
-                endTime: s.endTime,
-                remainingTime: Math.max(0, s.endTime - new Date())
-            }))
-        });
-    } catch (error) {
-        console.error("Get active exams error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Get student's exam history
- * GET /api/exams/student/history
- */
-export const getExamHistory = async (req, res) => {
-    try {
-        const sessions = await ExamSession.find({
-            student: req.user.id,
-            status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED", "EXPIRED"] }
-        })
-            .populate("assignment", "title maxMarks")
-            .populate("course", "title")
-            .sort({ updatedAt: -1 });
-
-        res.status(200).json({
-            success: true,
-            sessions: sessions.map(s => ({
-                id: s._id,
-                status: s.status,
-                assignment: s.assignment,
-                course: s.course,
-                startTime: s.startTime,
-                endTime: s.endTime,
-                totalViolations: s.totalViolations,
-                tabSwitchCount: s.tabSwitchCount,
-                timeOutside: s.timeOutside,
-                disqualifiedReason: s.disqualifiedReason,
-                autoSubmitReason: s.autoSubmitReason,
-                submission: s.submission
-            }))
-        });
-    } catch (error) {
-        console.error("Get exam history error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Get exam analytics for teacher
- * GET /api/exams/analytics/:assignmentId
- */
-export const getExamAnalytics = async (req, res) => {
-    try {
-        const { assignmentId } = req.params;
-
-        // Verify teacher owns the assignment
-        const assignment = await Assignment.findById(assignmentId);
-
-        if (!assignment) {
-            return res.status(404).json({ message: "Assignment not found" });
-        }
-
-        if (assignment.instructor.toString() !== req.user.id && req.user.role !== "admin") {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        // Get all exam sessions for this assignment
-        const sessions = await ExamSession.find({
-            assignment: assignmentId
-        })
-            .populate("student", "name email")
-            .sort({ startTime: -1 });
-
-        // Calculate analytics
-        const analytics = {
-            totalSessions: sessions.length,
-            inProgress: sessions.filter(s => s.status === "IN_PROGRESS").length,
-            submitted: sessions.filter(s => s.status === "SUBMITTED").length,
-            autoSubmitted: sessions.filter(s => s.status === "AUTO_SUBMITTED").length,
-            disqualified: sessions.filter(s => s.status === "DISQUALIFIED").length,
-            expired: sessions.filter(s => s.status === "EXPIRED").length,
-            
-            // Violation statistics
-            totalViolations: sessions.reduce((sum, s) => sum + s.totalViolations, 0),
-            avgViolations: sessions.length > 0 
-                ? Math.round(sessions.reduce((sum, s) => sum + s.totalViolations, 0) / sessions.length * 100) / 100 
-                : 0,
-            avgTimeOutside: sessions.length > 0 
-                ? Math.round(sessions.reduce((sum, s) => sum + s.timeOutside, 0) / sessions.length) 
-                : 0,
-            
-            // Session details
-            sessions: sessions.map(s => ({
-                id: s._id,
-                student: s.student,
-                status: s.status,
-                startTime: s.startTime,
-                endTime: s.endTime,
-                totalViolations: s.totalViolations,
-                tabSwitchCount: s.tabSwitchCount,
-                timeOutside: s.timeOutside,
-                disqualifiedReason: s.disqualifiedReason
-            }))
-        };
-
-        res.status(200).json({
-            success: true,
-            analytics
-        });
-    } catch (error) {
-        console.error("Get exam analytics error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Auto-submit all expired exams (cron job helper)
+ * Auto-submit expired exams (cron job)
  * POST /api/exams/cron/expire
  */
 export const autoSubmitExpired = async (req, res) => {
     try {
         const now = new Date();
 
-        // Find all in-progress exams that have expired
-        const expiredSessions = await ExamSession.find({
+        const expiredAttempts = await ExamAttempt.find({
             status: "IN_PROGRESS",
             endTime: { $lt: now }
         });
 
         let submitted = 0;
 
-        for (const session of expiredSessions) {
-            // Update session status
-            session.status = "AUTO_SUBMITTED";
-            session.autoSubmitReason = "TIME_EXPIRED";
-            await session.save();
+        for (const attempt of expiredAttempts) {
+            attempt.status = "AUTO_SUBMITTED";
+            attempt.autoSubmitReason = "TIME_EXPIRED";
+            attempt.submittedAt = now;
+            attempt.timeTaken = Math.round((now - attempt.startTime) / 1000);
+            await attempt.save();
             submitted++;
         }
 
@@ -625,36 +1012,3 @@ export const autoSubmitExpired = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
-/**
- * Reset exam session (for testing/admin)
- * POST /api/exams/:examId/reset
- */
-export const resetExamSession = async (req, res) => {
-    try {
-        const { examId } = req.params;
-
-        const session = await ExamSession.findById(examId);
-
-        if (!session) {
-            return res.status(404).json({ message: "Exam session not found" });
-        }
-
-        // Only allow reset for non-submitted sessions
-        if (["SUBMITTED", "AUTO_SUBMITTED"].includes(session.status)) {
-            return res.status(400).json({ message: "Cannot reset submitted exam" });
-        }
-
-        // Delete session
-        await session.deleteOne();
-
-        res.status(200).json({
-            success: true,
-            message: "Exam session deleted successfully"
-        });
-    } catch (error) {
-        console.error("Reset exam session error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-

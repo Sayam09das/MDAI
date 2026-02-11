@@ -1,15 +1,21 @@
 import express from "express";
 import {
-    startExam,
-    submitExam,
-    heartbeat,
+    createExam,
+    getTeacherExams,
+    getExamById,
+    updateExam,
+    deleteExam,
+    togglePublishExam,
+    getExamResults,
+    getExamStats,
+    startExamAttempt,
+    submitExamAttempt,
+    sendHeartbeat,
     reportViolation,
-    getExamStatus,
-    getActiveExams,
-    getExamHistory,
-    getExamAnalytics,
-    autoSubmitExpired,
-    resetExamSession
+    getMyAttempts,
+    getMyExamAttempts,
+    getStudentExams,
+    autoSubmitExpired
 } from "../controllers/exam.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 
@@ -18,21 +24,39 @@ const router = express.Router();
 // All routes require authentication
 router.use(protect);
 
-// Student routes
-router.post("/:assignmentId/start", startExam);
-router.post("/:examId/submit", submitExam);
-router.post("/:examId/heartbeat", heartbeat);
-router.post("/:examId/violation", reportViolation);
-router.get("/:examId/status", getExamStatus);
-router.get("/student/active", getActiveExams);
-router.get("/student/history", getExamHistory);
+// ==================== TEACHER ROUTES ====================
 
-// Teacher routes
-router.get("/analytics/:assignmentId", teacherOnly, getExamAnalytics);
+// Exam CRUD
+router.post("/", teacherOnly, createExam);
+router.get("/teacher", teacherOnly, getTeacherExams);
+router.get("/teacher/stats", teacherOnly, getExamStats);
+router.get("/:id", getExamById);
+router.put("/:id", teacherOnly, updateExam);
+router.delete("/:id", teacherOnly, deleteExam);
+router.patch("/:id/publish", teacherOnly, togglePublishExam);
 
-// Admin/Maintenance routes
+// Results and Analytics
+router.get("/:id/results", teacherOnly, getExamResults);
+
+// ==================== STUDENT ROUTES ====================
+
+// Available exams for student
+router.get("/student/available", getStudentExams);
+
+// Student attempts
+router.get("/my-attempts", getMyAttempts);
+router.get("/:examId/my-attempts", getMyExamAttempts);
+
+// Start exam attempt
+router.post("/:examId/start", startExamAttempt);
+
+// Exam attempt operations
+router.post("/attempt/:attemptId/heartbeat", sendHeartbeat);
+router.post("/attempt/:attemptId/violation", reportViolation);
+router.post("/attempt/:attemptId/submit", submitExamAttempt);
+
+// ==================== ADMIN/CRON ROUTES ====================
+
 router.post("/cron/expire", autoSubmitExpired);
-router.post("/:examId/reset", resetExamSession);
 
 export default router;
-
