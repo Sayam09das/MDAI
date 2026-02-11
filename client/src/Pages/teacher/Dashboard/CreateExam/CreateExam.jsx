@@ -214,22 +214,36 @@ const CreateExam = () => {
 
         try {
             const payload = {
-                ...examData,
+                title: examData.title,
+                description: examData.description,
+                course: examData.course,
+                duration: examData.duration,
+                passingMarks: examData.passingMarks,
+                shuffleQuestions: examData.shuffleQuestions,
+                shuffleOptions: examData.shuffleOptions,
+                showResults: examData.showResults,
+                allowReview: examData.allowReview,
+                startDate: examData.startDate || null,
+                endDate: examData.endDate || null,
+                maxAttempts: examData.maxAttempts,
+                security: examData.security,
                 questions: questions.map((q, index) => ({
-                    ...q,
+                    type: q.type,
+                    question: q.question,
+                    correctAnswer: q.correctAnswer || '',
+                    marks: q.marks || 1,
+                    explanation: q.explanation || '',
                     order: index,
-                    options: q.options.map(opt => ({
-                        text: opt.text,
-                        isCorrect: opt.isCorrect
-                    }))
+                    options: q.options && q.options.length > 0 
+                        ? q.options.map(opt => ({
+                            text: opt.text || '',
+                            isCorrect: opt.isCorrect || false
+                        }))
+                        : []
                 })),
                 isPublished: publish,
                 status: publish ? 'active' : 'draft'
             };
-
-            // Remove unnecessary fields
-            delete payload.durationHours;
-            delete payload.durationMinutes;
 
             const response = await createExam(payload);
 
