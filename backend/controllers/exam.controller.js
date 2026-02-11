@@ -99,7 +99,13 @@ export const getTeacherExams = async (req, res) => {
             .populate("course", "title")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({ success: true, exams });
+        // Transform exams to include id field for frontend compatibility
+        const transformedExams = exams.map(exam => ({
+            ...exam.toObject(),
+            id: exam._id
+        }));
+
+        res.status(200).json({ success: true, exams: transformedExams });
     } catch (error) {
         console.error("Get teacher exams error:", error);
         res.status(500).json({ message: error.message });
@@ -157,7 +163,13 @@ export const getExamById = async (req, res) => {
             return res.status(200).json({ success: true, exam: examForStudent });
         }
 
-        res.status(200).json({ success: true, exam });
+        // Transform exam to include id field for frontend compatibility
+        const examWithId = {
+            ...exam.toObject(),
+            id: exam._id
+        };
+
+        res.status(200).json({ success: true, exam: examWithId });
     } catch (error) {
         console.error("Get exam error:", error);
         res.status(500).json({ message: error.message });
