@@ -151,8 +151,9 @@ const App = () => {
           <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
           <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
           
-          {/* Exam Route - Protected by StudentProtectedRoute */}
-          <Route path="exam/:assignmentId" element={<ExamPage />} />
+          {/* Exam Routes - Students view and take exams */}
+          <Route path="exams" element={<ExamPage />} />
+          <Route path="exams/:examId" element={<ExamPage />} />
         </Route>
 
         {/* Teacher Routes */}
@@ -188,7 +189,7 @@ const App = () => {
           <Route path="assignments/:assignmentId/submissions" element={<GradeSubmission />} />
           <Route path="assignments/:assignmentId/analytics" element={<AssignmentAnalytics />} />
           
-          {/* Exam Management Route */}
+          {/* Exam Management Routes */}
           <Route path="exams" element={<ReturnTeacherExams />} />
           <Route path="create-exam" element={<CreateExam />} />
           <Route path="exams/:examId/results" element={<ExamResults />} />
