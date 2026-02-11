@@ -117,22 +117,6 @@ const examSchema = new mongoose.Schema(
             default: null
         },
 
-        // Duration - can be set in minutes or hours:minutes format
-        duration: {
-            type: Number, // in minutes
-            required: true
-        },
-
-        durationHours: {
-            type: Number, // hours portion (0-23)
-            default: 0
-        },
-
-        durationMinutes: {
-            type: Number, // minutes portion (0-59)
-            default: 0
-        },
-
         isPublished: {
             type: Boolean,
             default: false

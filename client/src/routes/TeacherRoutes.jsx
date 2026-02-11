@@ -25,6 +25,8 @@ import AssignmentAnalytics from "../Pages/teacher/Dashboard/AssignmentAnalytics/
 import EditCourse from "../Pages/teacher/Dashboard/MainCoursesDashboard/EditCourse";
 import ReturnTeacherExams from "../Pages/teacher/Dashboard/TeacherExams/ReturnTeacherExams";
 import CreateExam from "../Pages/teacher/Dashboard/CreateExam/CreateExam";
+import ExamResults from "../Pages/teacher/Dashboard/ExamResults/ExamResults";
+import ExamAnalytics from "../Pages/teacher/Dashboard/ExamAnalytics/ExamAnalytics";
 
 // Lazy imports
 const ReturnDashboard = lazy(() =>
@@ -76,6 +78,8 @@ const TeacherRoutes = () => {
                     {/* Exam Management Routes */}
                     <Route path="exams" element={<ReturnTeacherExams />} />
                     <Route path="create-exam" element={<CreateExam />} />
+                    <Route path="exams/:examId/results" element={<ExamResults />} />
+                    <Route path="exams/:examId/analytics" element={<ExamAnalytics />} />
                 </Route>
             </Routes>
         </Suspense>
