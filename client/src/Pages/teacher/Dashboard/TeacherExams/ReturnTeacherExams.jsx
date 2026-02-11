@@ -13,8 +13,8 @@ import {
     Users,
     Plus,
     RefreshCw,
-    Publish,
-    Unpublish
+    Check,
+    X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -435,12 +435,12 @@ const ReturnTeacherExams = () => {
                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                                                 ) : exam.status === 'draft' ? (
                                                     <>
-                                                        <Publish className="w-4 h-4" />
+                                                        <Check className="w-4 h-4" />
                                                         Publish
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Unpublish className="w-4 h-4" />
+                                                        <X className="w-4 h-4" />
                                                         Unpublish
                                                     </>
                                                 )}
