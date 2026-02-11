@@ -12,7 +12,9 @@ import {
     Eye,
     Users,
     Plus,
-    RefreshCw
+    RefreshCw,
+    Publish,
+    Unpublish
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -26,6 +28,7 @@ const ReturnTeacherExams = () => {
     const [selectedExam, setSelectedExam] = useState(null);
     const [examStats, setExamStats] = useState(null);
     const [error, setError] = useState("");
+    const [actionLoading, setActionLoading] = useState(null); // exam ID being processed
 
     useEffect(() => {
         fetchExams();
@@ -99,6 +102,49 @@ const ReturnTeacherExams = () => {
             case 'closed': return 'bg-red-100 text-red-700';
             case 'archived': return 'bg-purple-100 text-purple-700';
             default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    const getStatusLabel = (exam) => {
+        if (exam.status === 'draft') return 'Draft';
+        if (exam.status === 'scheduled') return 'Scheduled';
+        if (exam.status === 'active') return 'Active';
+        if (exam.status === 'closed') return 'Closed';
+        if (exam.status === 'archived') return 'Archived';
+        return exam.status?.charAt(0).toUpperCase() + exam.status?.slice(1) || 'Unknown';
+    };
+
+    const handleTogglePublish = async (examId, currentStatus) => {
+        const newStatus = currentStatus === 'draft' ? 'active' : 'draft';
+        const actionText = newStatus === 'active' ? 'publish' : 'unpublish';
+        
+        if (!window.confirm(`Are you sure you want to ${actionText} this exam?`)) {
+            return;
+        }
+
+        setActionLoading(examId);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/exams/${examId}/publish`, {
+                method: 'PATCH',
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Refresh exams list
+                fetchExams();
+                setError("");
+            } else {
+                setError(data.message || `Failed to ${actionText} exam`);
+            }
+        } catch (err) {
+            console.error(`Error ${actionText}ing exam:`, err);
+            setError(`Failed to ${actionText} exam`);
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -373,7 +419,34 @@ const ReturnTeacherExams = () => {
                                             </div>
                                         )}
 
-                                        <div className="flex gap-2">
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                                            {/* Publish/Unpublish Button */}
+                                            <button
+                                                onClick={() => handleTogglePublish(exam.id, exam.status)}
+                                                disabled={actionLoading === exam.id}
+                                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                                                    exam.status === 'draft'
+                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                                } disabled:opacity-50`}
+                                            >
+                                                {actionLoading === exam.id ? (
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                                ) : exam.status === 'draft' ? (
+                                                    <>
+                                                        <Publish className="w-4 h-4" />
+                                                        Publish
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Unpublish className="w-4 h-4" />
+                                                        Unpublish
+                                                    </>
+                                                )}
+                                            </button>
+                                            
+                                            {/* Analytics Button */}
                                             <Link
                                                 to={`/teacher-dashboard/exams/${exam.id}/analytics`}
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
@@ -381,6 +454,8 @@ const ReturnTeacherExams = () => {
                                                 <BarChart3 className="w-4 h-4" />
                                                 Analytics
                                             </Link>
+                                            
+                                            {/* Results Button */}
                                             <Link
                                                 to={`/teacher-dashboard/exams/${exam.id}/results`}
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium hover:bg-green-200 transition-colors"

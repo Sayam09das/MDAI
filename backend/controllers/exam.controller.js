@@ -40,6 +40,21 @@ export const createExam = async (req, res) => {
         // Calculate total marks from questions
         const totalMarks = questions.reduce((sum, q) => sum + (q.marks || 0), 0);
 
+        const now = new Date();
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        
+        // Determine initial status based on isPublished flag
+        const isPublished = req.body.isPublished || false;
+        let status = "draft";
+        let publishedAt = null;
+        
+        if (isPublished) {
+            publishedAt = now;
+            // Determine if scheduled or active based on startDate
+            status = start && start > now ? "scheduled" : "active";
+        }
+
         const exam = await Exam.create({
             title,
             description,
@@ -62,7 +77,10 @@ export const createExam = async (req, res) => {
                 requireFullscreen: true,
                 maxTimeOutside: 5,
                 autoSubmitOnViolation: false
-            }
+            },
+            isPublished,
+            status,
+            publishedAt
         });
 
         res.status(201).json({
