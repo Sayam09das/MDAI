@@ -1063,3 +1063,233 @@ export const autoSubmitExpired = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+/**
+ * Upload file for exam answer
+ * POST /api/exams/attempt/:attemptId/upload
+ */
+export const uploadExamFile = async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const { questionId } = req.body;
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        // Validate file type
+        if (req.file.mimetype !== "application/pdf") {
+            return res.status(400).json({ message: "Only PDF files are allowed" });
+        }
+
+        // Validate file size (max 10MB)
+        if (req.file.size > 10 * 1024 * 1024) {
+            return res.status(400).json({ message: "File size must be less than 10MB" });
+        }
+
+        const attempt = await ExamAttempt.findById(attemptId);
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        // Verify ownership
+        if (attempt.student.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Check if exam is still in progress
+        if (!["IN_PROGRESS", "NOT_STARTED"].includes(attempt.status)) {
+            return res.status(400).json({ message: "Exam is no longer in progress" });
+        }
+
+        // Find and update the answer with the file
+        const answerIndex = attempt.answers.findIndex(
+            a => a.questionId.toString() === questionId
+        );
+
+        if (answerIndex === -1) {
+            // Create new answer entry if not exists
+            attempt.answers.push({
+                questionId,
+                uploadedFile: {
+                    filename: req.file.filename || `exam_${attemptId}_${questionId}.pdf`,
+                    originalName: req.file.originalname,
+                    contentType: req.file.mimetype,
+                    size: req.file.size,
+                    data: req.file.buffer,
+                    uploadedAt: new Date()
+                }
+            });
+        } else {
+            // Update existing answer with file
+            attempt.answers[answerIndex].uploadedFile = {
+                filename: req.file.filename || `exam_${attemptId}_${questionId}.pdf`,
+                originalName: req.file.originalname,
+                contentType: req.file.mimetype,
+                size: req.file.size,
+                data: req.file.buffer,
+                uploadedAt: new Date()
+            };
+        }
+
+        await attempt.save();
+
+        res.status(200).json({
+            success: true,
+            message: "File uploaded successfully",
+            file: {
+                originalName: req.file.originalname,
+                size: req.file.size,
+                uploadedAt: new Date()
+            }
+        });
+    } catch (error) {
+        console.error("Upload exam file error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Download uploaded exam file
+ * GET /api/exams/attempt/:attemptId/file/:questionId
+ */
+export const downloadExamFile = async (req, res) => {
+    try {
+        const { attemptId, questionId } = req.params;
+
+        const attempt = await ExamAttempt.findById(attemptId);
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        // Find the answer with the file
+        const answer = attempt.answers.find(
+            a => a.questionId.toString() === questionId
+        );
+
+        if (!answer || !answer.uploadedFile || !answer.uploadedFile.data) {
+            return res.status(404).json({ message: "File not found" });
+        }
+
+        const file = answer.uploadedFile;
+
+        // Set response headers for file download
+        res.set({
+            "Content-Type": file.contentType || "application/pdf",
+            "Content-Disposition": `attachment; filename="${file.originalName || "exam_answer.pdf"}"`,
+            "Content-Length": file.size
+        });
+
+        // Send the file
+        res.send(file.data);
+    } catch (error) {
+        console.error("Download exam file error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Grade file upload question
+ * POST /api/exams/attempt/:attemptId/grade
+ */
+export const gradeExamAnswer = async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const { questionId, marksObtained, gradingNotes } = req.body;
+
+        if (marksObtained === undefined || marksObtained === null) {
+            return res.status(400).json({ message: "Marks are required" });
+        }
+
+        const attempt = await ExamAttempt.findById(attemptId)
+            .populate("exam");
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        // Verify teacher owns the exam
+        const exam = attempt.exam;
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Find and update the answer
+        const answerIndex = attempt.answers.findIndex(
+            a => a.questionId.toString() === questionId
+        );
+
+        if (answerIndex === -1) {
+            return res.status(404).json({ message: "Answer not found for this question" });
+        }
+
+        // Get the question to verify max marks
+        const question = exam.questions.find(
+            q => q._id.toString() === questionId
+        );
+
+        if (!question) {
+            return res.status(404).json({ message: "Question not found" });
+        }
+
+        // Validate marks
+        if (marksObtained < 0 || marksObtained > question.marks) {
+            return res.status(400).json({
+                message: `Marks must be between 0 and ${question.marks}`
+            });
+        }
+
+        // Update the answer with grading
+        attempt.answers[answerIndex].marksObtained = marksObtained;
+        attempt.answers[answerIndex].isGraded = true;
+        attempt.answers[answerIndex].gradingNotes = gradingNotes || "";
+
+        // Recalculate total marks
+        let obtainedMarks = 0;
+        let totalMarks = 0;
+
+        for (const answer of attempt.answers) {
+            // Add marks for file upload questions (manually graded)
+            if (answer.uploadedFile && answer.isGraded) {
+                obtainedMarks += answer.marksObtained || 0;
+            }
+            // Add marks for auto-graded questions
+            else if (answer.isCorrect) {
+                obtainedMarks += answer.marksObtained || 0;
+            }
+        }
+
+        // Get total marks from exam
+        totalMarks = exam.totalMarks;
+
+        attempt.obtainedMarks = obtainedMarks;
+        attempt.totalMarks = totalMarks;
+        attempt.percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100 * 100) / 100 : 0;
+        attempt.passed = attempt.percentage >= exam.passingMarks;
+
+        await attempt.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Answer graded successfully",
+            grade: {
+                questionId,
+                marksObtained,
+                totalMarks: question.marks,
+                gradingNotes,
+                isGraded: true
+            },
+            attempt: {
+                obtainedMarks: attempt.obtainedMarks,
+                totalMarks: attempt.totalMarks,
+                percentage: attempt.percentage,
+                passed: attempt.passed
+            }
+        });
+    } catch (error) {
+        console.error("Grade exam answer error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};

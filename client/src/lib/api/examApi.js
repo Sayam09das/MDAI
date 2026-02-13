@@ -389,6 +389,81 @@ export const getExamSession = (attemptId) => {
     return fetchWithQueue(`/api/exams/attempt/${attemptId}/session`);
 };
 
+// ================= FILE UPLOAD APIs =================
+
+/**
+ * Upload file for exam answer (multipart/form-data)
+ */
+export const uploadExamFile = async (attemptId, questionId, file) => {
+    const url = `${API_BASE_URL}/api/exams/attempt/${attemptId}/upload`;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('questionId', questionId);
+
+    const token = getAuthToken();
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': token
+        },
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw {
+            status: response.status,
+            message: data.message || "File upload failed"
+        };
+    }
+
+    return data;
+};
+
+/**
+ * Download uploaded exam file
+ */
+export const downloadExamFile = async (attemptId, questionId) => {
+    const url = `${API_BASE_URL}/api/exams/attempt/${attemptId}/file/${questionId}`;
+    
+    const token = getAuthToken();
+    
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token
+        }
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        throw {
+            status: response.status,
+            message: data.message || "File download failed"
+        };
+    }
+
+    // Return the blob
+    return response.blob();
+};
+
+/**
+ * Grade file upload question
+ */
+export const gradeExamAnswer = async (attemptId, questionId, marksObtained, gradingNotes = '') => {
+    return fetchWithQueue(`/api/exams/attempt/${attemptId}/grade`, {
+        method: 'POST',
+        body: JSON.stringify({
+            questionId,
+            marksObtained,
+            gradingNotes
+        })
+    });
+};
+
 // ================= EXPORT =================
 
 export default {
@@ -416,6 +491,11 @@ export default {
     previewExam,
     validateExamAccess,
     getExamSession,
+    
+    // File Upload APIs
+    uploadExamFile,
+    downloadExamFile,
+    gradeExamAnswer,
     
     // Config (exposed for testing)
     API_CONFIG,

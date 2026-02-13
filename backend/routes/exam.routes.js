@@ -15,9 +15,13 @@ import {
     getMyAttempts,
     getMyExamAttempts,
     getStudentExams,
-    autoSubmitExpired
+    autoSubmitExpired,
+    uploadExamFile,
+    downloadExamFile,
+    gradeExamAnswer
 } from "../controllers/exam.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
+import { examUpload } from "../middlewares/multer.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -93,5 +97,29 @@ router.get("/:id/results", teacherOnly, getExamResults);
 // ==================== ADMIN/CRON ROUTES ====================
 
 router.post("/cron/expire", autoSubmitExpired);
+
+// ==================== FILE UPLOAD ROUTES ====================
+
+// Upload file for exam answer (student)
+router.post(
+    "/attempt/:attemptId/upload",
+    protect,
+    examUpload.single("file"),
+    uploadExamFile
+);
+
+// Download uploaded file (teacher or student)
+router.get(
+    "/attempt/:attemptId/file/:questionId",
+    protect,
+    downloadExamFile
+);
+
+// Grade file upload question (teacher)
+router.post(
+    "/attempt/:attemptId/grade",
+    teacherOnly,
+    gradeExamAnswer
+);
 
 export default router;

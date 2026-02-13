@@ -14,7 +14,7 @@ const optionSchema = new mongoose.Schema({
 const questionSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ["multiple_choice", "true_false", "short_answer", "essay"],
+        enum: ["multiple_choice", "true_false", "short_answer", "essay", "file_upload"],
         required: true
     },
     question: {
@@ -38,6 +38,15 @@ const questionSchema = new mongoose.Schema({
     order: {
         type: Number,
         default: 0
+    },
+    // For file_upload questions
+    allowedFileTypes: {
+        type: [String],
+        default: ["application/pdf"]
+    },
+    maxFileSize: {
+        type: Number, // in MB
+        default: 10
     }
 }, { _id: true });
 

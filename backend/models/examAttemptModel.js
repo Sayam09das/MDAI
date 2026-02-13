@@ -24,6 +24,46 @@ const answerSchema = new mongoose.Schema({
     answeredAt: {
         type: Date,
         default: Date.now
+    },
+    // File upload support for exam answers
+    uploadedFile: {
+        filename: {
+            type: String,
+            default: ""
+        },
+        originalName: {
+            type: String,
+            default: ""
+        },
+        contentType: {
+            type: String,
+            default: "application/pdf"
+        },
+        size: {
+            type: Number,
+            default: 0
+        },
+        data: {
+            type: Buffer,
+            default: null
+        },
+        url: {
+            type: String,
+            default: ""
+        },
+        uploadedAt: {
+            type: Date,
+            default: null
+        }
+    },
+    // Manual grading status for file upload questions
+    isGraded: {
+        type: Boolean,
+        default: false
+    },
+    gradingNotes: {
+        type: String,
+        default: ""
     }
 }, { _id: false });
 

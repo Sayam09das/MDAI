@@ -19,9 +19,12 @@ import {
     Timer,
     BookOpen,
     Users,
-    Calendar
+    Calendar,
+    Upload,
+    X,
+    File
 } from 'lucide-react';
-import { getStudentExams, startExamAttempt, getMyAttempts } from '../../../lib/api/examApi';
+import { getStudentExams, startExamAttempt, getMyAttempts, uploadExamFile } from '../../../lib/api/examApi';
 import useExamSecurity from '../../../hooks/useExamSecurity';
 
 const ExamPage = () => {
@@ -46,6 +49,10 @@ const ExamPage = () => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
     const [questionStatus, setQuestionStatus] = useState({});
+
+    // File upload state
+    const [uploadedFiles, setUploadedFiles] = useState({});
+    const [uploadingFile, setUploadingFile] = useState(null);
 
     // Security hook
     const security = useExamSecurity(examId, attemptId);
@@ -135,6 +142,91 @@ const ExamPage = () => {
 
     const jumpToQuestion = (index) => {
         setCurrentQuestion(index);
+    };
+
+    // Handle file upload for file_upload question type
+    const handleFileUpload = async (event, questionId) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+            setError('Only PDF files are allowed');
+            return;
+        }
+
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            setError('File size must be less than 10MB');
+            return;
+        }
+
+        setUploadingFile(questionId);
+
+        try {
+            // Upload file to server
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('questionId', questionId);
+            formData.append('attemptId', attemptId);
+
+            const response = await uploadExamFile(attemptId, formData);
+
+            if (response.success) {
+                // Store file info locally
+                setUploadedFiles(prev => ({
+                    ...prev,
+                    [questionId]: {
+                        name: file.name,
+                        size: file.size,
+                        path: response.filePath
+                    }
+                }));
+
+                // Mark as answered
+                setQuestionStatus(prev => ({
+                    ...prev,
+                    [questionId]: 'answered'
+                }));
+
+                // Update answers state
+                setAnswers(prev => ({
+                    ...prev,
+                    [questionId]: {
+                        fileUploaded: true,
+                        filePath: response.filePath,
+                        fileName: file.name
+                    }
+                }));
+            } else {
+                setError(response.message || 'Failed to upload file');
+            }
+        } catch (err) {
+            setError('Failed to upload file');
+            console.error('File upload error:', err);
+        } finally {
+            setUploadingFile(null);
+        }
+    };
+
+    // Remove uploaded file
+    const removeUploadedFile = (questionId) => {
+        setUploadedFiles(prev => {
+            const newFiles = { ...prev };
+            delete newFiles[questionId];
+            return newFiles;
+        });
+
+        setAnswers(prev => {
+            const newAnswers = { ...prev };
+            delete newAnswers[questionId];
+            return newAnswers;
+        });
+
+        setQuestionStatus(prev => ({
+            ...prev,
+            [questionId]: 'unanswered'
+        }));
     };
 
     // Submit exam
@@ -411,6 +503,62 @@ const ExamPage = () => {
                                         </label>
                                     ))}
                                 </div>
+
+                                {/* File Upload Question Type */}
+                                {questions[currentQuestion].type === 'file_upload' && (
+                                    <div className="mt-4">
+                                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors">
+                                            <input
+                                                type="file"
+                                                accept="application/pdf"
+                                                onChange={(e) => handleFileUpload(e, questions[currentQuestion]._id)}
+                                                className="hidden"
+                                                id={`file-upload-${questions[currentQuestion]._id}`}
+                                                disabled={security.submitting}
+                                            />
+                                            <label
+                                                htmlFor={`file-upload-${questions[currentQuestion]._id}`}
+                                                className="cursor-pointer flex flex-col items-center"
+                                            >
+                                                <Upload className="w-12 h-12 text-indigo-400 mb-3" />
+                                                <p className="text-lg font-medium text-gray-700 mb-1">
+                                                    Click to upload PDF
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Maximum file size: 10MB
+                                                </p>
+                                            </label>
+                                            
+                                            {/* Show uploaded file info */}
+                                            {uploadedFiles[questions[currentQuestion]._id] && (
+                                                <div className="mt-4 bg-green-50 rounded-lg p-3 flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <File className="w-5 h-5 text-green-600" />
+                                                        <span className="text-sm font-medium text-green-700">
+                                                            {uploadedFiles[questions[currentQuestion]._id].name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            ({(uploadedFiles[questions[currentQuestion]._id].size / 1024 / 1024).toFixed(2)} MB)
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => removeUploadedFile(questions[currentQuestion]._id)}
+                                                        className="p-1 text-red-500 hover:bg-red-100 rounded"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
+                                            {uploadingFile === questions[currentQuestion]._id && (
+                                                <div className="mt-4">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                                                    <p className="text-sm text-gray-500 mt-2">Uploading...</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Navigation Buttons */}
                                 <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">

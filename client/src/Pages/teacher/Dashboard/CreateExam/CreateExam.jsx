@@ -91,7 +91,8 @@ const CreateExam = () => {
         { value: 'multiple_choice', label: 'Multiple Choice', icon: List },
         { value: 'true_false', label: 'True/False', icon: Check },
         { value: 'short_answer', label: 'Short Answer', icon: Type },
-        { value: 'essay', label: 'Essay', icon: FileText }
+        { value: 'essay', label: 'Essay', icon: FileText },
+        { value: 'file_upload', label: 'File Upload (PDF)', icon: FileText }
     ];
 
     // Add new question
@@ -801,6 +802,14 @@ const CreateExam = () => {
                                             <div className="bg-gray-100 rounded-lg p-4 text-center">
                                                 <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                                                 <p className="text-gray-500">Essay question - Students will write their answer in a text area</p>
+                                            </div>
+                                        )}
+
+                                        {/* File Upload */}
+                                        {question.type === 'file_upload' && (
+                                            <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                                <FileText className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                                                <p className="text-gray-500">File upload question - Students will upload a PDF file (max 10MB)</p>
                                             </div>
                                         )}
 
