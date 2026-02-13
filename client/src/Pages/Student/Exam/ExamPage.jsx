@@ -230,16 +230,53 @@ const ExamPage = () => {
     };
 
     // Submit exam
-    const handleSubmitExam = async () => {
-        if (window.confirm('Are you sure you want to submit your exam?')) {
-            try {
-                const response = await security.submitExam();
-                if (response.success) {
-                    setExamCompleted(true);
+    // Submit exam with confirmation modal
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [submittingExam, setSubmittingExam] = useState(false);
+    const [answerFile, setAnswerFile] = useState(null);
+
+    const handleSubmitExamClick = () => {
+        setShowSubmitModal(true);
+    };
+
+    const handleFinalSubmit = async () => {
+        setSubmittingExam(true);
+        try {
+            // Upload answer file if provided
+            if (answerFile && attemptId) {
+                const formData = new FormData();
+                formData.append('file', answerFile);
+                formData.append('questionId', 'exam_answer');
+                formData.append('attemptId', attemptId);
+                
+                try {
+                    await uploadExamFile(attemptId, formData);
+                } catch (uploadError) {
+                    console.error('File upload error:', uploadError);
+                    // Continue with exam submission even if file upload fails
                 }
-            } catch (err) {
-                setError('Failed to submit exam');
             }
+
+            const response = await security.submitExam();
+            if (response.success) {
+                setExamCompleted(true);
+                setShowSubmitModal(false);
+            }
+        } catch (err) {
+            setError('Failed to submit exam');
+        } finally {
+            setSubmittingExam(false);
+        }
+    };
+
+    const handleAnswerFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 10 * 1024 * 1024) {
+                setError('File size must be less than 10MB');
+                return;
+            }
+            setAnswerFile(file);
         }
     };
 
@@ -399,7 +436,7 @@ const ExamPage = () => {
                             
                             {/* Submit Button */}
                             <button
-                                onClick={handleSubmitExam}
+                                onClick={handleSubmitExamClick}
                                 disabled={security.submitting}
                                 className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50"
                             >
@@ -581,7 +618,7 @@ const ExamPage = () => {
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={handleSubmitExam}
+                                            onClick={handleSubmitExamClick}
                                             disabled={security.submitting}
                                             className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
                                         >
@@ -619,6 +656,124 @@ const ExamPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Submit Exam Modal */}
+                {showSubmitModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                                <h2 className="text-xl font-bold">Submit Exam</h2>
+                                <button 
+                                    onClick={() => setShowSubmitModal(false)} 
+                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold mb-3">Upload Your Answer Sheet (Optional)</h3>
+                                    <p className="text-gray-600 text-sm mb-4">
+                                        You can upload a scanned copy of your answer sheet as a PDF file. 
+                                        This is optional but recommended for verification purposes.
+                                    </p>
+                                    
+                                    {/* File Upload Area */}
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors">
+                                        <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={handleAnswerFileChange}
+                                            className="hidden"
+                                            id="answer-file-upload"
+                                        />
+                                        <label
+                                            htmlFor="answer-file-upload"
+                                            className="cursor-pointer flex flex-col items-center"
+                                        >
+                                            <Upload className="w-12 h-12 text-indigo-400 mb-3" />
+                                            <p className="text-lg font-medium text-gray-700 mb-1">
+                                                Click to upload PDF
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                Maximum file size: 10MB
+                                            </p>
+                                        </label>
+
+                                        {/* Show selected file */}
+                                        {answerFile && (
+                                            <div className="mt-4 bg-green-50 rounded-lg p-3 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <File className="w-5 h-5 text-green-600" />
+                                                    <span className="text-sm font-medium text-green-700">
+                                                        {answerFile.name}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        ({(answerFile.size / 1024 / 1024).toFixed(2)} MB)
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setAnswerFile(null);
+                                                    }}
+                                                    className="p-1 text-red-500 hover:bg-red-100 rounded"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                    <h4 className="font-medium text-gray-700 mb-2">Exam Summary</h4>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                        <p>Total Questions: {totalQuestions}</p>
+                                        <p>Answered: {answeredCount}</p>
+                                        <p>Unanswered: {totalQuestions - answeredCount}</p>
+                                    </div>
+                                </div>
+
+                                {/* Warning */}
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <p className="text-yellow-700 text-sm">
+                                        ⚠️ Once submitted, you cannot change your answers. 
+                                        Make sure you have reviewed all questions before submitting.
+                                    </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowSubmitModal(false)}
+                                        className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleFinalSubmit}
+                                        disabled={submittingExam}
+                                        className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {submittingExam ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                Submitting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-5 h-5" />
+                                                Submit Exam
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
