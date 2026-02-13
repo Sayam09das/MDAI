@@ -117,7 +117,7 @@ export const getAssignmentSubmissions = async (req, res) => {
         }
 
         const submissions = await Submission.find({ assignment: assignmentId })
-            .populate("student", "name email profileImage")
+            .populate("student", "fullName email profileImage")
             .sort({ submittedAt: -1 });
 
         // Calculate stats
