@@ -173,6 +173,37 @@ const AssignmentDetail = () => {
         return <FileText className="w-5 h-5 text-blue-500" />;
     };
 
+    const handleDownload = async (attachmentIndex, filename) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(
+                `${BACKEND_URL}/api/assignments/${assignmentId}/download?attachmentIndex=${attachmentIndex}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to download file");
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Error downloading file:", error);
+            alert("Failed to download file");
+        }
+    };
+
     const filteredSubmissions = submissions.filter(sub => {
         if (statusFilter === "all") return true;
         if (statusFilter === "graded") return sub.status === "graded";
@@ -514,12 +545,10 @@ const AssignmentDetail = () => {
                             <h3 className="text-sm font-medium text-gray-500 mb-3">Assignment Materials</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {assignment.attachments.map((attachment, index) => (
-                                    <a
+                                    <button
                                         key={index}
-                                        href={attachment.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        onClick={() => handleDownload(index, attachment.originalName)}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left w-full"
                                     >
                                         <FileText className="w-8 h-8 text-indigo-600" />
                                         <div className="flex-1 min-w-0">
@@ -527,11 +556,11 @@ const AssignmentDetail = () => {
                                                 {attachment.originalName}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                {attachment.size ? (attachment.size / 1024 / 1024).toFixed(2) : "0"} MB
                                             </p>
                                         </div>
                                         <Download className="w-4 h-4 text-gray-400" />
-                                    </a>
+                                    </button>
                                 ))}
                             </div>
                         </div>

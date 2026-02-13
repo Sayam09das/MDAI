@@ -140,6 +140,37 @@ const GradeSubmission = () => {
         return <FileText className="w-5 h-5 text-blue-500" />;
     };
 
+    const handleDownload = async (submissionId, fileIndex, filename) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(
+                `${BACKEND_URL}/api/submissions/${submissionId}/download?fileIndex=${fileIndex}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to download file");
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Error downloading file:", error);
+            alert("Failed to download file");
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -428,18 +459,16 @@ const GradeSubmission = () => {
                                                                             {file.originalName}
                                                                         </p>
                                                                         <p className="text-xs text-gray-500">
-                                                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                                            {file.size ? (file.size / 1024 / 1024).toFixed(2) : "0"} MB
                                                                         </p>
                                                                     </div>
                                                                 </div>
-                                                                <a
-                                                                    href={file.url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
+                                                                <button
+                                                                    onClick={() => handleDownload(selectedSubmission._id, index, file.originalName)}
                                                                     className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                                                 >
                                                                     <Download className="w-5 h-5" />
-                                                                </a>
+                                                                </button>
                                                             </div>
                                                         ))}
                                                     </div>

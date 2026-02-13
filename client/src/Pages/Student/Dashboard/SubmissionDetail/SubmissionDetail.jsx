@@ -108,6 +108,42 @@ const SubmissionDetail = () => {
         return new Date() > new Date(assignment.dueDate);
     };
 
+    const handleDownload = async (type, index, filename) => {
+        try {
+            const token = localStorage.getItem("token");
+            let url = "";
+            
+            if (type === "assignment") {
+                url = `${BACKEND_URL}/api/assignments/${assignmentId}/download?attachmentIndex=${index}`;
+            } else if (type === "submission") {
+                url = `${BACKEND_URL}/api/submissions/${submission._id}/download?fileIndex=${index}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to download file");
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(downloadUrl);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Error downloading file:", error);
+            alert("Failed to download file");
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -252,12 +288,10 @@ const SubmissionDetail = () => {
                                         <p className="text-sm font-medium text-gray-500 mb-2">Assignment Materials</p>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {assignment.attachments.map((attachment, index) => (
-                                                <a
+                                                <button
                                                     key={index}
-                                                    href={attachment.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                                    onClick={() => handleDownload("assignment", index, attachment.originalName)}
+                                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left w-full"
                                                 >
                                                     {getFileIcon(attachment)}
                                                     <div className="flex-1 min-w-0">
@@ -265,11 +299,11 @@ const SubmissionDetail = () => {
                                                             {attachment.originalName}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                            {attachment.size ? (attachment.size / 1024 / 1024).toFixed(2) : "0"} MB
                                                         </p>
                                                     </div>
                                                     <Download className="w-4 h-4 text-gray-400" />
-                                                </a>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -306,19 +340,17 @@ const SubmissionDetail = () => {
                                                             {file.originalName}
                                                         </p>
                                                         <p className="text-sm text-gray-500">
-                                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                            {file.size ? (file.size / 1024 / 1024).toFixed(2) : "0"} MB
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <a
-                                                    href={file.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                <button
+                                                    onClick={() => handleDownload("submission", index, file.originalName)}
                                                     className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700"
                                                 >
                                                     <Download className="w-4 h-4" />
                                                     Download
-                                                </a>
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
