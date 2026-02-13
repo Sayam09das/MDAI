@@ -16,9 +16,13 @@ import {
     Calendar,
     Users,
     TrendingUp,
-    Shield
+    Shield,
+    File,
+    Upload,
+    Save,
+    X
 } from 'lucide-react';
-import { getExamResults, getExam, getExamStats } from '../../../../lib/api/examApi';
+import { getExamResults, getExam, getExamStats, getAttemptDetails, gradeExamAnswer, downloadExamFile } from '../../../../lib/api/examApi';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -33,6 +37,12 @@ const ExamResults = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
+    const [attemptDetails, setAttemptDetails] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [gradingQuestion, setGradingQuestion] = useState(null);
+    const [gradingMarks, setGradingMarks] = useState('');
+    const [gradingNotes, setGradingNotes] = useState('');
+    const [savingGrade, setSavingGrade] = useState(false);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -85,6 +95,100 @@ const ExamResults = () => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}m ${secs}s`;
+    };
+
+    // Handle viewing attempt details
+    const handleViewDetails = async (attempt) => {
+        setSelectedAttempt(attempt);
+        setLoadingDetails(true);
+        setAttemptDetails(null);
+        setGradingQuestion(null);
+        try {
+            const detailsRes = await getAttemptDetails(attempt.id);
+            if (detailsRes.success) {
+                setAttemptDetails(detailsRes);
+            }
+        } catch (err) {
+            console.error('Failed to load attempt details:', err);
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    // Handle downloading student uploaded file
+    const handleDownloadFile = async (questionId, fileName) => {
+        if (!selectedAttempt) return;
+        
+        try {
+            const blob = await downloadExamFile(selectedAttempt.id, questionId);
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName || 'answer_file.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error('Failed to download file:', err);
+            alert('Failed to download file');
+        }
+    };
+
+    // Handle grading question
+    const handleStartGrading = (question) => {
+        setGradingQuestion(question);
+        setGradingMarks(question.studentAnswer?.marksObtained?.toString() || '');
+        setGradingNotes(question.studentAnswer?.gradingNotes || '');
+    };
+
+    const handleSaveGrade = async () => {
+        if (!gradingQuestion || !selectedAttempt) return;
+        
+        const marks = parseFloat(gradingMarks);
+        if (isNaN(marks) || marks < 0 || marks > gradingQuestion.marks) {
+            alert(`Marks must be between 0 and ${gradingQuestion.marks}`);
+            return;
+        }
+
+        setSavingGrade(true);
+        try {
+            const res = await gradeExamAnswer(
+                selectedAttempt.id,
+                gradingQuestion._id,
+                marks,
+                gradingNotes
+            );
+            
+            if (res.success) {
+                // Refresh attempt details
+                const detailsRes = await getAttemptDetails(selectedAttempt.id);
+                if (detailsRes.success) {
+                    setAttemptDetails(detailsRes);
+                    // Update the selected attempt with new marks
+                    setSelectedAttempt(prev => ({
+                        ...prev,
+                        marks: res.attempt.obtainedMarks,
+                        percentage: res.attempt.percentage,
+                        passed: res.attempt.passed
+                    }));
+                }
+                setGradingQuestion(null);
+                alert('Grade saved successfully!');
+            }
+        } catch (err) {
+            console.error('Failed to save grade:', err);
+            alert('Failed to save grade');
+        } finally {
+            setSavingGrade(false);
+        }
+    };
+
+    const handleCloseGrading = () => {
+        setGradingQuestion(null);
+        setGradingMarks('');
+        setGradingNotes('');
     };
 
     const getStatusColor = (status) => {
@@ -376,7 +480,7 @@ const ExamResults = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <button
-                                                onClick={() => setSelectedAttempt(attempt)}
+                                                onClick={() => handleViewDetails(attempt)}
                                                 className="flex items-center gap-1 px-3 py-1 text-indigo-600 hover:bg-indigo-50 rounded-lg text-sm font-medium"
                                             >
                                                 <Eye className="w-4 h-4" />
@@ -405,7 +509,7 @@ const ExamResults = () => {
                         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold">Attempt Details</h2>
                             <button
-                                onClick={() => setSelectedAttempt(null)}
+                                onClick={() => { setSelectedAttempt(null); setAttemptDetails(null); }}
                                 className="p-2 hover:bg-gray-100 rounded-lg"
                             >
                                 <XCircle className="w-6 h-6" />
@@ -416,9 +520,17 @@ const ExamResults = () => {
                             <div className="mb-6">
                                 <h3 className="text-lg font-semibold mb-3">Student Information</h3>
                                 <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                                        <User className="w-6 h-6 text-indigo-600" />
-                                    </div>
+                                    {selectedAttempt.student?.profileImage?.url ? (
+                                        <img
+                                            src={selectedAttempt.student.profileImage.url}
+                                            alt={selectedAttempt.student.name || 'Student'}
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                                            <User className="w-6 h-6 text-indigo-600" />
+                                        </div>
+                                    )}
                                     <div>
                                         <p className="font-bold text-gray-800">{selectedAttempt.student?.name}</p>
                                         <p className="text-sm text-gray-500">{selectedAttempt.student?.email}</p>
@@ -447,32 +559,205 @@ const ExamResults = () => {
                                 </div>
                             </div>
 
-                            {/* Violations */}
-                            <div className="mb-6">
-                                <h3 className="text-lg font-semibold mb-3">Security Violations</h3>
-                                <div className="bg-yellow-50 rounded-lg p-4">
-                                    <div className="flex items-center gap-4 mb-3">
-                                        <span className="text-2xl font-bold text-yellow-600">
-                                            {selectedAttempt.totalViolations || 0}
-                                        </span>
-                                        <span className="text-gray-600">Total Violations</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-gray-500">Tab Switches</p>
-                                            <p className="font-medium">{selectedAttempt.tabSwitchCount || 0}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Time Outside</p>
-                                            <p className="font-medium">
-                                                {selectedAttempt.timeOutside 
-                                                    ? `${Math.round(selectedAttempt.timeOutside / 60000)} min`
-                                                    : '0 min'}
-                                            </p>
-                                        </div>
+                            {/* Loading Details */}
+                            {loadingDetails && (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                                    <p className="text-gray-500 mt-2">Loading details...</p>
+                                </div>
+                            )}
+
+                            {/* Questions & Answers */}
+                            {attemptDetails && !loadingDetails && (
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold mb-3">Questions & Answers</h3>
+                                    <div className="space-y-4">
+                                        {attemptDetails.questions?.map((question, index) => (
+                                            <div key={question._id} className="border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-500">Question {index + 1}</span>
+                                                        <span className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-full capitalize">
+                                                            {question.type.replace('_', ' ')}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-indigo-600">
+                                                        {question.studentAnswer?.marksObtained || 0}/{question.marks} marks
+                                                    </span>
+                                                </div>
+                                                
+                                                <p className="font-medium text-gray-800 mb-3">{question.question}</p>
+
+                                                {/* Multiple Choice / True-False */}
+                                                {question.type === 'multiple_choice' || question.type === 'true_false' ? (
+                                                    <div className="space-y-2">
+                                                        {question.options?.map((option) => {
+                                                            const isSelected = question.studentAnswer?.selectedOption === option._id;
+                                                            const isCorrect = option.isCorrect;
+                                                            
+                                                            return (
+                                                                <div
+                                                                    key={option._id}
+                                                                    className={`p-3 rounded-lg border ${
+                                                                        isCorrect ? 'border-green-500 bg-green-50' :
+                                                                        isSelected ? 'border-red-500 bg-red-50' :
+                                                                        'border-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        {isCorrect && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                                                        {isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-500" />}
+                                                                        <span className={isCorrect ? 'font-medium text-green-700' : ''}>
+                                                                            {option.text}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : null}
+
+                                                {/* Short Answer */}
+                                                {question.type === 'short_answer' && (
+                                                    <div className={`p-3 rounded-lg border ${
+                                                        question.studentAnswer?.isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                                                    }`}>
+                                                        <p className="text-sm text-gray-600 mb-1">Student's Answer:</p>
+                                                        <p className="font-medium">{question.studentAnswer?.textAnswer || 'No answer'}</p>
+                                                        {question.correctAnswer && (
+                                                            <p className="text-sm text-gray-500 mt-2">
+                                                                Correct Answer: {question.correctAnswer}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* File Upload Question */}
+                                                {question.type === 'file_upload' && (
+                                                    <div className="space-y-3">
+                                                        {question.studentAnswer?.uploadedFile ? (
+                                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <File className="w-8 h-8 text-blue-600" />
+                                                                        <div>
+                                                                            <p className="font-medium text-gray-800">
+                                                                                {question.studentAnswer.uploadedFile.originalName}
+                                                                            </p>
+                                                                            <p className="text-sm text-gray-500">
+                                                                                {question.studentAnswer.uploadedFile.size && 
+                                                                                    `${(question.studentAnswer.uploadedFile.size / 1024 / 1024).toFixed(2)} MB`}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => handleDownloadFile(
+                                                                            question._id, 
+                                                                            question.studentAnswer.uploadedFile.originalName
+                                                                        )}
+                                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                                                    >
+                                                                        <Download className="w-4 h-4" />
+                                                                        Download
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Grading Section */}
+                                                                <div className="mt-4 pt-4 border-t border-blue-200">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <span className="text-sm font-medium">
+                                                                            Status: {question.studentAnswer.isGraded ? (
+                                                                                <span className="text-green-600">Graded</span>
+                                                                            ) : (
+                                                                                <span className="text-yellow-600">Pending</span>
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="text-sm text-gray-500">
+                                                                            Max Marks: {question.marks}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {gradingQuestion?._id === question._id ? (
+                                                                        <div className="bg-white rounded-lg p-4">
+                                                                            <div className="grid grid-cols-2 gap-4 mb-3">
+                                                                                <div>
+                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                        Marks (0-{question.marks})
+                                                                                    </label>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        min="0"
+                                                                                        max={question.marks}
+                                                                                        value={gradingMarks}
+                                                                                        onChange={(e) => setGradingMarks(e.target.value)}
+                                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="mb-3">
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Feedback/Notes
+                                                                                </label>
+                                                                                <textarea
+                                                                                    value={gradingNotes}
+                                                                                    onChange={(e) => setGradingNotes(e.target.value)}
+                                                                                    rows={2}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                                                                    placeholder="Add feedback for the student..."
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex gap-2">
+                                                                                <button
+                                                                                    onClick={handleSaveGrade}
+                                                                                    disabled={savingGrade}
+                                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                                                                >
+                                                                                    {savingGrade ? (
+                                                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                                    ) : (
+                                                                                        <Save className="w-4 h-4" />
+                                                                                    )}
+                                                                                    Save Grade
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={handleCloseGrading}
+                                                                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                                                                                >
+                                                                                    Cancel
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => handleStartGrading(question)}
+                                                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                                                        >
+                                                                            <Upload className="w-4 h-4" />
+                                                                            {question.studentAnswer.isGraded ? 'Update Grade' : 'Grade'}
+                                                                        </button>
+                                                                    )}
+
+                                                                    {question.studentAnswer.isGraded && question.studentAnswer.gradingNotes && (
+                                                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                                                            <p className="text-sm text-gray-600">Feedback:</p>
+                                                                            <p className="text-sm">{question.studentAnswer.gradingNotes}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                                                                <File className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                                <p className="text-gray-500">No file uploaded</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Timing */}
                             <div className="mb-6">
