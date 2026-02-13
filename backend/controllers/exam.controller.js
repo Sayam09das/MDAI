@@ -873,12 +873,19 @@ export const getMyAttempts = async (req, res) => {
         const attempts = await ExamAttempt.find(query)
             .populate("exam", "title totalMarks passingMarks")
             .populate("course", "title")
+            .populate("student", "name email profileImage")
             .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
             attempts: attempts.map(a => ({
                 id: a._id,
+                student: {
+                    _id: a.student?._id,
+                    name: a.student?.name || 'Unknown',
+                    email: a.student?.email || '',
+                    profileImage: a.student?.profileImage || null
+                },
                 exam: a.exam,
                 course: a.course,
                 status: a.status,
@@ -889,7 +896,18 @@ export const getMyAttempts = async (req, res) => {
                 timeTaken: a.timeTaken,
                 totalViolations: a.totalViolations,
                 submittedAt: a.submittedAt,
-                attemptNumber: a.attemptNumber
+                attemptNumber: a.attemptNumber,
+                // Include answers with file upload info for students to review
+                answers: a.answers?.map(ans => ({
+                    questionId: ans.questionId,
+                    isCorrect: ans.isCorrect,
+                    marksObtained: ans.marksObtained,
+                    uploadedFile: ans.uploadedFile ? {
+                        originalName: ans.uploadedFile.originalName,
+                        isGraded: ans.isGraded,
+                        gradingNotes: ans.gradingNotes
+                    } : null
+                })) || []
             }))
         });
     } catch (error) {
@@ -1290,6 +1308,97 @@ export const gradeExamAnswer = async (req, res) => {
         });
     } catch (error) {
         console.error("Grade exam answer error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Get detailed exam attempt for teachers
+ * GET /api/exams/attempt/:attemptId/details
+ */
+export const getAttemptDetails = async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+
+        const attempt = await ExamAttempt.findById(attemptId)
+            .populate("exam", "title totalMarks passingMarks questions instructor")
+            .populate("student", "name email profileImage");
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        // Verify teacher owns the exam
+        const exam = attempt.exam;
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Format questions for teacher view (include correct answers)
+        const questionsWithAnswers = exam.questions.map(q => {
+            const studentAnswer = attempt.answers.find(
+                a => a.questionId.toString() === q._id.toString()
+            );
+            
+            return {
+                _id: q._id,
+                type: q.type,
+                question: q.question,
+                marks: q.marks,
+                options: q.options,
+                correctAnswer: q.correctAnswer,
+                studentAnswer: studentAnswer ? {
+                    selectedOption: studentAnswer.selectedOption,
+                    textAnswer: studentAnswer.textAnswer,
+                    isCorrect: studentAnswer.isCorrect,
+                    marksObtained: studentAnswer.marksObtained,
+                    uploadedFile: studentAnswer.uploadedFile ? {
+                        originalName: studentAnswer.uploadedFile.originalName,
+                        filename: studentAnswer.uploadedFile.filename,
+                        size: studentAnswer.uploadedFile.size,
+                        uploadedAt: studentAnswer.uploadedFile.uploadedAt,
+                        isGraded: studentAnswer.isGraded,
+                        gradingNotes: studentAnswer.gradingNotes
+                    } : null,
+                    isGraded: studentAnswer.isGraded,
+                    gradingNotes: studentAnswer.gradingNotes
+                } : null
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            attempt: {
+                id: attempt._id,
+                student: {
+                    _id: attempt.student._id,
+                    name: attempt.student.name,
+                    email: attempt.student.email,
+                    profileImage: attempt.student.profileImage
+                },
+                status: attempt.status,
+                obtainedMarks: attempt.obtainedMarks,
+                totalMarks: attempt.totalMarks,
+                percentage: attempt.percentage,
+                passed: attempt.passed,
+                timeTaken: attempt.timeTaken,
+                totalViolations: attempt.totalViolations,
+                tabSwitchCount: attempt.tabSwitchCount,
+                timeOutside: attempt.timeOutside,
+                startTime: attempt.startTime,
+                submittedAt: attempt.submittedAt,
+                attemptNumber: attempt.attemptNumber
+            },
+            exam: {
+                id: exam._id,
+                title: exam.title,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks
+            },
+            questions: questionsWithAnswers
+        });
+    } catch (error) {
+        console.error("Get attempt details error:", error);
         res.status(500).json({ message: error.message });
     }
 };

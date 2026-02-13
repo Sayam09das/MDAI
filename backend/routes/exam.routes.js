@@ -18,7 +18,8 @@ import {
     autoSubmitExpired,
     uploadExamFile,
     downloadExamFile,
-    gradeExamAnswer
+    gradeExamAnswer,
+    getAttemptDetails
 } from "../controllers/exam.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import { examUpload } from "../middlewares/multer.js";
@@ -120,6 +121,13 @@ router.post(
     "/attempt/:attemptId/grade",
     teacherOnly,
     gradeExamAnswer
+);
+
+// Get detailed attempt info (teacher)
+router.get(
+    "/attempt/:attemptId/details",
+    teacherOnly,
+    getAttemptDetails
 );
 
 export default router;

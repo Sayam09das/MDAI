@@ -315,9 +315,17 @@ const ExamResults = () => {
                                     <tr key={attempt.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                                    <User className="w-5 h-5 text-indigo-600" />
-                                                </div>
+                                                {attempt.student?.profileImage?.url ? (
+                                                    <img
+                                                        src={attempt.student.profileImage.url}
+                                                        alt={attempt.student.name || 'Student'}
+                                                        className="w-10 h-10 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                                        <User className="w-5 h-5 text-indigo-600" />
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <p className="font-medium text-gray-800">
                                                         {attempt.student?.name || 'Unknown Student'}

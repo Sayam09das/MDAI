@@ -464,6 +464,13 @@ export const gradeExamAnswer = async (attemptId, questionId, marksObtained, grad
     });
 };
 
+/**
+ * Get detailed attempt info (teacher)
+ */
+export const getAttemptDetails = (attemptId) => {
+    return fetchWithQueue(`/api/exams/attempt/${attemptId}/details`);
+};
+
 // ================= EXPORT =================
 
 export default {
@@ -496,6 +503,7 @@ export default {
     uploadExamFile,
     downloadExamFile,
     gradeExamAnswer,
+    getAttemptDetails,
     
     // Config (exposed for testing)
     API_CONFIG,
