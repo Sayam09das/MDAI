@@ -194,6 +194,34 @@ const CreateExam = () => {
         return parts.length > 0 ? parts.join(' ') : '0 minutes';
     };
 
+    // Helper to get default start date (local timezone)
+    const getDefaultStartDate = () => {
+        const now = new Date();
+        // Add 1 hour to current time
+        now.setHours(now.getHours() + 1);
+        // Format as YYYY-MM-DDTHH:mm (local time)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    // Helper to get default end date (local timezone)
+    const getDefaultEndDate = () => {
+        const now = new Date();
+        // Add 2 hours to current time (duration + 1 hour buffer)
+        now.setHours(now.getHours() + 2);
+        // Format as YYYY-MM-DDTHH:mm (local time)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     // Save exam
     const handleSave = async (publish = false) => {
         if (!examData.title.trim()) {
@@ -450,20 +478,44 @@ const CreateExam = () => {
                                     <Calendar className="w-4 h-4 inline mr-1" />
                                     Availability
                                 </label>
-                                <div className="grid grid-cols-2 gap-2">
+                                
+                                {/* Immediate availability toggle */}
+                                <label className="flex items-center gap-2 cursor-pointer mb-2">
                                     <input
-                                        type="datetime-local"
-                                        value={examData.startDate}
-                                        onChange={(e) => setExamData({ ...examData, startDate: e.target.value })}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        type="checkbox"
+                                        checked={!examData.startDate}
+                                        onChange={(e) => setExamData({ 
+                                            ...examData, 
+                                            startDate: e.target.checked ? '' : getDefaultStartDate(),
+                                            endDate: e.target.checked ? '' : getDefaultEndDate()
+                                        })}
+                                        className="w-4 h-4 text-indigo-600 rounded"
                                     />
-                                    <input
-                                        type="datetime-local"
-                                        value={examData.endDate}
-                                        onChange={(e) => setExamData({ ...examData, endDate: e.target.value })}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                    />
-                                </div>
+                                    <span className="text-sm text-gray-700">Make available immediately</span>
+                                </label>
+                                
+                                {examData.startDate !== '' && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={examData.startDate}
+                                                onChange={(e) => setExamData({ ...examData, startDate: e.target.value })}
+                                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={examData.endDate}
+                                                onChange={(e) => setExamData({ ...examData, endDate: e.target.value })}
+                                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Toggle Settings */}
