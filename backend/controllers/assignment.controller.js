@@ -142,9 +142,23 @@ export const getAssignmentById = async (req, res) => {
             }
         }
 
+        // Remove binary data from attachments for response
+        const safeAttachments = assignment.attachments.map(att => ({
+            filename: att.filename,
+            contentType: att.contentType,
+            size: att.size,
+            originalName: att.originalName,
+            public_id: att.public_id,
+            url: att.url,
+        }));
+
+        const assignmentObj = assignment.toObject();
+        delete assignmentObj.attachments;
+        assignmentObj.attachments = safeAttachments;
+
         res.status(200).json({
             success: true,
-            assignment,
+            assignment: assignmentObj,
         });
     } catch (error) {
         console.error("Get assignment error:", error);
@@ -374,8 +388,22 @@ export const getStudentAssignments = async (req, res) => {
                 const dueDate = new Date(assignment.dueDate);
                 const isOverdue = now > dueDate;
 
+                // Remove binary data from attachments for response
+                const safeAttachments = assignment.attachments.map(att => ({
+                    filename: att.filename,
+                    contentType: att.contentType,
+                    size: att.size,
+                    originalName: att.originalName,
+                    public_id: att.public_id,
+                    url: att.url,
+                }));
+
+                const assignmentObj = assignment.toObject();
+                delete assignmentObj.attachments;
+                assignmentObj.attachments = safeAttachments;
+
                 return {
-                    ...assignment.toObject(),
+                    ...assignmentObj,
                     submission: submission
                         ? {
                               id: submission._id,

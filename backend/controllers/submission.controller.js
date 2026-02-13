@@ -144,7 +144,7 @@ export const getSubmissionById = async (req, res) => {
     try {
         const { submissionId } = req.params;
 
-        const submission = await Submission.findById(submissionId)
+        let submission = await Submission.findById(submissionId)
             .populate("student", "name email profileImage")
             .populate("assignment", "title description instructions dueDate maxMarks")
             .populate("gradedBy", "name email");
@@ -154,16 +154,43 @@ export const getSubmissionById = async (req, res) => {
         }
 
         // Check authorization
-        const isTeacher = submission.assignment.instructor?.toString() === req.user.id;
+        const isTeacher = submission.assignment?.instructor?.toString() === req.user.id;
         const isStudent = submission.student._id.toString() === req.user.id;
 
         if (!isTeacher && !isStudent && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
+        // Remove binary data from files for response
+        const safeFiles = submission.files.map(file => ({
+            filename: file.filename,
+            contentType: file.contentType,
+            size: file.size,
+            originalName: file.originalName,
+            public_id: file.public_id,
+            url: file.url,
+        }));
+
+        const submissionObj = submission.toObject();
+        submissionObj.files = safeFiles;
+
+        // Also handle previous submissions
+        if (submission.previousSubmissions && submission.previousSubmissions.length > 0) {
+            submissionObj.previousSubmissions = submission.previousSubmissions.map(ps => ({
+                submittedAt: ps.submittedAt,
+                textAnswer: ps.textAnswer,
+                files: ps.files ? ps.files.map(f => ({
+                    filename: f.filename,
+                    contentType: f.contentType,
+                    size: f.size,
+                    originalName: f.originalName,
+                })) : [],
+            }));
+        }
+
         res.status(200).json({
             success: true,
-            submission,
+            submission: submissionObj,
         });
     } catch (error) {
         console.error("Get submission error:", error);
@@ -379,10 +406,18 @@ export const downloadSubmissionFile = async (req, res) => {
         const { submissionId } = req.params;
         const { fileIndex } = req.query;
 
-        const submission = await Submission.findById(submissionId);
+        const submission = await Submission.findById(submissionId).populate("assignment");
 
         if (!submission) {
             return res.status(404).json({ message: "Submission not found" });
+        }
+
+        // Check authorization - student can download their own, teacher can download any
+        const isTeacher = submission.assignment?.instructor?.toString() === req.user.id;
+        const isStudent = submission.student.toString() === req.user.id;
+
+        if (!isTeacher && !isStudent && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
         }
 
         const index = parseInt(fileIndex);

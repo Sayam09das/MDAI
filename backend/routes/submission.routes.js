@@ -7,6 +7,7 @@ import {
     getMySubmissions,
     deleteSubmission,
     getCourseSubmissionStats,
+    downloadSubmissionFile,
 } from "../controllers/submission.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
@@ -26,6 +27,9 @@ router.post(
 router.get("/my", getMySubmissions);
 
 router.delete("/:submissionId", deleteSubmission);
+
+// Download submission file
+router.get("/:submissionId/download", protect, downloadSubmissionFile);
 
 // Teacher routes
 router.get(
