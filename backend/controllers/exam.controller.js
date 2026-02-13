@@ -965,6 +965,17 @@ export const getStudentExams = async (req, res) => {
             status: { $in: ["active", "scheduled"] }
         };
 
+        // Update scheduled exams that have started to active
+        const now = new Date();
+        await Exam.updateMany(
+            { 
+                status: "scheduled", 
+                startDate: { $lte: now },
+                isPublished: true 
+            },
+            { $set: { status: "active" } }
+        );
+
         if (courseId) {
             query.course = courseId;
         }

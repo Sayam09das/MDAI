@@ -511,9 +511,11 @@ const ExamPage = () => {
                                                 <p className="text-sm text-gray-500">{exam.course?.title}</p>
                                             </div>
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                exam.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                exam.status === 'active' ? 'bg-green-100 text-green-700' : 
+                                                exam.status === 'scheduled' && new Date(exam.startDate) <= new Date() ? 'bg-green-100 text-green-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                             }`}>
-                                                {exam.status}
+                                                {exam.status === 'scheduled' && new Date(exam.startDate) <= new Date() ? 'active' : exam.status}
                                             </span>
                                         </div>
                                         
@@ -550,18 +552,28 @@ const ExamPage = () => {
                                             )}
                                         </div>
                                         
-                                        <button
-                                            onClick={() => handleStartExam(exam)}
-                                            disabled={!canAttempt || exam.status !== 'active'}
-                                            className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
-                                                canAttempt && exam.status === 'active'
-                                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            }`}
-                                        >
-                                            <Shield className="w-5 h-5" />
-                                            {attempt ? 'Already Attempted' : !canAttempt ? 'Attempts Exhausted' : 'Start Secure Exam'}
-                                        </button>
+                                        {/* Check if exam is actually available based on dates */}
+                                        {(() => {
+                                            const now = new Date();
+                                            const isNotStarted = exam.startDate && new Date(exam.startDate) > now;
+                                            const hasEnded = exam.endDate && new Date(exam.endDate) < now;
+                                            const canStart = canAttempt && (!isNotStarted) && (!hasEnded);
+                                            
+                                            return (
+                                                <button
+                                                    onClick={() => handleStartExam(exam)}
+                                                    disabled={!canStart}
+                                                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
+                                                        canStart
+                                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    <Shield className="w-5 h-5" />
+                                                    {attempt ? 'Already Attempted' : !canAttempt ? 'Attempts Exhausted' : isNotStarted ? `Starts: ${new Date(exam.startDate).toLocaleString()}` : hasEnded ? 'Exam Ended' : 'Start Secure Exam'}
+                                                </button>
+                                            );
+                                        })()}
                                     </div>
                                 );
                             })}
