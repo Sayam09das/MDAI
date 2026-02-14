@@ -78,6 +78,10 @@ const examSchema = new mongoose.Schema(
                 type: String,
                 default: ""
             },
+            data: {
+                type: Buffer,
+                default: null
+            },
             uploadedAt: {
                 type: Date,
                 default: null

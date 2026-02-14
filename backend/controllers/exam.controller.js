@@ -82,12 +82,13 @@ export const uploadQuestionPaper = async (req, res) => {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
+        // Store the file data directly in the database
         exam.questionPaper = {
             filename: req.file.filename || `question_${exam._id}.pdf`,
             originalName: req.file.originalname,
             contentType: req.file.mimetype,
             size: req.file.size,
-            url: req.file.path || "",
+            data: req.file.buffer, // Store the file buffer in database
             uploadedAt: new Date()
         };
 
@@ -96,7 +97,13 @@ export const uploadQuestionPaper = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Question paper uploaded successfully",
-            questionPaper: exam.questionPaper
+            questionPaper: {
+                filename: exam.questionPaper.filename,
+                originalName: exam.questionPaper.originalName,
+                contentType: exam.questionPaper.contentType,
+                size: exam.questionPaper.size,
+                uploadedAt: exam.questionPaper.uploadedAt
+            }
         });
     } catch (error) {
         console.error("Upload question paper error:", error);
