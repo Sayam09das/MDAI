@@ -32,29 +32,28 @@ const StudentExamResults = () => {
     };
 
     const getStatusBadge = (submission) => {
-        // Only show results if published
-        if (!submission.resultPublished) {
+        // Show graded status if grading is complete, regardless of publication
+        if (submission.gradingStatus === 'graded' || submission.gradingStatus === 'published') {
+            if (submission.passed) {
+                return (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3" />
+                        Passed
+                    </span>
+                );
+            }
             return (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    <Clock className="w-3 h-3" />
-                    Pending Publication
-                </span>
-            );
-        }
-
-        if (submission.passed) {
-            return (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <CheckCircle className="w-3 h-3" />
-                    Passed
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <XCircle className="w-3 h-3" />
+                    Failed
                 </span>
             );
         }
 
         return (
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                <XCircle className="w-3 h-3" />
-                Failed
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <Clock className="w-3 h-3" />
+                Pending
             </span>
         );
     };
@@ -217,7 +216,7 @@ const StudentExamResults = () => {
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        {submission.resultPublished ? (
+                                        {(submission.gradingStatus === 'graded' || submission.gradingStatus === 'published') ? (
                                             <>
                                                 <div className="text-center">
                                                     <div className="text-3xl font-bold text-gray-900">
@@ -237,7 +236,7 @@ const StudentExamResults = () => {
                                         ) : (
                                             <div className="text-center px-4">
                                                 <div className="text-sm text-gray-500">
-                                                    Result not published yet
+                                                    Result not available yet
                                                 </div>
                                             </div>
                                         )}
@@ -245,8 +244,8 @@ const StudentExamResults = () => {
                                     </div>
                                 </div>
 
-                                {/* Feedback Section - Only show if published */}
-                                {submission.resultPublished && submission.feedback && (
+                                {/* Feedback Section - Show if graded or published */}
+                                {(submission.gradingStatus === 'graded' || submission.gradingStatus === 'published') && submission.feedback && (
                                     <div className="mt-4 pt-4 border-t border-gray-100">
                                         <h4 className="text-sm font-medium text-gray-700 mb-2">Feedback:</h4>
                                         <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
