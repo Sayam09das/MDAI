@@ -24,3 +24,4 @@ const ReturnStudentExamResults = () => {
 };
 
 export default ReturnStudentExamResults;
+

@@ -17,7 +17,8 @@ import {
   AlertCircle,
   ClipboardList,
   FileQuestion,
-  HelpCircle
+  HelpCircle,
+  Award
 } from "lucide-react";
 
 /* ================= MENU ================= */
@@ -29,6 +30,7 @@ const mainMenu = [
   { icon: FolderOpen, label: "Resources", path: "/student-dashboard/resources" },
   { icon: ClipboardList, label: "Assignments", path: "/student-dashboard/assignments" },
   { icon: FileQuestion, label: "Exams / Quizzes", path: "/student-dashboard/exams" },
+  { icon: Award, label: "Exam Results", path: "/student-dashboard/exam-results" },
   { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
   { icon: CreditCard, label: "Payments", path: "/student-dashboard/payments" },
   { icon: AlertCircle, label: "Complaints", path: "/student-dashboard/complaints" },

@@ -49,20 +49,20 @@ const StudentRoutes = () => {
                     <Route path="course/:courseId" element={<CourseView />} />
 
                     <Route path="resources" element={<ReturnStudentResources />} />
-                    <Route path="profile" element= {<ReturnStudentProfile />} />
+                    <Route path="profile" element={<ReturnStudentProfile />} />
                     <Route path="attendance" element={<ReturnAttendence />} />
                     <Route path="calendar" element={<ReturnCalendar />} />
                     <Route path="search" element={<ReturnSearch />} />
                     <Route path="messages" element={<StudentMessages />} />
                     <Route path="announcements" element={<ReturnAnnouncements />} />
                     <Route path="payments" element={<ReturnStudentPayments />} />
-<Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
+                    <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
                     <Route path="complaints" element={<StudentComplaints />} />
-<Route path="assignments" element={<ReturnStudentAssignments />} />
+                    <Route path="assignments" element={<ReturnStudentAssignments />} />
                     <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
                     <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
-                    
-{/* Exam Routes */}
+
+                    {/* Exam Routes */}
                     <Route path="exam/:assignmentId" element={<ExamPage />} />
                     <Route path="exam-results" element={<StudentExamResults />} />
                 </Route>
