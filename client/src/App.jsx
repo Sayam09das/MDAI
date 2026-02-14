@@ -36,6 +36,7 @@ import StudentPaymentPage from "./Pages/Student/Dashboard/StudentPayments/Studen
 
 // Exam Page
 import ExamPage from "./Pages/Student/Exam/ExamPage"
+import StudentExamResults from "./Pages/Student/Dashboard/StudentExamResults/StudentExamResults"
 
 // Teacher Pages
 import TeacherLayout from "./components/Dashboard/Teacher/TeacherLayout"
@@ -154,6 +155,7 @@ const App = () => {
           {/* Exam Routes - Students view and take exams */}
           <Route path="exams" element={<ExamPage />} />
           <Route path="exams/:examId" element={<ExamPage />} />
+          <Route path="exam-results" element={<StudentExamResults />} />
         </Route>
 
         {/* Teacher Routes */}
