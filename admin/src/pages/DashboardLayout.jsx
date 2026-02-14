@@ -29,7 +29,8 @@ import {
     TrendingUp,
     CreditCard,
     DollarSign,
-    AlertCircle
+    AlertCircle,
+    Award
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -824,7 +825,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         )}
                     </motion.button>
 
-                    <motion.button
+<motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.62 }}
@@ -847,6 +848,33 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                         {isCollapsed && (
                             <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                                 Complaints
+                            </div>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.63 }}
+                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                        onClick={() => handleNavClick("/admin/dashboard/certificates")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group
+                            ${location.pathname === "/admin/dashboard/certificates"
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }
+                            ${isCollapsed ? "justify-center" : ""}
+                        `}
+                        title={isCollapsed ? "Certificates" : ""}
+                    >
+                        <Award className={`w-5 h-5 flex-shrink-0 ${location.pathname === "/admin/dashboard/certificates" ? 'text-indigo-600' : 'text-slate-500'}`} />
+                        {!isCollapsed && <span className="font-medium text-sm">Certificates</span>}
+                        {location.pathname === "/admin/dashboard/certificates" && !isCollapsed && (
+                            <motion.div layoutId="activeTab" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        )}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Certificates
                             </div>
                         )}
                     </motion.button>
@@ -907,6 +935,7 @@ const pageNames = {
         "/admin/dashboard/audit-logs": "Audit Logs",
         "/admin/dashboard/system": "System Health",
         "/admin/dashboard/complaints": "Complaints",
+        "/admin/dashboard/certificates": "Certificates",
         "/admin/profile": "Profile",
         "/admin/settings": "Settings",
     };

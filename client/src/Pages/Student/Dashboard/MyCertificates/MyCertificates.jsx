@@ -1,0 +1,255 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { Award, Download, CheckCircle, Clock, AlertCircle, ExternalLink } from "lucide-react";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+const MyCertificates = () => {
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCert, setSelectedCert] = useState(null);
+
+  useEffect(() => {
+    fetchCertificates();
+  }, []);
+
+  const fetchCertificates = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/certificates/my-certificates");
+      setCertificates(response.data.certificates || []);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "issued":
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case "eligible":
+        return <Clock className="w-5 h-5 text-yellow-500" />;
+      case "not_eligible":
+        return <AlertCircle className="w-5 h-5 text-gray-400" />;
+      default:
+        return <Clock className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "issued":
+        return "bg-green-100 text-green-800";
+      case "eligible":
+        return "bg-yellow-100 text-yellow-800";
+      case "not_eligible":
+        return "bg-gray-100 text-gray-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "issued":
+        return "Certificate Issued";
+      case "eligible":
+        return "Eligible";
+      case "not_eligible":
+        return "Not Eligible";
+      default:
+        return "Unknown";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">My Certificates</h1>
+        <p className="text-gray-600 mt-2">
+          View your earned certificates and track your progress towards completion.
+        </p>
+      </div>
+
+      {certificates.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-12 text-center">
+          <Award className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Certificates Yet</h2>
+          <p className="text-gray-600">
+            Complete courses to earn certificates. Your earned certificates will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {certificates.map((cert, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
+            >
+              {/* Thumbnail */}
+              <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                {cert.thumbnail?.url ? (
+                  <img
+                    src={cert.thumbnail.url}
+                    alt={cert.courseTitle}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Award className="h-16 w-16 text-blue-300" />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+                  {cert.courseTitle}
+                </h3>
+
+                {/* Status */}
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(cert.status)}`}>
+                  {getStatusIcon(cert.status)}
+                  {getStatusText(cert.status)}
+                </div>
+
+                {/* Details */}
+                <div className="mt-4 space-y-2 text-sm text-gray-600">
+                  {cert.status === "issued" && (
+                    <>
+                      <p className="flex items-center gap-2">
+                        <span className="font-medium">Certificate ID:</span>
+                        <span className="font-mono text-xs">{cert.certificateId}</span>
+                      </p>
+                      {cert.issuedAt && (
+                        <p>
+                          <span className="font-medium">Issued on:</span>{" "}
+                          {new Date(cert.issuedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {cert.status !== "issued" && cert.reason && (
+                    <p className="text-sm text-gray-500 italic">
+                      {cert.reason}
+                    </p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="mt-4 flex gap-2">
+                  {cert.status === "issued" && cert.certificateUrl ? (
+                    <>
+                      <a
+                        href={cert.certificateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        View
+                      </a>
+                      <a
+                        href={cert.certificateUrl}
+                        download={`certificate-${cert.certificateId}.jpg`}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </a>
+                    </>
+                  ) : cert.status === "eligible" ? (
+                    <button
+                      onClick={() => toast.info("Certificate will be generated automatically. Please check back later.")}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      <Clock className="w-4 h-4" />
+                      Generating...
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => toast.info(cert.reason || "Complete all requirements to earn this certificate.")}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600"
+                    >
+                      View Requirements
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Certificate Stats */}
+      {certificates.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 rounded-full">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {certificates.filter(c => c.status === "issued").length}
+                </p>
+                <p className="text-sm text-gray-600">Certificates Earned</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-yellow-100 rounded-full">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {certificates.filter(c => c.status === "eligible").length}
+                </p>
+                <p className="text-sm text-gray-600">Eligible</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-full">
+                <Award className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {certificates.length}
+                </p>
+                <p className="text-sm text-gray-600">Total Courses</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MyCertificates;
+

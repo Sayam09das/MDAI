@@ -30,6 +30,7 @@ import ReturnManageTransactions from "../Dashboard/DashboardFinance/ReturnManage
 import ReturnTeacherPayments from "../Dashboard/DashboardFinance/ReturnTeacherPayments";
 import ReturnRevenueReports from "../Dashboard/DashboardFinance/ReturnRevenueReports";
 import ComplaintManagement from "../Dashboard/DashboardComplaints/ComplaintManagement";
+import ReturnCertificateSettings from "../Dashboard/DashboardCertificates/ReturnCertificateSettings";
 
 const DashboardRoutes = () => {
     return (
@@ -84,8 +85,11 @@ const DashboardRoutes = () => {
                     {/* System */}
                     <Route path="dashboard/system" element={<SystemHealth />} />
                     
-                    {/* Complaints */}
+{/* Complaints */}
                     <Route path="dashboard/complaints" element={<ComplaintManagement />} />
+                    
+                    {/* Certificates */}
+                    <Route path="dashboard/certificates" element={<ReturnCertificateSettings />} />
                 </Route>
             </Route>
         </Routes>

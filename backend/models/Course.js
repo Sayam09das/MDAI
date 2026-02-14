@@ -72,6 +72,40 @@ const courseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    /* ================= CERTIFICATE COMPLETION CRITERIA ================= */
+    certificateEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Minimum progress percentage required (default 80%)
+    certificateMinProgress: {
+      type: Number,
+      default: 80,
+      min: 0,
+      max: 100,
+    },
+
+    // Whether all assignments must be submitted
+    certificateRequireAssignments: {
+      type: Boolean,
+      default: true,
+    },
+
+    // Whether final exam is required
+    certificateRequireExam: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Minimum passing marks for exam (percentage)
+    certificatePassingMarks: {
+      type: Number,
+      default: 60,
+      min: 0,
+      max: 100,
+    },
   },
   { timestamps: true }
 );

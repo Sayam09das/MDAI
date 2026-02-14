@@ -31,6 +31,7 @@ const mainMenu = [
   { icon: ClipboardList, label: "Assignments", path: "/student-dashboard/assignments" },
   { icon: FileQuestion, label: "Exams / Quizzes", path: "/student-dashboard/exams" },
   { icon: Award, label: "Exam Results", path: "/student-dashboard/exam-results" },
+  { icon: Award, label: "Certificates", path: "/student-dashboard/certificates" },
   { icon: Bell, label: "Announcements", path: "/student-dashboard/announcements" },
   { icon: CreditCard, label: "Payments", path: "/student-dashboard/payments" },
   { icon: AlertCircle, label: "Complaints", path: "/student-dashboard/complaints" },

@@ -1,6 +1,7 @@
 import Enrollment from "../models/enrollmentModel.js";
 import Course from "../models/Course.js";
 import Lesson from "../models/lessonModel.js";
+import { generateCertificate } from "./certificate.controller.js";
 
 /* ======================================================
    GET STUDENT'S ALL COURSE PROGRESS
