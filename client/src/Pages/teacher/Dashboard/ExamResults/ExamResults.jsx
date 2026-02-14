@@ -20,9 +20,11 @@ import {
     File,
     Upload,
     Save,
-    X
+    X,
+    Send,
+    CheckSquare
 } from 'lucide-react';
-import { getExamResults, getExam, getExamStats, getAttemptDetails, gradeExamAnswer, downloadExamFile } from '../../../../lib/api/examApi';
+import { getExamResults, getExam, getExamStats, getAttemptDetails, gradeExamAnswer, gradeExam, downloadExamFile, publishExamResult, publishAllExamResults } from '../../../../lib/api/examApi';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -45,6 +47,10 @@ const ExamResults = () => {
     const [savingGrade, setSavingGrade] = useState(false);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [publishingAll, setPublishingAll] = useState(false);
+    const [overallGrading, setOverallGrading] = useState(false);
+    const [overallMarks, setOverallMarks] = useState('');
+    const [overallFeedback, setOverallFeedback] = useState('');
 
     useEffect(() => {
         fetchExamData();
@@ -191,6 +197,125 @@ const ExamResults = () => {
         setGradingNotes('');
     };
 
+    // Handle grading entire exam at once
+    const handleStartOverallGrading = () => {
+        setOverallGrading(true);
+        setOverallMarks(selectedAttempt?.marks?.toString() || '0');
+        setOverallFeedback(selectedAttempt?.overallFeedback || '');
+    };
+
+    const handleSaveOverallGrade = async () => {
+        if (!selectedAttempt) return;
+        
+        const marks = parseFloat(overallMarks);
+        if (isNaN(marks) || marks < 0 || marks > exam?.totalMarks) {
+            alert(`Marks must be between 0 and ${exam?.totalMarks}`);
+            return;
+        }
+
+        setSavingGrade(true);
+        try {
+            const res = await gradeExam(
+                selectedAttempt.id,
+                marks,
+                overallFeedback
+            );
+            
+            if (res.success) {
+                // Refresh attempt details
+                const detailsRes = await getAttemptDetails(selectedAttempt.id);
+                if (detailsRes.success) {
+                    setAttemptDetails(detailsRes);
+                }
+                // Refresh exam data
+                await fetchExamData();
+                setOverallGrading(false);
+                setSelectedAttempt(prev => ({
+                    ...prev,
+                    marks: res.attempt.obtainedMarks,
+                    percentage: res.attempt.percentage,
+                    passed: res.attempt.passed,
+                    gradingStatus: res.attempt.gradingStatus
+                }));
+                alert('Grade saved successfully!');
+            }
+        } catch (err) {
+            console.error('Failed to save grade:', err);
+            alert('Failed to save grade');
+        } finally {
+            setSavingGrade(false);
+        }
+    };
+
+    // Handle publishing single result
+    const handlePublishResult = async (attemptId) => {
+        if (!confirm('Are you sure you want to publish this result? Students will be able to see their marks.')) {
+            return;
+        }
+
+        try {
+            const res = await publishExamResult(attemptId);
+            if (res.success) {
+                alert('Result published successfully!');
+                await fetchExamData();
+            }
+        } catch (err) {
+            console.error('Failed to publish result:', err);
+            alert('Failed to publish result');
+        }
+    };
+
+    // Handle publishing all results
+    const handlePublishAllResults = async () => {
+        if (!confirm('Are you sure you want to publish all graded results? Students will be able to see their marks.')) {
+            return;
+        }
+
+        setPublishingAll(true);
+        try {
+            const res = await publishAllExamResults(examId);
+            if (res.success) {
+                alert(`${res.publishedCount} results published successfully!`);
+                await fetchExamData();
+            }
+        } catch (err) {
+            console.error('Failed to publish results:', err);
+            alert('Failed to publish results');
+        } finally {
+            setPublishingAll(false);
+        }
+    };
+
+    // Get grading status color
+    const getGradingStatusColor = (status) => {
+        switch (status) {
+            case 'graded': return 'bg-green-100 text-green-700';
+            case 'published': return 'bg-blue-100 text-blue-700';
+            case 'pending': return 'bg-yellow-100 text-yellow-700';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    // Get grading status icon
+    const getGradingStatusIcon = (status) => {
+        switch (status) {
+            case 'graded': return <CheckCircle className="w-4 h-4 text-green-500" />;
+            case 'published': return <Eye className="w-4 h-4 text-blue-500" />;
+            case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
+            default: return <Clock className="w-4 h-4 text-gray-500" />;
+        }
+    };
+
+    // Get grading status text
+    const getGradingStatusText = (status) => {
+        switch (status) {
+            case 'graded': return 'Graded';
+            case 'published': return 'Published';
+            case 'pending': return 'Pending';
+            default: return 'Unknown';
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'SUBMITTED': return 'bg-green-100 text-green-700';
@@ -281,6 +406,18 @@ const ExamResults = () => {
                         </div>
                         
                         <div className="flex gap-3">
+                            <button
+                                onClick={handlePublishAllResults}
+                                disabled={publishingAll}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                            >
+                                {publishingAll ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                ) : (
+                                    <Send className="w-5 h-5" />
+                                )}
+                                Publish All Results
+                            </button>
                             <button
                                 onClick={() => window.print()}
                                 className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50"
@@ -398,6 +535,9 @@ const ExamResults = () => {
                                         Status
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Grading
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Score
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -444,6 +584,12 @@ const ExamResults = () => {
                                             <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(attempt.status)}`}>
                                                 {getStatusIcon(attempt.status)}
                                                 {attempt.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getGradingStatusColor(attempt.gradingStatus)}`}>
+                                                {getGradingStatusIcon(attempt.gradingStatus)}
+                                                {getGradingStatusText(attempt.gradingStatus)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">

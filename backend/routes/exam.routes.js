@@ -19,7 +19,9 @@ import {
     uploadExamFile,
     downloadExamFile,
     gradeExamAnswer,
-    getAttemptDetails
+    getAttemptDetails,
+    publishExamResult,
+    publishAllExamResults
 } from "../controllers/exam.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import { examUpload } from "../middlewares/multer.js";
@@ -121,6 +123,20 @@ router.post(
     "/attempt/:attemptId/grade",
     teacherOnly,
     gradeExamAnswer
+);
+
+// Publish single exam result (teacher)
+router.post(
+    "/attempt/:attemptId/publish",
+    teacherOnly,
+    publishExamResult
+);
+
+// Publish all results for an exam (teacher)
+router.post(
+    "/:examId/publish-all",
+    teacherOnly,
+    publishAllExamResults
 );
 
 // Get detailed attempt info (teacher)

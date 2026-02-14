@@ -465,6 +465,37 @@ export const gradeExamAnswer = async (attemptId, questionId, marksObtained, grad
 };
 
 /**
+ * Grade entire exam at once
+ */
+export const gradeExam = async (attemptId, obtainedMarks, overallFeedback = '') => {
+    return fetchWithQueue(`/api/exams/attempt/${attemptId}/grade`, {
+        method: 'POST',
+        body: JSON.stringify({
+            obtainedMarks,
+            overallFeedback
+        })
+    });
+};
+
+/**
+ * Publish single exam result
+ */
+export const publishExamResult = (attemptId) => {
+    return fetchWithQueue(`/api/exams/attempt/${attemptId}/publish`, {
+        method: 'POST'
+    });
+};
+
+/**
+ * Publish all results for an exam
+ */
+export const publishAllExamResults = (examId) => {
+    return fetchWithQueue(`/api/exams/${examId}/publish-all`, {
+        method: 'POST'
+    });
+};
+
+/**
  * Get detailed attempt info (teacher)
  */
 export const getAttemptDetails = (attemptId) => {
@@ -503,6 +534,9 @@ export default {
     uploadExamFile,
     downloadExamFile,
     gradeExamAnswer,
+    gradeExam,
+    publishExamResult,
+    publishAllExamResults,
     getAttemptDetails,
     
     // Config (exposed for testing)

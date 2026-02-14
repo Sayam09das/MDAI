@@ -5,27 +5,7 @@ const answerSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
-    selectedOption: {
-        type: String,
-        default: ""
-    },
-    textAnswer: {
-        type: String,
-        default: ""
-    },
-    isCorrect: {
-        type: Boolean,
-        default: false
-    },
-    marksObtained: {
-        type: Number,
-        default: 0
-    },
-    answeredAt: {
-        type: Date,
-        default: Date.now
-    },
-    // File upload support for exam answers
+    // For file upload questions - student uploads answer sheet
     uploadedFile: {
         filename: {
             type: String,
@@ -56,14 +36,24 @@ const answerSchema = new mongoose.Schema({
             default: null
         }
     },
-    // Manual grading status for file upload questions
+    // Manual grading - marks entered by teacher
+    marksObtained: {
+        type: Number,
+        default: 0
+    },
+    // Grading status - needs manual grading
     isGraded: {
         type: Boolean,
         default: false
     },
+    // Teacher feedback/notes
     gradingNotes: {
         type: String,
         default: ""
+    },
+    answeredAt: {
+        type: Date,
+        default: Date.now
     }
 }, { _id: false });
 
@@ -232,6 +222,28 @@ const examAttemptSchema = new mongoose.Schema(
 
         resultPublishedAt: {
             type: Date
+        },
+
+        // Manual Grading Status
+        gradingStatus: {
+            type: String,
+            enum: ["pending", "graded", "published"],
+            default: "pending"
+        },
+
+        gradedAt: {
+            type: Date
+        },
+
+        gradedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Teacher"
+        },
+
+        // Overall feedback for the entire exam
+        overallFeedback: {
+            type: String,
+            default: ""
         },
 
         // Metadata

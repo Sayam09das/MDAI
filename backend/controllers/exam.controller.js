@@ -586,6 +586,9 @@ export const startExamAttempt = async (req, res) => {
 /**
  * Submit exam
  * POST /api/exams/attempt/:attemptId/submit
+ * 
+ * Manual Grading: Student submits answer sheet (file upload)
+ * Teacher downloads, evaluates, and manually enters marks
  */
 export const submitExamAttempt = async (req, res) => {
     try {
@@ -607,82 +610,38 @@ export const submitExamAttempt = async (req, res) => {
             return res.status(400).json({ message: "Exam already submitted" });
         }
 
-        // Get exam for correct answers
+        // Get exam for total marks
         const exam = await Exam.findById(attempt.exam._id);
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
         }
 
-        // Calculate score
-        let obtainedMarks = 0;
-        const processedAnswers = answers.map(answer => {
-            const question = exam.questions.find(q => q._id.toString() === answer.questionId);
-            let isCorrect = false;
-            let marksObtained = 0;
-
-            if (question) {
-                if (question.type === "multiple_choice" || question.type === "true_false") {
-                    const selectedOption = question.options.find(o => o._id.toString() === answer.selectedOption);
-                    isCorrect = selectedOption?.isCorrect || false;
-                    marksObtained = isCorrect ? question.marks : 0;
-                } else if (question.type === "short_answer") {
-                    isCorrect = answer.textAnswer?.toLowerCase().trim() === question.correctAnswer?.toLowerCase().trim();
-                    marksObtained = isCorrect ? question.marks : 0;
-                } else {
-                    // Essay/short answer - needs manual grading
-                    marksObtained = 0;
-                }
-            }
-
-            if (isCorrect) {
-                obtainedMarks += marksObtained;
-            }
-
-            return {
-                questionId: answer.questionId,
-                selectedOption: answer.selectedOption || "",
-                textAnswer: answer.textAnswer || "",
-                isCorrect,
-                marksObtained,
-                answeredAt: new Date()
-            };
-        });
-
-        // Update attempt
-        attempt.answers = processedAnswers;
-        attempt.obtainedMarks = obtainedMarks;
+        // For manual grading: Student submits, but no auto-scoring
+        // Marks remain 0 until teacher manually grades
+        // Status changes to SUBMITTED, awaiting manual grading
+        attempt.answers = answers || [];
+        attempt.obtainedMarks = 0; // No auto-grading
         attempt.totalMarks = exam.totalMarks;
-        attempt.percentage = Math.round((obtainedMarks / exam.totalMarks) * 100 * 100) / 100;
-        attempt.passed = attempt.percentage >= exam.passingMarks;
+        attempt.percentage = 0; // Will be calculated after grading
+        attempt.passed = false; // Will be determined after grading
         attempt.status = "SUBMITTED";
         attempt.submittedAt = new Date();
         attempt.timeTaken = Math.round((attempt.submittedAt - attempt.startTime) / 1000);
+        
+        // Set grading status - awaiting manual grading
+        attempt.gradingStatus = "pending";
 
         await attempt.save();
 
-        // Update exam statistics
-        if (exam.averageScore === 0) {
-            exam.averageScore = attempt.percentage;
-            exam.highestScore = attempt.percentage;
-            exam.lowestScore = attempt.percentage;
-        } else {
-            const totalScore = exam.averageScore * (exam.totalAttempts - 1) + attempt.percentage;
-            exam.averageScore = Math.round(totalScore / exam.totalAttempts * 100) / 100;
-            if (attempt.percentage > exam.highestScore) exam.highestScore = attempt.percentage;
-            if (attempt.percentage < exam.lowestScore || exam.lowestScore === 0) exam.lowestScore = attempt.percentage;
-        }
-        await exam.save();
-
         res.status(200).json({
             success: true,
-            message: "Exam submitted successfully",
+            message: "Exam submitted successfully. Awaiting manual grading.",
             result: {
-                marks: obtainedMarks,
-                totalMarks: exam.totalMarks,
-                percentage: attempt.percentage,
-                passed: attempt.passed,
+                status: "submitted",
+                submittedAt: attempt.submittedAt,
                 timeTaken: attempt.timeTaken,
-                showResults: exam.showResults
+                gradingStatus: "pending",
+                message: "Your answers have been submitted. Results will be published after manual evaluation."
             }
         });
     } catch (error) {
@@ -1209,13 +1168,13 @@ export const downloadExamFile = async (req, res) => {
 };
 
 /**
- * Grade file upload question
+ * Grade file upload question (Manual Grading)
  * POST /api/exams/attempt/:attemptId/grade
  */
 export const gradeExamAnswer = async (req, res) => {
     try {
         const { attemptId } = req.params;
-        const { questionId, marksObtained, gradingNotes } = req.body;
+        const { questionId, marksObtained, gradingNotes, overallFeedback } = req.body;
 
         if (marksObtained === undefined || marksObtained === null) {
             return res.status(400).json({ message: "Marks are required" });
@@ -1234,7 +1193,78 @@ export const gradeExamAnswer = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // Find and update the answer
+        // If grading entire exam (no questionId provided)
+        if (!questionId) {
+            // Grade entire exam at once
+            const { obtainedMarks } = req.body;
+            
+            if (obtainedMarks === undefined || obtainedMarks === null) {
+                return res.status(400).json({ message: "Total marks are required" });
+            }
+
+            // Validate total marks
+            if (obtainedMarks < 0 || obtainedMarks > exam.totalMarks) {
+                return res.status(400).json({
+                    message: `Total marks must be between 0 and ${exam.totalMarks}`
+                });
+            }
+
+            // Update attempt with manual grade
+            attempt.obtainedMarks = obtainedMarks;
+            attempt.totalMarks = exam.totalMarks;
+            attempt.percentage = exam.totalMarks > 0 ? Math.round((obtainedMarks / exam.totalMarks) * 100 * 100) / 100 : 0;
+            attempt.passed = attempt.percentage >= exam.passingMarks;
+            
+            // Mark as graded
+            attempt.gradingStatus = "graded";
+            attempt.gradedAt = new Date();
+            attempt.gradedBy = req.user.id;
+            attempt.overallFeedback = overallFeedback || "";
+
+            // Mark all answers as graded (since we're grading the entire exam)
+            attempt.answers = attempt.answers.map(ans => ({
+                ...ans.toObject(),
+                isGraded: true,
+                marksObtained: obtainedMarks, // Apply same marks to each answer (or could be distributed)
+                gradingNotes: gradingNotes || ""
+            }));
+
+            await attempt.save();
+
+            // Update exam statistics
+            const allAttempts = await ExamAttempt.find({ exam: exam._id, status: "SUBMITTED" });
+            if (allAttempts.length > 0) {
+                const scores = allAttempts.map(a => a.percentage);
+                exam.averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 100) / 100;
+                exam.highestScore = Math.max(...scores);
+                exam.lowestScore = Math.min(...scores);
+                await exam.save();
+            }
+
+            res.status(200).json({
+                success: true,
+                message: "Exam graded successfully",
+                grade: {
+                    obtainedMarks: attempt.obtainedMarks,
+                    totalMarks: attempt.totalMarks,
+                    percentage: attempt.percentage,
+                    passed: attempt.passed,
+                    gradingStatus: attempt.gradingStatus,
+                    feedback: attempt.overallFeedback
+                },
+                attempt: {
+                    obtainedMarks: attempt.obtainedMarks,
+                    totalMarks: attempt.totalMarks,
+                    percentage: attempt.percentage,
+                    passed: attempt.passed,
+                    gradingStatus: attempt.gradingStatus
+                }
+            });
+            return;
+        }
+
+        // Single question grading (legacy support)
+        // Find and update the answer with the grading
         const answerIndex = attempt.answers.findIndex(
             a => a.questionId.toString() === questionId
         );
@@ -1264,28 +1294,29 @@ export const gradeExamAnswer = async (req, res) => {
         attempt.answers[answerIndex].isGraded = true;
         attempt.answers[answerIndex].gradingNotes = gradingNotes || "";
 
-        // Recalculate total marks
+        // Recalculate total marks from all graded answers
         let obtainedMarks = 0;
-        let totalMarks = 0;
-
         for (const answer of attempt.answers) {
-            // Add marks for file upload questions (manually graded)
-            if (answer.uploadedFile && answer.isGraded) {
-                obtainedMarks += answer.marksObtained || 0;
-            }
-            // Add marks for auto-graded questions
-            else if (answer.isCorrect) {
+            if (answer.isGraded) {
                 obtainedMarks += answer.marksObtained || 0;
             }
         }
 
         // Get total marks from exam
-        totalMarks = exam.totalMarks;
+        const totalMarks = exam.totalMarks;
 
         attempt.obtainedMarks = obtainedMarks;
         attempt.totalMarks = totalMarks;
         attempt.percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100 * 100) / 100 : 0;
         attempt.passed = attempt.percentage >= exam.passingMarks;
+
+        // Check if all answers are graded
+        const allGraded = attempt.answers.length > 0 && attempt.answers.every(a => a.isGraded);
+        if (allGraded) {
+            attempt.gradingStatus = "graded";
+            attempt.gradedAt = new Date();
+            attempt.gradedBy = req.user.id;
+        }
 
         await attempt.save();
 
@@ -1303,11 +1334,121 @@ export const gradeExamAnswer = async (req, res) => {
                 obtainedMarks: attempt.obtainedMarks,
                 totalMarks: attempt.totalMarks,
                 percentage: attempt.percentage,
-                passed: attempt.passed
+                passed: attempt.passed,
+                gradingStatus: attempt.gradingStatus
             }
         });
     } catch (error) {
         console.error("Grade exam answer error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Publish exam results
+ * POST /api/exams/attempt/:attemptId/publish
+ */
+export const publishExamResult = async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+
+        const attempt = await ExamAttempt.findById(attemptId)
+            .populate("exam");
+
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found" });
+        }
+
+        // Verify teacher owns the exam
+        const exam = attempt.exam;
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Check if the exam is graded
+        if (attempt.gradingStatus !== "graded") {
+            return res.status(400).json({ 
+                message: "Cannot publish results. The exam has not been graded yet." 
+            });
+        }
+
+        // Publish results
+        attempt.resultPublished = true;
+        attempt.resultPublishedAt = new Date();
+        attempt.gradingStatus = "published";
+
+        await attempt.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Results published successfully",
+            result: {
+                id: attempt._id,
+                obtainedMarks: attempt.obtainedMarks,
+                totalMarks: attempt.totalMarks,
+                percentage: attempt.percentage,
+                passed: attempt.passed,
+                gradingStatus: attempt.gradingStatus,
+                resultPublished: attempt.resultPublished,
+                resultPublishedAt: attempt.resultPublishedAt
+            }
+        });
+    } catch (error) {
+        console.error("Publish exam result error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Publish all results for an exam
+ * POST /api/exams/:examId/publish-all
+ */
+export const publishAllExamResults = async (req, res) => {
+    try {
+        const { examId } = req.params;
+
+        const exam = await Exam.findById(examId);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Find all graded attempts
+        const gradedAttempts = await ExamAttempt.find({
+            exam: examId,
+            gradingStatus: "graded",
+            status: "SUBMITTED"
+        });
+
+        if (gradedAttempts.length === 0) {
+            return res.status(400).json({ 
+                message: "No graded submissions found to publish" 
+            });
+        }
+
+        // Publish all graded results
+        const now = new Date();
+        let publishedCount = 0;
+
+        for (const attempt of gradedAttempts) {
+            attempt.resultPublished = true;
+            attempt.resultPublishedAt = now;
+            attempt.gradingStatus = "published";
+            await attempt.save();
+            publishedCount++;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully published ${publishedCount} results`,
+            publishedCount
+        });
+    } catch (error) {
+        console.error("Publish all exam results error:", error);
         res.status(500).json({ message: error.message });
     }
 };
