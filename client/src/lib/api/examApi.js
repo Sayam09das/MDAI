@@ -1,12 +1,6 @@
 /**
- * Enhanced Exam API Module
- * Comprehensive API functions for exam management with network resilience
- * 
- * Features:
- * - Automatic retry for network errors
- * - Request queuing for offline support
- * - Request timeout handling
- * - Response caching
+ * Manual Exam API Module
+ * API functions for manual evaluation exam system
  */
 
 // ================= CONFIG =================
@@ -27,80 +21,10 @@ const API_BASE_URL = getBackendURL();
 // ================= API CONFIG =================
 
 const API_CONFIG = {
-    TIMEOUT: 30000, // 30 seconds
+    TIMEOUT: 30000,
     MAX_RETRIES: 3,
-    RETRY_DELAY: 1000, // 1 second
-    RETRY_DELAY_MULTIPLIER: 2, // Exponential backoff
-    QUEUE_ENABLED: true
+    RETRY_DELAY: 1000
 };
-
-// ================= REQUEST QUEUE =================
-
-class RequestQueue {
-    constructor() {
-        this.queue = [];
-        this.processing = false;
-        this.isOnline = navigator.onLine;
-        
-        // Listen for network changes
-        window.addEventListener('online', () => {
-            this.isOnline = true;
-            this.processQueue();
-        });
-        
-        window.addEventListener('offline', () => {
-            this.isOnline = false;
-        });
-    }
-    
-    add(request) {
-        return new Promise((resolve, reject) => {
-            this.queue.push({
-                request,
-                resolve,
-                reject,
-                retries: 0
-            });
-            
-            if (this.isOnline) {
-                this.processQueue();
-            }
-        });
-    }
-    
-    async processQueue() {
-        if (this.processing || this.queue.length === 0) return;
-        
-        this.processing = true;
-        
-        while (this.queue.length > 0) {
-            const item = this.queue[0];
-            
-            try {
-                const result = await item.request();
-                item.resolve(result);
-            } catch (error) {
-                if (item.retries < API_CONFIG.MAX_RETRIES) {
-                    item.retries++;
-                    // Exponential backoff
-                    await new Promise(resolve => 
-                        setTimeout(resolve, API_CONFIG.RETRY_DELAY * Math.pow(API_CONFIG.RETRY_DELAY_MULTIPLIER, item.retries))
-                    );
-                    // Re-queue for next attempt
-                    continue;
-                } else {
-                    item.reject(error);
-                }
-            }
-            
-            this.queue.shift();
-        }
-        
-        this.processing = false;
-    }
-}
-
-const requestQueue = new RequestQueue();
 
 // ================= TOKEN HELPER =================
 
@@ -109,7 +33,7 @@ const getAuthToken = () => {
     return token ? `Bearer ${token}` : null;
 };
 
-// ================= GENERIC FETCH WRAPPER =================
+// ================= GENERIC FETCH =================
 
 const fetchAPI = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -123,9 +47,6 @@ const fetchAPI = async (endpoint, options = {}) => {
     if (token) {
         headers.Authorization = token;
     }
-    
-    // Add request ID for tracking
-    headers['X-Request-ID'] = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
@@ -159,247 +80,33 @@ const fetchAPI = async (endpoint, options = {}) => {
         
         throw {
             status: error.status || 0,
-            message: error.message || "Network error",
-            isNetworkError: !navigator.onLine
+            message: error.message || "Network error"
         };
     }
 };
 
-// ================= API FUNCTIONS WITH RETRIES =================
-
-/**
- * Fetch with automatic retry
- */
-const fetchWithRetry = async (endpoint, options = {}) => {
-    let lastError;
-    
-    for (let attempt = 0; attempt <= API_CONFIG.MAX_RETRIES; attempt++) {
-        try {
-            return await fetchAPI(endpoint, options);
-        } catch (error) {
-            lastError = error;
-            
-            // Don't retry on client errors (4xx)
-            if (error.status >= 400 && error.status < 500) {
-                throw error;
-            }
-            
-            // Wait before retrying (exponential backoff)
-            if (attempt < API_CONFIG.MAX_RETRIES) {
-                const delay = API_CONFIG.RETRY_DELAY * Math.pow(API_CONFIG.RETRY_DELAY_MULTIPLIER, attempt);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-    
-    throw lastError;
-};
-
-/**
- * Fetch with offline queue support
- */
-const fetchWithQueue = async (endpoint, options = {}) => {
-    if (API_CONFIG.QUEUE_ENABLED && !navigator.onLine) {
-        return requestQueue.add(() => fetchWithRetry(endpoint, options));
-    }
-    
-    return fetchWithRetry(endpoint, options);
-};
-
-// ================= EXAM APIs =================
+// ================= API FUNCTIONS =================
 
 // Teacher Exam Management
 
 /**
- * Create a new exam
+ * Create a new manual exam
  */
 export const createExam = async (examData) => {
-    return fetchWithQueue("/api/exams", {
+    return fetchAPI("/api/exams", {
         method: "POST",
         body: JSON.stringify(examData),
     });
 };
 
 /**
- * Get all exams for teacher
+ * Upload question paper for exam
  */
-export const getTeacherExams = (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return fetchWithQueue(`/api/exams/teacher${query ? `?${query}` : ""}`);
-};
-
-/**
- * Get teacher exam stats
- */
-export const getTeacherExamStats = () => {
-    return fetchWithQueue("/api/exams/teacher/stats");
-};
-
-/**
- * Get single exam
- */
-export const getExam = (id) => {
-    return fetchWithQueue(`/api/exams/${id}`);
-};
-
-/**
- * Update exam
- */
-export const updateExam = async (id, examData) => {
-    return fetchWithQueue(`/api/exams/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(examData),
-    });
-};
-
-/**
- * Delete exam
- */
-export const deleteExam = (id) => {
-    return fetchWithQueue(`/api/exams/${id}`, {
-        method: "DELETE",
-    });
-};
-
-/**
- * Publish/Unpublish exam
- */
-export const publishExam = (id) => {
-    return fetchWithQueue(`/api/exams/${id}/publish`, {
-        method: "PATCH",
-    });
-};
-
-/**
- * Get exam results
- */
-export const getExamResults = (id) => {
-    return fetchWithQueue(`/api/exams/${id}/results`);
-};
-
-/**
- * Get exam statistics
- */
-export const getExamStats = (id) => {
-    return fetchWithQueue(`/api/exams/${id}/stats`);
-};
-
-/**
- * Get exam with questions (teacher only)
- */
-export const getExamWithQuestions = (id) => {
-    return fetchWithQueue(`/api/exams/${id}?includeQuestions=true`);
-};
-
-// Student Exam APIs
-
-/**
- * Get available exams for student
- */
-export const getStudentExams = (courseId = null) => {
-    const endpoint = courseId 
-        ? `/api/exams/student/available?courseId=${courseId}` 
-        : "/api/exams/student/available";
-    return fetchWithQueue(endpoint);
-};
-
-/**
- * Get student's exam attempts
- */
-export const getMyAttempts = (courseId = null) => {
-    const endpoint = courseId 
-        ? `/api/exams/my-attempts?courseId=${courseId}` 
-        : "/api/exams/my-attempts";
-    return fetchWithQueue(endpoint);
-};
-
-/**
- * Get student's attempts for specific exam
- */
-export const getMyExamAttempts = (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/my-attempts`);
-};
-
-/**
- * Start exam attempt
- */
-export const startExamAttempt = async (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/start`, {
-        method: "POST",
-    });
-};
-
-/**
- * Submit exam attempt
- */
-export const submitExamAttempt = async (attemptId, answers) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/submit`, {
-        method: "POST",
-        body: JSON.stringify({ answers }),
-    });
-};
-
-/**
- * Send heartbeat
- */
-export const sendHeartbeat = async (attemptId, data = {}) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/heartbeat`, {
-        method: "POST",
-        body: JSON.stringify(data),
-    });
-};
-
-/**
- * Report violation
- */
-export const reportViolation = async (attemptId, data = {}) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/violation`, {
-        method: "POST",
-        body: JSON.stringify(data),
-    });
-};
-
-/**
- * Get student's exam results
- */
-export const getStudentExamResults = (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/student-results`);
-};
-
-/**
- * Preview exam (without starting)
- */
-export const previewExam = (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/preview`);
-};
-
-/**
- * Validate exam before starting
- */
-export const validateExamAccess = async (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/validate-access`, {
-        method: "POST",
-    });
-};
-
-/**
- * Get exam session info (for resuming)
- */
-export const getExamSession = (attemptId) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/session`);
-};
-
-// ================= FILE UPLOAD APIs =================
-
-/**
- * Upload file for exam answer (multipart/form-data)
- */
-export const uploadExamFile = async (attemptId, questionId, file) => {
-    const url = `${API_BASE_URL}/api/exams/attempt/${attemptId}/upload`;
+export const uploadQuestionPaper = async (examId, file) => {
+    const url = `${API_BASE_URL}/api/exams/${examId}/question-paper`;
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('questionId', questionId);
 
     const token = getAuthToken();
     
@@ -424,10 +131,68 @@ export const uploadExamFile = async (attemptId, questionId, file) => {
 };
 
 /**
- * Download uploaded exam file
+ * Get all exams for teacher
  */
-export const downloadExamFile = async (attemptId, questionId) => {
-    const url = `${API_BASE_URL}/api/exams/attempt/${attemptId}/file/${questionId}`;
+export const getTeacherExams = (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/api/exams/teacher${query ? `?${query}` : ""}`);
+};
+
+/**
+ * Get single exam
+ */
+export const getExam = (id) => {
+    return fetchAPI(`/api/exams/${id}`);
+};
+
+/**
+ * Update exam
+ */
+export const updateExam = async (id, examData) => {
+    return fetchAPI(`/api/exams/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(examData),
+    });
+};
+
+/**
+ * Delete exam
+ */
+export const deleteExam = (id) => {
+    return fetchAPI(`/api/exams/${id}`, {
+        method: "DELETE",
+    });
+};
+
+/**
+ * Publish/Unpublish exam
+ */
+export const publishExam = (id) => {
+    return fetchAPI(`/api/exams/${id}/publish`, {
+        method: "PATCH",
+    });
+};
+
+/**
+ * Get exam submissions (for teachers)
+ */
+export const getExamSubmissions = (id, params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/api/exams/${id}/submissions${query ? `?${query}` : ""}`);
+};
+
+/**
+ * Get exam statistics
+ */
+export const getExamStats = (id) => {
+    return fetchAPI(`/api/exams/${id}/stats`);
+};
+
+/**
+ * Download question paper
+ */
+export const downloadQuestionPaper = async (examId) => {
+    const url = `${API_BASE_URL}/api/exams/${examId}/question-paper`;
     
     const token = getAuthToken();
     
@@ -446,42 +211,113 @@ export const downloadExamFile = async (attemptId, questionId) => {
         };
     }
 
-    // Return the blob
+    return response.blob();
+};
+
+// Student Exam APIs
+
+/**
+ * Get available exams for student
+ */
+export const getStudentExams = (courseId = null) => {
+    const endpoint = courseId 
+        ? `/api/exams/student/available?courseId=${courseId}` 
+        : "/api/exams/student/available";
+    return fetchAPI(endpoint);
+};
+
+/**
+ * Get student's submission for an exam
+ */
+export const getMySubmission = (examId) => {
+    return fetchAPI(`/api/exams/${examId}/my-submission`);
+};
+
+/**
+ * Get student's all submissions
+ */
+export const getMySubmissions = (courseId = null) => {
+    const endpoint = courseId 
+        ? `/api/exams/my-submissions?courseId=${courseId}` 
+        : "/api/exams/my-submissions";
+    return fetchAPI(endpoint);
+};
+
+/**
+ * Submit exam (upload answer file)
+ */
+export const submitExam = async (examId, file) => {
+    const url = `${API_BASE_URL}/api/exams/${examId}/submit`;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = getAuthToken();
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': token
+        },
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw {
+            status: response.status,
+            message: data.message || "File upload failed"
+        };
+    }
+
+    return data;
+};
+
+/**
+ * Download student's answer file (for teachers)
+ */
+export const downloadAnswerFile = async (submissionId) => {
+    const url = `${API_BASE_URL}/api/exams/submission/${submissionId}/download`;
+    
+    const token = getAuthToken();
+    
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token
+        }
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        throw {
+            status: response.status,
+            message: data.message || "File download failed"
+        };
+    }
+
     return response.blob();
 };
 
 /**
- * Grade file upload question
+ * Grade submission
  */
-export const gradeExamAnswer = async (attemptId, questionId, marksObtained, gradingNotes = '') => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/grade`, {
-        method: 'POST',
-        body: JSON.stringify({
-            questionId,
-            marksObtained,
-            gradingNotes
-        })
-    });
-};
-
-/**
- * Grade entire exam at once
- */
-export const gradeExam = async (attemptId, obtainedMarks, overallFeedback = '') => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/grade`, {
+export const gradeSubmission = async (submissionId, obtainedMarks, feedback = '') => {
+    return fetchAPI(`/api/exams/submission/${submissionId}/grade`, {
         method: 'POST',
         body: JSON.stringify({
             obtainedMarks,
-            overallFeedback
+            feedback
         })
     });
 };
 
 /**
- * Publish single exam result
+ * Publish single result
  */
-export const publishExamResult = (attemptId) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/publish`, {
+export const publishResult = (submissionId) => {
+    return fetchAPI(`/api/exams/submission/${submissionId}/publish`, {
         method: 'POST'
     });
 };
@@ -489,17 +325,118 @@ export const publishExamResult = (attemptId) => {
 /**
  * Publish all results for an exam
  */
-export const publishAllExamResults = (examId) => {
-    return fetchWithQueue(`/api/exams/${examId}/publish-all`, {
+export const publishAllResults = (examId) => {
+    return fetchAPI(`/api/exams/${examId}/publish-all`, {
         method: 'POST'
     });
 };
 
 /**
- * Get detailed attempt info (teacher)
+ * Get submission details (for teachers)
+ */
+export const getSubmissionDetails = (submissionId) => {
+    return fetchAPI(`/api/exams/submission/${submissionId}/details`);
+};
+
+// ================= LEGACY API (for backward compatibility) =================
+// These are kept for compatibility with existing code but map to new endpoints
+
+/**
+ * @deprecated Use getExamSubmissions instead
+ */
+export const getExamResults = (id) => {
+    return getExamSubmissions(id);
+};
+
+/**
+ * @deprecated Use gradeSubmission instead
+ */
+export const gradeExam = async (attemptId, obtainedMarks, overallFeedback = '') => {
+    return gradeSubmission(attemptId, obtainedMarks, overallFeedback);
+};
+
+/**
+ * @deprecated Use gradeSubmission instead
+ */
+export const gradeExamAnswer = async (attemptId, questionId, marksObtained, gradingNotes = '') => {
+    return gradeSubmission(attemptId, marksObtained, gradingNotes);
+};
+
+/**
+ * @deprecated Use publishResult instead
+ */
+export const publishExamResult = (attemptId) => {
+    return publishResult(attemptId);
+};
+
+/**
+ * @deprecated Use publishAllResults instead
+ */
+export const publishAllExamResults = (examId) => {
+    return publishAllResults(examId);
+};
+
+/**
+ * @deprecated Use getSubmissionDetails instead
  */
 export const getAttemptDetails = (attemptId) => {
-    return fetchWithQueue(`/api/exams/attempt/${attemptId}/details`);
+    return getSubmissionDetails(attemptId);
+};
+
+/**
+ * @deprecated No longer needed - exams are not timed
+ */
+export const startExamAttempt = async () => {
+    throw new Error("Not applicable for manual exams");
+};
+
+/**
+ * @deprecated Use submitExam instead
+ */
+export const submitExamAttempt = async () => {
+    throw new Error("Not applicable for manual exams");
+};
+
+/**
+ * @deprecated Use submitExam instead
+ */
+export const uploadExamFile = async () => {
+    throw new Error("Not applicable for manual exams");
+};
+
+/**
+ * @deprecated Use getMySubmissions instead
+ */
+export const getMyAttempts = () => {
+    return getMySubmissions();
+};
+
+/**
+ * @deprecated Use getMyAttempts instead
+ */
+export const getMyExamAttempts = () => {
+    return getMySubmissions();
+};
+
+/**
+ * @deprecated No longer needed - exams are not timed
+ */
+export const sendHeartbeat = async () => {
+    throw new Error("Not applicable for manual exams");
+};
+
+/**
+ * @deprecated No longer needed - no violations in manual exams
+ */
+export const reportViolation = async () => {
+    throw new Error("Not applicable for manual exams");
+};
+
+/**
+ * @deprecated Use getStudentExams instead
+ */
+export const getStudentExamResults = () => {
+    return getMySubmissions();
 };
 
 // ================= EXPORT =================
@@ -507,40 +444,47 @@ export const getAttemptDetails = (attemptId) => {
 export default {
     // Teacher Exam Management
     createExam,
+    uploadQuestionPaper,
     getTeacherExams,
-    getTeacherExamStats,
     getExam,
-    getExamWithQuestions,
+    getExamWithQuestions: getExam,
     updateExam,
     deleteExam,
     publishExam,
-    getExamResults,
+    getExamSubmissions,
+    getExamResults: getExamSubmissions,
     getExamStats,
+    downloadQuestionPaper,
     
     // Student Exam APIs
     getStudentExams,
-    getMyAttempts,
-    getMyExamAttempts,
+    getMySubmission,
+    getMySubmissions,
+    submitExam,
+    downloadAnswerFile,
+    
+    // Grading APIs
+    gradeSubmission,
+    gradeExam,
+    gradeExamAnswer,
+    publishResult,
+    publishExamResult,
+    publishAllResults,
+    publishAllExamResults,
+    getSubmissionDetails,
+    getAttemptDetails,
+    
+    // Legacy/Broken APIs (kept for compatibility)
     startExamAttempt,
     submitExamAttempt,
+    uploadExamFile,
+    getMyAttempts,
+    getMyExamAttempts,
     sendHeartbeat,
     reportViolation,
     getStudentExamResults,
-    previewExam,
-    validateExamAccess,
-    getExamSession,
     
-    // File Upload APIs
-    uploadExamFile,
-    downloadExamFile,
-    gradeExamAnswer,
-    gradeExam,
-    publishExamResult,
-    publishAllExamResults,
-    getAttemptDetails,
-    
-    // Config (exposed for testing)
-    API_CONFIG,
+    // Config
     getBackendURL
 };
 

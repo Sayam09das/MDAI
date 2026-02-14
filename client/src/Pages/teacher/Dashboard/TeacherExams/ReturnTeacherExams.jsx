@@ -7,16 +7,17 @@ import {
     CheckCircle,
     AlertCircle,
     BookOpen,
-    Shield,
     BarChart3,
     Eye,
     Users,
     Plus,
     RefreshCw,
     Check,
-    X
+    X,
+    Upload,
+    Download
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -25,10 +26,8 @@ const ReturnTeacherExams = () => {
 
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedExam, setSelectedExam] = useState(null);
-    const [examStats, setExamStats] = useState(null);
     const [error, setError] = useState("");
-    const [actionLoading, setActionLoading] = useState(null); // exam ID being processed
+    const [actionLoading, setActionLoading] = useState(null);
 
     useEffect(() => {
         fetchExams();
@@ -54,21 +53,6 @@ const ReturnTeacherExams = () => {
         }
     };
 
-    const fetchExamStats = async (examId) => {
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/exams/${examId}/stats`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                setExamStats(data.stats);
-            }
-        } catch (err) {
-            console.error("Error fetching exam stats:", err);
-        }
-    };
-
     const formatDate = (date) => {
         if (!date) return "Not set";
         return new Date(date).toLocaleDateString("en-US", {
@@ -81,42 +65,18 @@ const ReturnTeacherExams = () => {
         });
     };
 
-    const formatDuration = (minutes) => {
-        if (!minutes) return "0 minutes";
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        if (hours > 0 && mins > 0) {
-            return `${hours}h ${mins}m`;
-        } else if (hours > 0) {
-            return `${hours}h`;
-        } else {
-            return `${mins}m`;
-        }
-    };
-
     const getStatusColor = (status) => {
         switch (status) {
-            case 'active': return 'bg-green-100 text-green-700';
+            case 'published': return 'bg-green-100 text-green-700';
             case 'draft': return 'bg-gray-100 text-gray-700';
-            case 'scheduled': return 'bg-yellow-100 text-yellow-700';
             case 'closed': return 'bg-red-100 text-red-700';
-            case 'archived': return 'bg-purple-100 text-purple-700';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
 
-    const getStatusLabel = (exam) => {
-        if (exam.status === 'draft') return 'Draft';
-        if (exam.status === 'scheduled') return 'Scheduled';
-        if (exam.status === 'active') return 'Active';
-        if (exam.status === 'closed') return 'Closed';
-        if (exam.status === 'archived') return 'Archived';
-        return exam.status?.charAt(0).toUpperCase() + exam.status?.slice(1) || 'Unknown';
-    };
-
     const handleTogglePublish = async (examId, currentStatus) => {
-        const newStatus = currentStatus === 'draft' ? 'active' : 'draft';
-        const actionText = newStatus === 'active' ? 'publish' : 'unpublish';
+        const newStatus = currentStatus === 'draft' ? 'published' : 'draft';
+        const actionText = newStatus === 'published' ? 'publish' : 'unpublish';
         
         if (!window.confirm(`Are you sure you want to ${actionText} this exam?`)) {
             return;
@@ -134,7 +94,6 @@ const ReturnTeacherExams = () => {
             const data = await res.json();
 
             if (data.success) {
-                // Refresh exams list
                 fetchExams();
                 setError("");
             } else {
@@ -146,11 +105,6 @@ const ReturnTeacherExams = () => {
         } finally {
             setActionLoading(null);
         }
-    };
-
-    const handleViewStats = (exam) => {
-        setSelectedExam(exam);
-        fetchExamStats(exam.id);
     };
 
     const handleRefresh = () => {
@@ -177,7 +131,7 @@ const ReturnTeacherExams = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 mb-2">
-                            <Shield className="w-8 h-8 text-indigo-600" />
+                            <FileText className="w-8 h-8 text-indigo-600" />
                             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
                                 Exam Management
                             </h1>
@@ -190,7 +144,7 @@ const ReturnTeacherExams = () => {
                             Refresh
                         </button>
                     </div>
-                    <p className="text-gray-600">Monitor and manage secure online examinations</p>
+                    <p className="text-gray-600">Create and manage manual evaluation exams</p>
                 </motion.div>
 
                 {/* Error Message */}
@@ -218,9 +172,9 @@ const ReturnTeacherExams = () => {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-800">
-                                    {exams.filter(e => e.status === 'active').length}
+                                    {exams.filter(e => e.status === 'published').length}
                                 </p>
-                                <p className="text-sm text-gray-500">Active Exams</p>
+                                <p className="text-sm text-gray-500">Published</p>
                             </div>
                         </div>
                     </motion.div>
@@ -251,14 +205,14 @@ const ReturnTeacherExams = () => {
                         className="bg-white rounded-xl p-4 shadow-lg"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-yellow-100 rounded-lg">
-                                <Clock className="w-6 h-6 text-yellow-600" />
+                            <div className="p-3 bg-purple-100 rounded-lg">
+                                <Users className="w-6 h-6 text-purple-600" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-800">
-                                    {exams.filter(e => e.status === 'scheduled').length}
+                                    {exams.reduce((sum, e) => sum + (e.totalSubmissions || 0), 0)}
                                 </p>
-                                <p className="text-sm text-gray-500">Scheduled</p>
+                                <p className="text-sm text-gray-500">Total Submissions</p>
                             </div>
                         </div>
                     </motion.div>
@@ -270,14 +224,14 @@ const ReturnTeacherExams = () => {
                         className="bg-white rounded-xl p-4 shadow-lg"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-purple-100 rounded-lg">
-                                <BarChart3 className="w-6 h-6 text-purple-600" />
+                            <div className="p-3 bg-yellow-100 rounded-lg">
+                                <CheckCircle className="w-6 h-6 text-yellow-600" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-800">
-                                    {exams.length}
+                                    {exams.reduce((sum, e) => sum + (e.gradedCount || 0), 0)}
                                 </p>
-                                <p className="text-sm text-gray-500">Total Exams</p>
+                                <p className="text-sm text-gray-500">Graded</p>
                             </div>
                         </div>
                     </motion.div>
@@ -358,66 +312,30 @@ const ReturnTeacherExams = () => {
 
                                         <div className="space-y-2 mb-4">
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                <Clock className="w-4 h-4" />
-                                                <span>Duration: {formatDuration(exam.duration)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-gray-500">
                                                 <FileText className="w-4 h-4" />
-                                                <span>Questions: {exam.questionCount || 0}</span>
+                                                <span>Total Marks: {exam.totalMarks || 0}</span>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                                 <Users className="w-4 h-4" />
-                                                <span>Attempts: {exam.totalAttempts || 0}</span>
+                                                <span>Submissions: {exam.totalSubmissions || 0}</span>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                                 <CheckCircle className="w-4 h-4" />
-                                                <span>Total Marks: {exam.totalMarks || 0}</span>
+                                                <span>Graded: {exam.gradedCount || 0}</span>
                                             </div>
-                                            {exam.startDate && (
+                                            {exam.dueDate && (
                                                 <div className="flex items-center gap-2 text-sm text-gray-500">
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>Starts: {formatDate(exam.startDate)}</span>
+                                                    <span>Due: {formatDate(exam.dueDate)}</span>
                                                 </div>
                                             )}
-                                            {exam.endDate && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                    <Calendar className="w-4 h-4" />
-                                                    <span>Ends: {formatDate(exam.endDate)}</span>
+                                            {exam.questionPaper?.filename && (
+                                                <div className="flex items-center gap-2 text-sm text-blue-600">
+                                                    <Download className="w-4 h-4" />
+                                                    <span>Question paper attached</span>
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Stats Preview */}
-                                        {selectedExam?.id === exam.id && examStats && (
-                                            <div className="bg-indigo-50 rounded-lg p-4 mb-4">
-                                                <h4 className="font-semibold text-indigo-800 mb-2 flex items-center gap-2">
-                                                    <BarChart3 className="w-4 h-4" />
-                                                    Exam Statistics
-                                                </h4>
-                                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="text-gray-500">Avg Score</p>
-                                                        <p className="font-bold text-indigo-600">{examStats.avgPercentage?.toFixed(1) || 0}%</p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="text-gray-500">Highest</p>
-                                                        <p className="font-bold text-green-600">{examStats.highestPercentage?.toFixed(1) || 0}%</p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="text-gray-500">Pass Rate</p>
-                                                        <p className="font-bold text-yellow-600">
-                                                            {examStats.totalAttempts > 0 
-                                                                ? Math.round((examStats.passedCount / examStats.totalAttempts) * 100)
-                                                                : 0}%
-                                                        </p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="text-gray-500">Attempts</p>
-                                                        <p className="font-bold text-blue-600">{examStats.totalAttempts || 0}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         {/* Action Buttons */}
                                         <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
@@ -446,22 +364,13 @@ const ReturnTeacherExams = () => {
                                                 )}
                                             </button>
                                             
-                                            {/* Analytics Button */}
-                                            <Link
-                                                to={`/teacher-dashboard/exams/${exam.id}/analytics`}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
-                                            >
-                                                <BarChart3 className="w-4 h-4" />
-                                                Analytics
-                                            </Link>
-                                            
                                             {/* Results Button */}
                                             <Link
                                                 to={`/teacher-dashboard/exams/${exam.id}/results`}
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium hover:bg-green-200 transition-colors"
                                             >
                                                 <Eye className="w-4 h-4" />
-                                                Results
+                                                Submissions
                                             </Link>
                                         </div>
                                     </div>

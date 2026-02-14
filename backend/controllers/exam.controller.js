@@ -1,11 +1,11 @@
-import Exam from "../models/examModel.js";
-import ExamAttempt from "../models/examAttemptModel.js";
+import ManualExam from "../models/examModel.js";
+import ExamSubmission from "../models/examAttemptModel.js";
 import Course from "../models/Course.js";
 
 // ==================== TEACHER EXAM MANAGEMENT ====================
 
 /**
- * Create a new exam
+ * Create a new manual exam
  * POST /api/exams
  */
 export const createExam = async (req, res) => {
@@ -14,17 +14,14 @@ export const createExam = async (req, res) => {
             title,
             description,
             course,
-            duration,
-            questions,
+            totalMarks,
             passingMarks,
-            shuffleQuestions,
-            shuffleOptions,
-            showResults,
-            allowReview,
-            startDate,
-            endDate,
-            maxAttempts,
-            security
+            dueDate,
+            instructions,
+            allowedAnswerFileTypes,
+            maxAnswerFileSize,
+            allowLateSubmission,
+            latePenaltyPercentage
         } = req.body;
 
         // Verify course belongs to teacher
@@ -37,50 +34,21 @@ export const createExam = async (req, res) => {
             return res.status(404).json({ message: "Course not found or unauthorized" });
         }
 
-        // Calculate total marks from questions
-        const totalMarks = questions.reduce((sum, q) => sum + (q.marks || 0), 0);
-
-        const now = new Date();
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-        
-        // Determine initial status based on isPublished flag
-        const isPublished = req.body.isPublished || false;
-        let status = "draft";
-        let publishedAt = null;
-        
-        if (isPublished) {
-            publishedAt = now;
-            // Determine if scheduled or active based on startDate
-            status = start && start > now ? "scheduled" : "active";
-        }
-
-        const exam = await Exam.create({
+        const exam = await ManualExam.create({
             title,
             description,
             course,
             instructor: req.user.id,
-            duration,
-            totalMarks,
+            totalMarks: totalMarks || 100,
             passingMarks: passingMarks || 0,
-            questions,
-            shuffleQuestions: shuffleQuestions || false,
-            shuffleOptions: shuffleOptions || false,
-            showResults: showResults || false,
-            allowReview: allowReview !== false,
-            startDate: startDate || null,
-            endDate: endDate || null,
-            maxAttempts: maxAttempts || 1,
-            security: security || {
-                preventTabSwitch: true,
-                preventCopyPaste: true,
-                requireFullscreen: true,
-                maxTimeOutside: 5,
-                autoSubmitOnViolation: false
-            },
-            isPublished,
-            status,
-            publishedAt
+            dueDate: dueDate || null,
+            instructions: instructions || "",
+            allowedAnswerFileTypes: allowedAnswerFileTypes || ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+            maxAnswerFileSize: maxAnswerFileSize || 10,
+            allowLateSubmission: allowLateSubmission || false,
+            latePenaltyPercentage: latePenaltyPercentage || 0,
+            isPublished: req.body.isPublished || false,
+            status: req.body.isPublished ? "published" : "draft"
         });
 
         res.status(201).json({
@@ -90,6 +58,48 @@ export const createExam = async (req, res) => {
         });
     } catch (error) {
         console.error("Create exam error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Upload question paper for exam
+ * POST /api/exams/:id/question-paper
+ */
+export const uploadQuestionPaper = async (req, res) => {
+    try {
+        const exam = await ManualExam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        exam.questionPaper = {
+            filename: req.file.filename || `question_${exam._id}.pdf`,
+            originalName: req.file.originalname,
+            contentType: req.file.mimetype,
+            size: req.file.size,
+            url: req.file.path || "",
+            uploadedAt: new Date()
+        };
+
+        await exam.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Question paper uploaded successfully",
+            questionPaper: exam.questionPaper
+        });
+    } catch (error) {
+        console.error("Upload question paper error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -113,7 +123,7 @@ export const getTeacherExams = async (req, res) => {
             ];
         }
 
-        const exams = await Exam.find(query)
+        const exams = await ManualExam.find(query)
             .populate("course", "title")
             .sort({ createdAt: -1 });
 
@@ -136,7 +146,7 @@ export const getTeacherExams = async (req, res) => {
  */
 export const getExamById = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id)
+        const exam = await ManualExam.findById(req.params.id)
             .populate("course", "title description")
             .populate("instructor", "name email");
 
@@ -165,18 +175,10 @@ export const getExamById = async (req, res) => {
                 return res.status(403).json({ message: "You are not enrolled in this course" });
             }
 
-            // For students, don't send correct answers
+            // For students, don't send sensitive info
             const examForStudent = exam.toObject();
-            if (!isTeacher) {
-                examForStudent.questions = examForStudent.questions.map(q => ({
-                    _id: q._id,
-                    type: q.type,
-                    question: q.question,
-                    options: q.options.map(o => ({ _id: o._id, text: o.text })),
-                    marks: q.marks,
-                    order: q.order
-                }));
-            }
+            // Remove questionPaper from student view (or keep it based on requirement)
+            // Keep question paper so students can download it
 
             return res.status(200).json({ success: true, exam: examForStudent });
         }
@@ -200,7 +202,7 @@ export const getExamById = async (req, res) => {
  */
 export const updateExam = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id);
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -211,9 +213,9 @@ export const updateExam = async (req, res) => {
         }
 
         const allowedUpdates = [
-            "title", "description", "duration", "passingMarks",
-            "shuffleQuestions", "shuffleOptions", "showResults",
-            "allowReview", "startDate", "endDate", "maxAttempts", "security"
+            "title", "description", "totalMarks", "passingMarks",
+            "dueDate", "instructions", "allowedAnswerFileTypes",
+            "maxAnswerFileSize", "allowLateSubmission", "latePenaltyPercentage"
         ];
 
         allowedUpdates.forEach(field => {
@@ -221,12 +223,6 @@ export const updateExam = async (req, res) => {
                 exam[field] = req.body[field];
             }
         });
-
-        // Handle questions update
-        if (req.body.questions) {
-            exam.questions = req.body.questions;
-            exam.totalMarks = req.body.questions.reduce((sum, q) => sum + (q.marks || 0), 0);
-        }
 
         await exam.save();
 
@@ -247,7 +243,7 @@ export const updateExam = async (req, res) => {
  */
 export const deleteExam = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id);
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -257,8 +253,8 @@ export const deleteExam = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // Delete all attempts
-        await ExamAttempt.deleteMany({ exam: exam._id });
+        // Delete all submissions
+        await ExamSubmission.deleteMany({ exam: exam._id });
 
         await exam.deleteOne();
 
@@ -278,7 +274,7 @@ export const deleteExam = async (req, res) => {
  */
 export const togglePublishExam = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id);
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -292,7 +288,7 @@ export const togglePublishExam = async (req, res) => {
         
         if (exam.isPublished) {
             exam.publishedAt = new Date();
-            exam.status = exam.startDate && new Date(exam.startDate) > new Date() ? "scheduled" : "active";
+            exam.status = "published";
         } else {
             exam.status = "draft";
         }
@@ -311,13 +307,12 @@ export const togglePublishExam = async (req, res) => {
 };
 
 /**
- * Get exam results/attempts
- * GET /api/exams/:id/results
+ * Get exam submissions (for teachers)
+ * GET /api/exams/:id/submissions
  */
-export const getExamResults = async (req, res) => {
+export const getExamSubmissions = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id)
-            .populate("course", "title");
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -327,30 +322,34 @@ export const getExamResults = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const attempts = await ExamAttempt.find({ exam: exam._id })
+        const { status, search } = req.query;
+
+        const query = { exam: exam._id };
+        if (status && status !== "all") {
+            query.gradingStatus = status;
+        }
+
+        const submissions = await ExamSubmission.find(query)
             .populate("student", "fullName email profileImage")
             .sort({ submittedAt: -1 });
 
+        // Filter by search if provided
+        let filteredSubmissions = submissions;
+        if (search) {
+            filteredSubmissions = submissions.filter(s => 
+                s.student.fullName.toLowerCase().includes(search.toLowerCase()) ||
+                s.student.email.toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
         // Calculate statistics
         const stats = {
-            totalAttempts: attempts.length,
-            submitted: attempts.filter(a => a.status === "SUBMITTED").length,
-            disqualified: attempts.filter(a => a.status === "DISQUALIFIED").length,
-            autoSubmitted: attempts.filter(a => a.status === "AUTO_SUBMITTED").length,
-            avgScore: 0,
-            highestScore: 0,
-            lowestScore: 0,
-            passRate: 0
+            totalSubmissions: filteredSubmissions.length,
+            pending: filteredSubmissions.filter(s => s.gradingStatus === "pending").length,
+            graded: filteredSubmissions.filter(s => s.gradingStatus === "graded").length,
+            published: filteredSubmissions.filter(s => s.gradingStatus === "published").length,
+            late: filteredSubmissions.filter(s => s.isLate).length
         };
-
-        const submittedAttempts = attempts.filter(a => a.status === "SUBMITTED");
-        if (submittedAttempts.length > 0) {
-            const scores = submittedAttempts.map(a => a.percentage);
-            stats.avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-            stats.highestScore = Math.max(...scores);
-            stats.lowestScore = Math.min(...scores);
-            stats.passRate = Math.round((submittedAttempts.filter(a => a.passed).length / submittedAttempts.length) * 100);
-        }
 
         res.status(200).json({
             success: true,
@@ -358,27 +357,27 @@ export const getExamResults = async (req, res) => {
                 id: exam._id,
                 title: exam.title,
                 totalMarks: exam.totalMarks,
-                passingMarks: exam.passingMarks
+                passingMarks: exam.passingMarks,
+                dueDate: exam.dueDate
             },
             stats,
-            attempts: attempts.map(a => ({
-                id: a._id,
-                student: a.student,
-                status: a.status,
-                marks: a.obtainedMarks,
-                totalMarks: a.totalMarks,
-                percentage: a.percentage,
-                passed: a.passed,
-                timeTaken: a.timeTaken,
-                totalViolations: a.totalViolations,
-                tabSwitchCount: a.tabSwitchCount,
-                timeOutside: a.timeOutside,
-                submittedAt: a.submittedAt,
-                attemptNumber: a.attemptNumber
+            submissions: filteredSubmissions.map(s => ({
+                id: s._id,
+                student: s.student,
+                status: s.status,
+                isLate: s.isLate,
+                submittedAt: s.submittedAt,
+                obtainedMarks: s.obtainedMarks,
+                totalMarks: s.totalMarks,
+                percentage: s.percentage,
+                passed: s.passed,
+                gradingStatus: s.gradingStatus,
+                feedback: s.feedback,
+                resultPublished: s.resultPublished
             }))
         });
     } catch (error) {
-        console.error("Get exam results error:", error);
+        console.error("Get exam submissions error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -389,7 +388,7 @@ export const getExamResults = async (req, res) => {
  */
 export const getExamStats = async (req, res) => {
     try {
-        const exam = await Exam.findById(req.params.id);
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -399,7 +398,7 @@ export const getExamStats = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const dbStats = await ExamAttempt.getExamStats(exam._id);
+        const dbStats = await ExamSubmission.getExamStats(exam._id);
 
         res.status(200).json({
             success: true,
@@ -418,501 +417,59 @@ export const getExamStats = async (req, res) => {
     }
 };
 
-// ==================== STUDENT EXAM ATTEMPTS ====================
-
 /**
- * Start exam attempt
- * POST /api/exams/:examId/start
- * 
- * IMPORTANT: Timer starts from server time when student clicks start
- * Timer continues even after page refresh, internet disconnect, or re-login
- * Server calculates remaining time from stored startTime and endTime
+ * Download question paper
+ * GET /api/exams/:id/question-paper
  */
-export const startExamAttempt = async (req, res) => {
+export const downloadQuestionPaper = async (req, res) => {
     try {
-        const { examId } = req.params;
-
-        const exam = await Exam.findById(examId)
-            .populate("course", "title");
+        const exam = await ManualExam.findById(req.params.id);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
         }
 
-        // Check if exam is published
-        if (!exam.isPublished) {
-            return res.status(403).json({ message: "Exam is not available" });
-        }
-
-        // Check dates - but allow bypass for testing
-        const isTestMode = req.query.test === 'true' || req.body.test === true;
-        
-        // Allow teachers (exam instructors) to test anytime
-        const isInstructor = exam.instructor.toString() === req.user.id || req.user.role === "admin";
-        
-        const now = new Date();
-        
-        // Allow instructor to test or test mode bypasses start date check
-        if (exam.startDate && !isTestMode && !isInstructor && now < new Date(exam.startDate)) {
-            return res.status(400).json({ 
-                message: "Exam has not started yet",
-                startsAt: exam.startDate
-            });
-        }
-        
-        // If test mode, ignore start date but still check end date
-        if (exam.endDate && now > new Date(exam.endDate)) {
-            return res.status(400).json({ message: "Exam has ended" });
-        }
-
-        // Check enrollment - but allow instructor to bypass for testing
-        const Enrollment = (await import("../models/enrollmentModel.js")).default;
-        const enrollment = await Enrollment.findOne({
-            student: req.user.id,
-            course: exam.course._id,
-            $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
-        });
-
-        // Allow instructor to bypass enrollment for testing
-        if (!enrollment && !isInstructor && !isTestMode) {
-            return res.status(403).json({ message: "You are not enrolled in this course" });
-        }
-
-        // Check for existing active attempt
-        const existingAttempt = await ExamAttempt.findOne({
-            exam: examId,
-            student: req.user.id,
-            status: "IN_PROGRESS"
-        });
-
-        if (existingAttempt) {
-            // Calculate remaining time from server
-            const remainingMs = new Date(existingAttempt.endTime) - new Date();
-            const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-
-            // Return existing attempt with server-calculated remaining time
-            return res.status(200).json({
-                success: true,
-                message: "Resuming existing attempt",
-                attempt: {
-                    id: existingAttempt._id,
-                    startTime: existingAttempt.startTime,
-                    endTime: existingAttempt.endTime,
-                    duration: exam.duration,
-                    remainingTime: remainingSeconds,
-                    remainingMs: remainingMs
-                },
-                resuming: true
-            });
-        }
-
-        // Check max attempts
-        const attemptCount = await ExamAttempt.countDocuments({
-            exam: examId,
-            student: req.user.id,
-            status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"] }
-        });
-
-        if (attemptCount >= exam.maxAttempts) {
-            return res.status(403).json({ message: "Maximum attempts reached" });
-        }
-
-        // Calculate server-side timer
-        const startTime = new Date();
-        const endTime = new Date(startTime.getTime() + exam.duration * 60 * 1000);
-
-        // Create new attempt with server timestamps
-        const attempt = await ExamAttempt.create({
-            exam: examId,
-            student: req.user.id,
-            course: exam.course._id,
-            startTime,
-            endTime,
-            status: "IN_PROGRESS",
-            attemptNumber: attemptCount + 1,
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent']
-        });
-
-        // Update exam statistics
-        exam.totalAttempts += 1;
-        await exam.save();
-
-        // Return exam with server-calculated timer
-        const questionsForStudent = exam.questions.map((q, index) => ({
-            _id: q._id,
-            type: q.type,
-            question: q.question,
-            options: q.options.map(o => ({ _id: o._id, text: o.text })),
-            marks: q.marks,
-            order: q.order
-        }));
-
-        res.status(200).json({
-            success: true,
-            message: "Exam started successfully. Timer has started.",
-            attempt: {
-                id: attempt._id,
-                startTime: attempt.startTime,
-                endTime: attempt.endTime,
-                duration: exam.duration,
-                remainingTime: exam.duration * 60, // in seconds
-                remainingMs: exam.duration * 60 * 1000
-            },
-            exam: {
-                id: exam._id,
-                title: exam.title,
-                description: exam.description,
-                totalMarks: exam.totalMarks,
-                passingMarks: exam.passingMarks,
-                questions: questionsForStudent,
-                shuffleQuestions: exam.shuffleQuestions,
-                showResults: exam.showResults,
-                security: exam.security
-            },
-            timer: {
-                startTime: attempt.startTime,
-                endTime: attempt.endTime,
-                duration: exam.duration,
-                serverTime: now
+        // Check enrollment for students
+        if (req.user.role === "student") {
+            if (!exam.isPublished) {
+                return res.status(403).json({ message: "Exam not available" });
             }
-        });
-    } catch (error) {
-        console.error("Start exam attempt error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
 
-/**
- * Submit exam
- * POST /api/exams/attempt/:attemptId/submit
- * 
- * Manual Grading: Student submits answer sheet (file upload)
- * Teacher downloads, evaluates, and manually enters marks
- */
-export const submitExamAttempt = async (req, res) => {
-    try {
-        const { attemptId } = req.params;
-        const { answers } = req.body;
+            const Enrollment = (await import("../models/enrollmentModel.js")).default;
+            const enrollment = await Enrollment.findOne({
+                student: req.user.id,
+                course: exam.course,
+                $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
+            });
 
-        const attempt = await ExamAttempt.findById(attemptId)
-            .populate("exam");
-
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
-        }
-
-        if (attempt.student.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        if (!["IN_PROGRESS", "NOT_STARTED"].includes(attempt.status)) {
-            return res.status(400).json({ message: "Exam already submitted" });
-        }
-
-        // Get exam for total marks
-        const exam = await Exam.findById(attempt.exam._id);
-        if (!exam) {
-            return res.status(404).json({ message: "Exam not found" });
-        }
-
-        // For manual grading: Student submits, but no auto-scoring
-        // Marks remain 0 until teacher manually grades
-        // Status changes to SUBMITTED, awaiting manual grading
-        attempt.answers = answers || [];
-        attempt.obtainedMarks = 0; // No auto-grading
-        attempt.totalMarks = exam.totalMarks;
-        attempt.percentage = 0; // Will be calculated after grading
-        attempt.passed = false; // Will be determined after grading
-        attempt.status = "SUBMITTED";
-        attempt.submittedAt = new Date();
-        attempt.timeTaken = Math.round((attempt.submittedAt - attempt.startTime) / 1000);
-        
-        // Set grading status - awaiting manual grading
-        attempt.gradingStatus = "pending";
-
-        await attempt.save();
-
-        res.status(200).json({
-            success: true,
-            message: "Exam submitted successfully. Awaiting manual grading.",
-            result: {
-                status: "submitted",
-                submittedAt: attempt.submittedAt,
-                timeTaken: attempt.timeTaken,
-                gradingStatus: "pending",
-                message: "Your answers have been submitted. Results will be published after manual evaluation."
+            if (!enrollment) {
+                return res.status(403).json({ message: "You are not enrolled in this course" });
             }
+        }
+
+        if (!exam.questionPaper || !exam.questionPaper.data) {
+            return res.status(404).json({ message: "Question paper not found" });
+        }
+
+        const file = exam.questionPaper;
+
+        res.set({
+            "Content-Type": file.contentType || "application/pdf",
+            "Content-Disposition": `attachment; filename="${file.originalName || "question_paper.pdf"}"`,
+            "Content-Length": file.size
         });
+
+        res.send(file.data);
     } catch (error) {
-        console.error("Submit exam attempt error:", error);
+        console.error("Download question paper error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
-/**
- * Send heartbeat - Server calculates remaining time
- * POST /api/exams/attempt/:attemptId/heartbeat
- * 
- * IMPORTANT: Timer is calculated from server, not client
- * This prevents timer manipulation and ensures strict timing
- */
-export const sendHeartbeat = async (req, res) => {
-    try {
-        const { attemptId } = req.params;
-        const { timeOutside, status } = req.body;
-
-        const attempt = await ExamAttempt.findById(attemptId);
-
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
-        }
-
-        if (attempt.student.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        if (!["IN_PROGRESS"].includes(attempt.status)) {
-            return res.status(400).json({ message: "Exam not in progress" });
-        }
-
-        // Update time outside
-        if (timeOutside !== undefined) {
-            attempt.timeOutside = timeOutside;
-        }
-
-        // Get exam for security settings
-        const exam = await Exam.findById(attempt.exam);
-        const maxTimeOutside = exam?.security?.maxTimeOutside || 5;
-        const maxTimeMs = maxTimeOutside * 60 * 1000;
-
-        // Calculate remaining time from SERVER (not client)
-        const now = new Date();
-        const remainingMs = new Date(attempt.endTime) - now;
-        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-
-        // Check for disqualification due to time outside
-        if (attempt.timeOutside > maxTimeMs) {
-            attempt.status = "DISQUALIFIED";
-            attempt.disqualifiedAt = new Date();
-            attempt.disqualifiedReason = "Exceeded maximum time outside exam window";
-            attempt.autoSubmitReason = "TIME_OUTSIDE_EXCEEDED";
-            await attempt.save();
-
-            return res.status(200).json({
-                success: true,
-                disqualified: true,
-                message: "Disqualified for exceeding time outside limit",
-                remainingTime: 0,
-                timerExpired: true
-            });
-        }
-
-        // Check if timer expired (server-side check)
-        if (remainingMs <= 0) {
-            // Auto-submit expired exam
-            attempt.status = "AUTO_SUBMITTED";
-            attempt.autoSubmitReason = "TIME_EXPIRED";
-            attempt.submittedAt = now;
-            attempt.timeTaken = Math.round((now - new Date(attempt.startTime)) / 1000);
-            await attempt.save();
-
-            return res.status(200).json({
-                success: true,
-                expired: true,
-                message: "Exam time expired",
-                remainingTime: 0,
-                timerExpired: true
-            });
-        }
-
-        // Update heartbeat
-        attempt.lastHeartbeat = now;
-        await attempt.save();
-
-        // Return server-calculated remaining time
-        res.status(200).json({
-            success: true,
-            remainingTime: remainingSeconds,
-            remainingMs: remainingMs,
-            serverTime: now,
-            timer: {
-                startTime: attempt.startTime,
-                endTime: attempt.endTime,
-                elapsed: Math.round((now - new Date(attempt.startTime)) / 1000),
-                remaining: remainingSeconds
-            },
-            violations: attempt.totalViolations
-        });
-    } catch (error) {
-        console.error("Heartbeat error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
+// ==================== STUDENT EXAM SUBMISSIONS ====================
 
 /**
- * Report violation
- * POST /api/exams/attempt/:attemptId/violation
- */
-export const reportViolation = async (req, res) => {
-    try {
-        const { attemptId } = req.params;
-        const { type, details, duration } = req.body;
-
-        const attempt = await ExamAttempt.findById(attemptId)
-            .populate("exam");
-
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
-        }
-
-        if (attempt.student.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        if (!["IN_PROGRESS"].includes(attempt.status)) {
-            return res.status(400).json({ message: "Exam not in progress" });
-        }
-
-        // Add violation
-        attempt.addViolation(type, details, duration);
-        await attempt.save();
-
-        // Check for auto-submit on violation
-        const exam = attempt.exam;
-        if (exam.security?.autoSubmitOnViolation && attempt.totalViolations >= 5) {
-            attempt.status = "DISQUALIFIED";
-            attempt.disqualifiedAt = new Date();
-            attempt.disqualifiedReason = "Too many violations";
-            attempt.autoSubmitReason = "VIOLATION_LIMIT";
-            await attempt.save();
-
-            return res.status(200).json({
-                success: true,
-                disqualified: true,
-                message: "Disqualified due to violations",
-                violationCount: attempt.totalViolations
-            });
-        }
-
-        // Determine warning message
-        let warningMessage = null;
-        if (attempt.totalViolations === 1) {
-            warningMessage = "First warning: Do not leave the exam window";
-        } else if (attempt.totalViolations === 3) {
-            warningMessage = "Second warning: Multiple violations recorded";
-        } else if (attempt.totalViolations === 5) {
-            warningMessage = "Final warning: One more violation and you'll be disqualified";
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Violation recorded",
-            violationCount: attempt.totalViolations,
-            warning: warningMessage,
-            timeOutside: attempt.timeOutside
-        });
-    } catch (error) {
-        console.error("Report violation error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Get student's exam attempts
- * GET /api/exams/my-attempts
- */
-export const getMyAttempts = async (req, res) => {
-    try {
-        const { courseId } = req.query;
-
-        const query = { student: req.user.id };
-        if (courseId) query.course = courseId;
-
-        const attempts = await ExamAttempt.find(query)
-            .populate("exam", "title totalMarks passingMarks")
-            .populate("course", "title")
-            .populate("student", "fullName email profileImage")
-            .sort({ createdAt: -1 });
-
-        res.status(200).json({
-            success: true,
-            attempts: attempts.map(a => ({
-                id: a._id,
-                student: {
-                    _id: a.student?._id,
-                    fullName: a.student?.fullName || 'Unknown',
-                    email: a.student?.email || '',
-                    profileImage: a.student?.profileImage || null
-                },
-                exam: a.exam,
-                course: a.course,
-                status: a.status,
-                marks: a.obtainedMarks,
-                totalMarks: a.totalMarks,
-                percentage: a.percentage,
-                passed: a.passed,
-                timeTaken: a.timeTaken,
-                totalViolations: a.totalViolations,
-                submittedAt: a.submittedAt,
-                attemptNumber: a.attemptNumber,
-                // Include answers with file upload info for students to review
-                answers: a.answers?.map(ans => ({
-                    questionId: ans.questionId,
-                    isCorrect: ans.isCorrect,
-                    marksObtained: ans.marksObtained,
-                    uploadedFile: ans.uploadedFile ? {
-                        originalName: ans.uploadedFile.originalName,
-                        isGraded: ans.isGraded,
-                        gradingNotes: ans.gradingNotes
-                    } : null
-                })) || []
-            }))
-        });
-    } catch (error) {
-        console.error("Get my attempts error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Get student's attempts for specific exam
- * GET /api/exams/:examId/my-attempts
- */
-export const getMyExamAttempts = async (req, res) => {
-    try {
-        const { examId } = req.params;
-
-        const attempts = await ExamAttempt.find({
-            exam: examId,
-            student: req.user.id
-        })
-            .populate("exam", "title totalMarks passingMarks")
-            .sort({ attemptNumber: 1 });
-
-        res.status(200).json({
-            success: true,
-            attempts: attempts.map(a => ({
-                id: a._id,
-                status: a.status,
-                marks: a.obtainedMarks,
-                totalMarks: a.totalMarks,
-                percentage: a.percentage,
-                passed: a.passed,
-                timeTaken: a.timeTaken,
-                totalViolations: a.tabSwitchCount,
-                submittedAt: a.submittedAt,
-                attemptNumber: a.attemptNumber
-            }))
-        });
-    } catch (error) {
-        console.error("Get my exam attempts error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-/**
- * Get student's available exams
+ * Get available exams for student
  * GET /api/exams/student/available
  */
 export const getStudentExams = async (req, res) => {
@@ -939,42 +496,29 @@ export const getStudentExams = async (req, res) => {
         const query = {
             course: { $in: courseIds },
             isPublished: true,
-            status: { $in: ["active", "scheduled"] }
+            status: "published"
         };
-
-        // Update scheduled exams that have started to active
-        const now = new Date();
-        await Exam.updateMany(
-            { 
-                status: "scheduled", 
-                startDate: { $lte: now },
-                isPublished: true 
-            },
-            { $set: { status: "active" } }
-        );
 
         if (courseId) {
             query.course = courseId;
         }
 
-        const exams = await Exam.find(query)
+        const exams = await ManualExam.find(query)
             .populate("course", "title")
             .populate("instructor", "name")
-            .sort({ createdAt: -1 });
+            .sort({ dueDate: 1 });
 
-        // Get student's attempts for each exam
-        const examsWithAttempts = await Promise.all(exams.map(async (exam) => {
-            const attemptCount = await ExamAttempt.countDocuments({
+        // Get student's submissions for each exam
+        const examsWithSubmissions = await Promise.all(exams.map(async (exam) => {
+            const submission = await ExamSubmission.findOne({
                 exam: exam._id,
-                student: req.user.id,
-                status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"] }
+                student: req.user.id
             });
 
-            const activeAttempt = await ExamAttempt.findOne({
-                exam: exam._id,
-                student: req.user.id,
-                status: "IN_PROGRESS"
-            });
+            // Check if exam is past due
+            const now = new Date();
+            const isPastDue = exam.dueDate && now > new Date(exam.dueDate);
+            const isLate = exam.allowLateSubmission && isPastDue;
 
             return {
                 id: exam._id,
@@ -982,24 +526,28 @@ export const getStudentExams = async (req, res) => {
                 description: exam.description,
                 course: exam.course,
                 instructor: exam.instructor,
-                duration: exam.duration,
                 totalMarks: exam.totalMarks,
                 passingMarks: exam.passingMarks,
-                questionCount: exam.questions.length,
-                startDate: exam.startDate,
-                endDate: exam.endDate,
-                maxAttempts: exam.maxAttempts,
-                attemptsUsed: attemptCount,
-                hasActiveAttempt: !!activeAttempt,
-                activeAttemptId: activeAttempt?._id,
-                canAttempt: attemptCount < exam.maxAttempts,
-                status: exam.status
+                dueDate: exam.dueDate,
+                instructions: exam.instructions,
+                hasQuestionPaper: !!exam.questionPaper?.filename,
+                // Submission status
+                hasSubmitted: !!submission,
+                submissionStatus: submission ? submission.status : null,
+                gradingStatus: submission ? submission.gradingStatus : null,
+                obtainedMarks: submission?.obtainedMarks,
+                percentage: submission?.percentage,
+                passed: submission?.passed,
+                feedback: submission?.feedback,
+                resultPublished: submission?.resultPublished,
+                // Can still submit if allowed
+                canSubmit: !submission && (isLate ? exam.allowLateSubmission : !isPastDue)
             };
         }));
 
         res.status(200).json({
             success: true,
-            exams: examsWithAttempts
+            exams: examsWithSubmissions
         });
     } catch (error) {
         console.error("Get student exams error:", error);
@@ -1008,393 +556,359 @@ export const getStudentExams = async (req, res) => {
 };
 
 /**
- * Auto-submit expired exams (cron job)
- * POST /api/exams/cron/expire
+ * Get student's submission for an exam
+ * GET /api/exams/:examId/my-submission
  */
-export const autoSubmitExpired = async (req, res) => {
+export const getMySubmission = async (req, res) => {
     try {
-        const now = new Date();
+        const { examId } = req.params;
 
-        const expiredAttempts = await ExamAttempt.find({
-            status: "IN_PROGRESS",
-            endTime: { $lt: now }
+        const exam = await ManualExam.findById(examId);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (!exam.isPublished) {
+            return res.status(403).json({ message: "Exam not available" });
+        }
+
+        // Check enrollment
+        const Enrollment = (await import("../models/enrollmentModel.js")).default;
+        const enrollment = await Enrollment.findOne({
+            student: req.user.id,
+            course: exam.course,
+            $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
         });
 
-        let submitted = 0;
-
-        for (const attempt of expiredAttempts) {
-            attempt.status = "AUTO_SUBMITTED";
-            attempt.autoSubmitReason = "TIME_EXPIRED";
-            attempt.submittedAt = now;
-            attempt.timeTaken = Math.round((now - attempt.startTime) / 1000);
-            await attempt.save();
-            submitted++;
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
         }
+
+        const submission = await ExamSubmission.findOne({
+            exam: examId,
+            student: req.user.id
+        });
 
         res.status(200).json({
             success: true,
-            message: `Auto-submitted ${submitted} expired exams`
+            exam: {
+                id: exam._id,
+                title: exam.title,
+                description: exam.description,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks,
+                dueDate: exam.dueDate,
+                instructions: exam.instructions,
+                hasQuestionPaper: !!exam.questionPaper?.filename,
+                allowLateSubmission: exam.allowLateSubmission
+            },
+            submission: submission ? {
+                id: submission._id,
+                status: submission.status,
+                isLate: submission.isLate,
+                submittedAt: submission.submittedAt,
+                answerFile: submission.answerFile ? {
+                    originalName: submission.answerFile.originalName,
+                    uploadedAt: submission.answerFile.uploadedAt
+                } : null,
+                obtainedMarks: submission.obtainedMarks,
+                totalMarks: submission.totalMarks,
+                percentage: submission.percentage,
+                passed: submission.passed,
+                gradingStatus: submission.gradingStatus,
+                feedback: submission.feedback,
+                resultPublished: submission.resultPublished
+            } : null
         });
     } catch (error) {
-        console.error("Auto-submit expired error:", error);
+        console.error("Get my submission error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Upload file for exam answer
- * POST /api/exams/attempt/:attemptId/upload
+ * Submit exam (upload answer file)
+ * POST /api/exams/:examId/submit
  */
-export const uploadExamFile = async (req, res) => {
+export const submitExam = async (req, res) => {
     try {
-        const { attemptId } = req.params;
-        const { questionId } = req.body;
+        const { examId } = req.params;
 
+        const exam = await ManualExam.findById(examId);
+
+        if (!exam) {
+            return res.status(404).json({ message: "Exam not found" });
+        }
+
+        if (!exam.isPublished) {
+            return res.status(403).json({ message: "Exam is not available" });
+        }
+
+        // Check enrollment
+        const Enrollment = (await import("../models/enrollmentModel.js")).default;
+        const enrollment = await Enrollment.findOne({
+            student: req.user.id,
+            course: exam.course,
+            $or: [{ status: "ACTIVE" }, { paymentStatus: { $in: ["PAID", "LATER"] } }]
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
+        }
+
+        // Check if already submitted
+        const existingSubmission = await ExamSubmission.findOne({
+            exam: examId,
+            student: req.user.id
+        });
+
+        if (existingSubmission) {
+            return res.status(400).json({ message: "You have already submitted this exam" });
+        }
+
+        // Check due date
+        const now = new Date();
+        const isLate = exam.dueDate && now > new Date(exam.dueDate);
+        
+        if (isLate && !exam.allowLateSubmission) {
+            return res.status(400).json({ message: "Submission deadline has passed" });
+        }
+
+        // Validate file
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
         // Validate file type
-        if (req.file.mimetype !== "application/pdf") {
-            return res.status(400).json({ message: "Only PDF files are allowed" });
+        const allowedTypes = exam.allowedAnswerFileTypes || ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+            return res.status(400).json({ message: "Invalid file type. Allowed: PDF, DOC, DOCX" });
         }
 
-        // Validate file size (max 10MB)
-        if (req.file.size > 10 * 1024 * 1024) {
-            return res.status(400).json({ message: "File size must be less than 10MB" });
+        // Validate file size
+        const maxSize = (exam.maxAnswerFileSize || 10) * 1024 * 1024;
+        if (req.file.size > maxSize) {
+            return res.status(400).json({ message: `File size must be less than ${exam.maxAnswerFileSize || 10}MB` });
         }
 
-        const attempt = await ExamAttempt.findById(attemptId);
-
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
-        }
-
-        // Verify ownership
-        if (attempt.student.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        // Check if exam is still in progress
-        if (!["IN_PROGRESS", "NOT_STARTED"].includes(attempt.status)) {
-            return res.status(400).json({ message: "Exam is no longer in progress" });
-        }
-
-        // Find and update the answer with the file
-        const answerIndex = attempt.answers.findIndex(
-            a => a.questionId.toString() === questionId
-        );
-
-        if (answerIndex === -1) {
-            // Create new answer entry if not exists
-            attempt.answers.push({
-                questionId,
-                uploadedFile: {
-                    filename: req.file.filename || `exam_${attemptId}_${questionId}.pdf`,
-                    originalName: req.file.originalname,
-                    contentType: req.file.mimetype,
-                    size: req.file.size,
-                    data: req.file.buffer,
-                    uploadedAt: new Date()
-                }
-            });
-        } else {
-            // Update existing answer with file
-            attempt.answers[answerIndex].uploadedFile = {
-                filename: req.file.filename || `exam_${attemptId}_${questionId}.pdf`,
+        // Create submission
+        const submission = await ExamSubmission.create({
+            exam: examId,
+            student: req.user.id,
+            course: exam.course,
+            answerFile: {
+                filename: req.file.filename || `answer_${examId}_${req.user.id}`,
                 originalName: req.file.originalname,
                 contentType: req.file.mimetype,
                 size: req.file.size,
                 data: req.file.buffer,
+                url: req.file.path || "",
                 uploadedAt: new Date()
-            };
-        }
+            },
+            status: "submitted",
+            isLate: isLate || false,
+            submittedAt: new Date(),
+            totalMarks: exam.totalMarks,
+            gradingStatus: "pending",
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent']
+        });
 
-        await attempt.save();
+        // Update exam submission count
+        exam.totalSubmissions += 1;
+        await exam.save();
 
-        res.status(200).json({
+        res.status(201).json({
             success: true,
-            message: "File uploaded successfully",
-            file: {
-                originalName: req.file.originalname,
-                size: req.file.size,
-                uploadedAt: new Date()
+            message: isLate ? "Exam submitted late" : "Exam submitted successfully",
+            submission: {
+                id: submission._id,
+                status: submission.status,
+                isLate: submission.isLate,
+                submittedAt: submission.submittedAt,
+                answerFile: {
+                    originalName: submission.answerFile.originalName,
+                    size: submission.answerFile.size
+                }
             }
         });
     } catch (error) {
-        console.error("Upload exam file error:", error);
+        console.error("Submit exam error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Download uploaded exam file
- * GET /api/exams/attempt/:attemptId/file/:questionId
+ * Download student's submitted answer file (for teachers)
+ * GET /api/exams/submission/:submissionId/download
  */
-export const downloadExamFile = async (req, res) => {
+export const downloadAnswerFile = async (req, res) => {
     try {
-        const { attemptId, questionId } = req.params;
+        const { submissionId } = req.params;
 
-        const attempt = await ExamAttempt.findById(attemptId);
+        const submission = await ExamSubmission.findById(submissionId)
+            .populate("exam");
 
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
+        if (!submission) {
+            return res.status(404).json({ message: "Submission not found" });
         }
 
-        // Find the answer with the file
-        const answer = attempt.answers.find(
-            a => a.questionId.toString() === questionId
-        );
-
-        if (!answer || !answer.uploadedFile || !answer.uploadedFile.data) {
-            return res.status(404).json({ message: "File not found" });
+        // Verify teacher owns the exam
+        const exam = submission.exam;
+        if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const file = answer.uploadedFile;
+        if (!submission.answerFile || !submission.answerFile.data) {
+            return res.status(404).json({ message: "Answer file not found" });
+        }
 
-        // Set response headers for file download
+        const file = submission.answerFile;
+
         res.set({
             "Content-Type": file.contentType || "application/pdf",
-            "Content-Disposition": `attachment; filename="${file.originalName || "exam_answer.pdf"}"`,
+            "Content-Disposition": `attachment; filename="${file.originalName || "answer_file.pdf"}"`,
             "Content-Length": file.size
         });
 
-        // Send the file
         res.send(file.data);
     } catch (error) {
-        console.error("Download exam file error:", error);
+        console.error("Download answer file error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Grade file upload question (Manual Grading)
- * POST /api/exams/attempt/:attemptId/grade
+ * Grade submission (manual evaluation)
+ * POST /api/exams/submission/:submissionId/grade
  */
-export const gradeExamAnswer = async (req, res) => {
+export const gradeSubmission = async (req, res) => {
     try {
-        const { attemptId } = req.params;
-        const { questionId, marksObtained, gradingNotes, overallFeedback } = req.body;
+        const { submissionId } = req.params;
+        const { obtainedMarks, feedback } = req.body;
 
-        if (marksObtained === undefined || marksObtained === null) {
+        if (obtainedMarks === undefined || obtainedMarks === null) {
             return res.status(400).json({ message: "Marks are required" });
         }
 
-        const attempt = await ExamAttempt.findById(attemptId)
+        const submission = await ExamSubmission.findById(submissionId)
             .populate("exam");
 
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
+        if (!submission) {
+            return res.status(404).json({ message: "Submission not found" });
         }
 
         // Verify teacher owns the exam
-        const exam = attempt.exam;
+        const exam = submission.exam;
         if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // If grading entire exam (no questionId provided)
-        if (!questionId) {
-            // Grade entire exam at once
-            const { obtainedMarks } = req.body;
-            
-            if (obtainedMarks === undefined || obtainedMarks === null) {
-                return res.status(400).json({ message: "Total marks are required" });
-            }
-
-            // Validate total marks
-            if (obtainedMarks < 0 || obtainedMarks > exam.totalMarks) {
-                return res.status(400).json({
-                    message: `Total marks must be between 0 and ${exam.totalMarks}`
-                });
-            }
-
-            // Update attempt with manual grade
-            attempt.obtainedMarks = obtainedMarks;
-            attempt.totalMarks = exam.totalMarks;
-            attempt.percentage = exam.totalMarks > 0 ? Math.round((obtainedMarks / exam.totalMarks) * 100 * 100) / 100 : 0;
-            attempt.passed = attempt.percentage >= exam.passingMarks;
-            
-            // Mark as graded
-            attempt.gradingStatus = "graded";
-            attempt.gradedAt = new Date();
-            attempt.gradedBy = req.user.id;
-            attempt.overallFeedback = overallFeedback || "";
-
-            // Mark all answers as graded (since we're grading the entire exam)
-            attempt.answers = attempt.answers.map(ans => ({
-                ...ans.toObject(),
-                isGraded: true,
-                marksObtained: obtainedMarks, // Apply same marks to each answer (or could be distributed)
-                gradingNotes: gradingNotes || ""
-            }));
-
-            await attempt.save();
-
-            // Update exam statistics
-            const allAttempts = await ExamAttempt.find({ exam: exam._id, status: "SUBMITTED" });
-            if (allAttempts.length > 0) {
-                const scores = allAttempts.map(a => a.percentage);
-                exam.averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 100) / 100;
-                exam.highestScore = Math.max(...scores);
-                exam.lowestScore = Math.min(...scores);
-                await exam.save();
-            }
-
-            res.status(200).json({
-                success: true,
-                message: "Exam graded successfully",
-                grade: {
-                    obtainedMarks: attempt.obtainedMarks,
-                    totalMarks: attempt.totalMarks,
-                    percentage: attempt.percentage,
-                    passed: attempt.passed,
-                    gradingStatus: attempt.gradingStatus,
-                    feedback: attempt.overallFeedback
-                },
-                attempt: {
-                    obtainedMarks: attempt.obtainedMarks,
-                    totalMarks: attempt.totalMarks,
-                    percentage: attempt.percentage,
-                    passed: attempt.passed,
-                    gradingStatus: attempt.gradingStatus
-                }
-            });
-            return;
-        }
-
-        // Single question grading (legacy support)
-        // Find and update the answer with the grading
-        const answerIndex = attempt.answers.findIndex(
-            a => a.questionId.toString() === questionId
-        );
-
-        if (answerIndex === -1) {
-            return res.status(404).json({ message: "Answer not found for this question" });
-        }
-
-        // Get the question to verify max marks
-        const question = exam.questions.find(
-            q => q._id.toString() === questionId
-        );
-
-        if (!question) {
-            return res.status(404).json({ message: "Question not found" });
-        }
-
         // Validate marks
-        if (marksObtained < 0 || marksObtained > question.marks) {
+        if (obtainedMarks < 0 || obtainedMarks > exam.totalMarks) {
             return res.status(400).json({
-                message: `Marks must be between 0 and ${question.marks}`
+                message: `Marks must be between 0 and ${exam.totalMarks}`
             });
         }
 
-        // Update the answer with grading
-        attempt.answers[answerIndex].marksObtained = marksObtained;
-        attempt.answers[answerIndex].isGraded = true;
-        attempt.answers[answerIndex].gradingNotes = gradingNotes || "";
-
-        // Recalculate total marks from all graded answers
-        let obtainedMarks = 0;
-        for (const answer of attempt.answers) {
-            if (answer.isGraded) {
-                obtainedMarks += answer.marksObtained || 0;
-            }
+        // Apply late penalty if applicable
+        let finalMarks = obtainedMarks;
+        if (submission.isLate && exam.latePenaltyPercentage > 0) {
+            finalMarks = obtainedMarks - (obtainedMarks * exam.latePenaltyPercentage / 100);
+            finalMarks = Math.max(0, finalMarks); // Don't go below 0
         }
 
-        // Get total marks from exam
-        const totalMarks = exam.totalMarks;
+        // Update submission
+        submission.obtainedMarks = finalMarks;
+        submission.totalMarks = exam.totalMarks;
+        submission.percentage = exam.totalMarks > 0 ? Math.round((finalMarks / exam.totalMarks) * 100 * 100) / 100 : 0;
+        submission.passed = submission.percentage >= exam.passingMarks;
+        submission.gradingStatus = "graded";
+        submission.gradedAt = new Date();
+        submission.gradedBy = req.user.id;
+        submission.feedback = feedback || "";
+        submission.status = "graded";
 
-        attempt.obtainedMarks = obtainedMarks;
-        attempt.totalMarks = totalMarks;
-        attempt.percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100 * 100) / 100 : 0;
-        attempt.passed = attempt.percentage >= exam.passingMarks;
+        await submission.save();
 
-        // Check if all answers are graded
-        const allGraded = attempt.answers.length > 0 && attempt.answers.every(a => a.isGraded);
-        if (allGraded) {
-            attempt.gradingStatus = "graded";
-            attempt.gradedAt = new Date();
-            attempt.gradedBy = req.user.id;
-        }
-
-        await attempt.save();
+        // Update exam graded count
+        await ManualExam.findByIdAndUpdate(exam._id, {
+            $inc: { gradedCount: 1 }
+        });
 
         res.status(200).json({
             success: true,
-            message: "Answer graded successfully",
+            message: "Submission graded successfully",
             grade: {
-                questionId,
-                marksObtained,
-                totalMarks: question.marks,
-                gradingNotes,
-                isGraded: true
-            },
-            attempt: {
-                obtainedMarks: attempt.obtainedMarks,
-                totalMarks: attempt.totalMarks,
-                percentage: attempt.percentage,
-                passed: attempt.passed,
-                gradingStatus: attempt.gradingStatus
+                obtainedMarks: submission.obtainedMarks,
+                totalMarks: submission.totalMarks,
+                percentage: submission.percentage,
+                passed: submission.passed,
+                isLate: submission.isLate,
+                latePenalty: submission.isLate ? exam.latePenaltyPercentage : 0,
+                feedback: submission.feedback,
+                gradingStatus: submission.gradingStatus
             }
         });
     } catch (error) {
-        console.error("Grade exam answer error:", error);
+        console.error("Grade submission error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Publish exam results
- * POST /api/exams/attempt/:attemptId/publish
+ * Publish result for a submission
+ * POST /api/exams/submission/:submissionId/publish
  */
-export const publishExamResult = async (req, res) => {
+export const publishResult = async (req, res) => {
     try {
-        const { attemptId } = req.params;
+        const { submissionId } = req.params;
 
-        const attempt = await ExamAttempt.findById(attemptId)
+        const submission = await ExamSubmission.findById(submissionId)
             .populate("exam");
 
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
+        if (!submission) {
+            return res.status(404).json({ message: "Submission not found" });
         }
 
         // Verify teacher owns the exam
-        const exam = attempt.exam;
+        const exam = submission.exam;
         if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // Check if the exam is graded
-        if (attempt.gradingStatus !== "graded") {
+        // Check if graded
+        if (submission.gradingStatus !== "graded") {
             return res.status(400).json({ 
-                message: "Cannot publish results. The exam has not been graded yet." 
+                message: "Cannot publish results. The submission has not been graded yet." 
             });
         }
 
         // Publish results
-        attempt.resultPublished = true;
-        attempt.resultPublishedAt = new Date();
-        attempt.gradingStatus = "published";
+        submission.resultPublished = true;
+        submission.resultPublishedAt = new Date();
+        submission.gradingStatus = "published";
+        submission.status = "published";
 
-        await attempt.save();
+        await submission.save();
 
         res.status(200).json({
             success: true,
-            message: "Results published successfully",
+            message: "Result published successfully",
             result: {
-                id: attempt._id,
-                obtainedMarks: attempt.obtainedMarks,
-                totalMarks: attempt.totalMarks,
-                percentage: attempt.percentage,
-                passed: attempt.passed,
-                gradingStatus: attempt.gradingStatus,
-                resultPublished: attempt.resultPublished,
-                resultPublishedAt: attempt.resultPublishedAt
+                id: submission._id,
+                obtainedMarks: submission.obtainedMarks,
+                totalMarks: submission.totalMarks,
+                percentage: submission.percentage,
+                passed: submission.passed,
+                gradingStatus: submission.gradingStatus,
+                resultPublished: submission.resultPublished,
+                resultPublishedAt: submission.resultPublishedAt
             }
         });
     } catch (error) {
-        console.error("Publish exam result error:", error);
+        console.error("Publish result error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -1403,11 +917,11 @@ export const publishExamResult = async (req, res) => {
  * Publish all results for an exam
  * POST /api/exams/:examId/publish-all
  */
-export const publishAllExamResults = async (req, res) => {
+export const publishAllResults = async (req, res) => {
     try {
         const { examId } = req.params;
 
-        const exam = await Exam.findById(examId);
+        const exam = await ManualExam.findById(examId);
 
         if (!exam) {
             return res.status(404).json({ message: "Exam not found" });
@@ -1417,14 +931,13 @@ export const publishAllExamResults = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // Find all graded attempts
-        const gradedAttempts = await ExamAttempt.find({
+        // Find all graded submissions
+        const gradedSubmissions = await ExamSubmission.find({
             exam: examId,
-            gradingStatus: "graded",
-            status: "SUBMITTED"
+            gradingStatus: "graded"
         });
 
-        if (gradedAttempts.length === 0) {
+        if (gradedSubmissions.length === 0) {
             return res.status(400).json({ 
                 message: "No graded submissions found to publish" 
             });
@@ -1434,11 +947,12 @@ export const publishAllExamResults = async (req, res) => {
         const now = new Date();
         let publishedCount = 0;
 
-        for (const attempt of gradedAttempts) {
-            attempt.resultPublished = true;
-            attempt.resultPublishedAt = now;
-            attempt.gradingStatus = "published";
-            await attempt.save();
+        for (const submission of gradedSubmissions) {
+            submission.resultPublished = true;
+            submission.resultPublishedAt = now;
+            submission.gradingStatus = "published";
+            submission.status = "published";
+            await submission.save();
             publishedCount++;
         }
 
@@ -1448,98 +962,117 @@ export const publishAllExamResults = async (req, res) => {
             publishedCount
         });
     } catch (error) {
-        console.error("Publish all exam results error:", error);
+        console.error("Publish all results error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 /**
- * Get detailed exam attempt for teachers
- * GET /api/exams/attempt/:attemptId/details
+ * Get submission details (for teachers)
+ * GET /api/exams/submission/:submissionId/details
  */
-export const getAttemptDetails = async (req, res) => {
+export const getSubmissionDetails = async (req, res) => {
     try {
-        const { attemptId } = req.params;
+        const { submissionId } = req.params;
 
-        const attempt = await ExamAttempt.findById(attemptId)
-            .populate("exam", "title totalMarks passingMarks questions instructor")
-            .populate("student", "fullName email profileImage");
+        const submission = await ExamSubmission.findById(submissionId)
+            .populate("exam", "title totalMarks passingMarks dueDate instructions")
+            .populate("student", "fullName email profileImage")
+            .populate("gradedBy", "name");
 
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found" });
+        if (!submission) {
+            return res.status(404).json({ message: "Submission not found" });
         }
 
         // Verify teacher owns the exam
-        const exam = attempt.exam;
+        const exam = submission.exam;
         if (exam.instructor.toString() !== req.user.id && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // Format questions for teacher view (include correct answers)
-        const questionsWithAnswers = exam.questions.map(q => {
-            const studentAnswer = attempt.answers.find(
-                a => a.questionId.toString() === q._id.toString()
-            );
-            
-            return {
-                _id: q._id,
-                type: q.type,
-                question: q.question,
-                marks: q.marks,
-                options: q.options,
-                correctAnswer: q.correctAnswer,
-                studentAnswer: studentAnswer ? {
-                    selectedOption: studentAnswer.selectedOption,
-                    textAnswer: studentAnswer.textAnswer,
-                    isCorrect: studentAnswer.isCorrect,
-                    marksObtained: studentAnswer.marksObtained,
-                    uploadedFile: studentAnswer.uploadedFile ? {
-                        originalName: studentAnswer.uploadedFile.originalName,
-                        filename: studentAnswer.uploadedFile.filename,
-                        size: studentAnswer.uploadedFile.size,
-                        uploadedAt: studentAnswer.uploadedFile.uploadedAt,
-                        isGraded: studentAnswer.isGraded,
-                        gradingNotes: studentAnswer.gradingNotes
-                    } : null,
-                    isGraded: studentAnswer.isGraded,
-                    gradingNotes: studentAnswer.gradingNotes
-                } : null
-            };
-        });
-
         res.status(200).json({
             success: true,
-            attempt: {
-                id: attempt._id,
+            submission: {
+                id: submission._id,
                 student: {
-                    _id: attempt.student._id,
-                    fullName: attempt.student.fullName,
-                    email: attempt.student.email,
-                    profileImage: attempt.student.profileImage
+                    _id: submission.student._id,
+                    fullName: submission.student.fullName,
+                    email: submission.student.email,
+                    profileImage: submission.student.profileImage
                 },
-                status: attempt.status,
-                obtainedMarks: attempt.obtainedMarks,
-                totalMarks: attempt.totalMarks,
-                percentage: attempt.percentage,
-                passed: attempt.passed,
-                timeTaken: attempt.timeTaken,
-                totalViolations: attempt.totalViolations,
-                tabSwitchCount: attempt.tabSwitchCount,
-                timeOutside: attempt.timeOutside,
-                startTime: attempt.startTime,
-                submittedAt: attempt.submittedAt,
-                attemptNumber: attempt.attemptNumber
+                status: submission.status,
+                isLate: submission.isLate,
+                submittedAt: submission.submittedAt,
+                answerFile: submission.answerFile ? {
+                    originalName: submission.answerFile.originalName,
+                    filename: submission.answerFile.filename,
+                    size: submission.answerFile.size,
+                    contentType: submission.answerFile.contentType,
+                    uploadedAt: submission.answerFile.uploadedAt
+                } : null,
+                obtainedMarks: submission.obtainedMarks,
+                totalMarks: submission.totalMarks,
+                percentage: submission.percentage,
+                passed: submission.passed,
+                gradingStatus: submission.gradingStatus,
+                feedback: submission.feedback,
+                gradedAt: submission.gradedAt,
+                gradedBy: submission.gradedBy,
+                resultPublished: submission.resultPublished,
+                resultPublishedAt: submission.resultPublishedAt
             },
             exam: {
                 id: exam._id,
                 title: exam.title,
                 totalMarks: exam.totalMarks,
-                passingMarks: exam.passingMarks
-            },
-            questions: questionsWithAnswers
+                passingMarks: exam.passingMarks,
+                dueDate: exam.dueDate,
+                instructions: exam.instructions
+            }
         });
     } catch (error) {
-        console.error("Get attempt details error:", error);
+        console.error("Get submission details error:", error);
         res.status(500).json({ message: error.message });
     }
 };
+
+/**
+ * Get student's all exam submissions
+ * GET /api/exams/my-submissions
+ */
+export const getMySubmissions = async (req, res) => {
+    try {
+        const { courseId } = req.query;
+
+        const query = { student: req.user.id };
+        if (courseId) query.course = courseId;
+
+        const submissions = await ExamSubmission.find(query)
+            .populate("exam", "title totalMarks passingMarks dueDate")
+            .populate("course", "title")
+            .sort({ submittedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            submissions: submissions.map(s => ({
+                id: s._id,
+                exam: s.exam,
+                course: s.course,
+                status: s.status,
+                isLate: s.isLate,
+                submittedAt: s.submittedAt,
+                obtainedMarks: s.obtainedMarks,
+                totalMarks: s.totalMarks,
+                percentage: s.percentage,
+                passed: s.passed,
+                gradingStatus: s.gradingStatus,
+                feedback: s.feedback,
+                resultPublished: s.resultPublished
+            }))
+        });
+    } catch (error) {
+        console.error("Get my submissions error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+

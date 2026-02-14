@@ -1,103 +1,16 @@
 import mongoose from "mongoose";
 
-const answerSchema = new mongoose.Schema({
-    questionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
-    // For file upload questions - student uploads answer sheet
-    uploadedFile: {
-        filename: {
-            type: String,
-            default: ""
-        },
-        originalName: {
-            type: String,
-            default: ""
-        },
-        contentType: {
-            type: String,
-            default: "application/pdf"
-        },
-        size: {
-            type: Number,
-            default: 0
-        },
-        data: {
-            type: Buffer,
-            default: null
-        },
-        url: {
-            type: String,
-            default: ""
-        },
-        uploadedAt: {
-            type: Date,
-            default: null
-        }
-    },
-    // Manual grading - marks entered by teacher
-    marksObtained: {
-        type: Number,
-        default: 0
-    },
-    // Grading status - needs manual grading
-    isGraded: {
-        type: Boolean,
-        default: false
-    },
-    // Teacher feedback/notes
-    gradingNotes: {
-        type: String,
-        default: ""
-    },
-    answeredAt: {
-        type: Date,
-        default: Date.now
-    }
-}, { _id: false });
+/**
+ * Manual Exam Submission Model
+ * For exams where students upload answer files (PDF/DOC)
+ * and teachers grade manually
+ */
 
-const violationSchema = new mongoose.Schema({
-    type: {
-        type: String,
-        enum: [
-            "TAB_SWITCH",
-            "WINDOW_BLUR",
-            "FULLSCREEN_EXIT",
-            "COPY_ATTEMPT",
-            "PASTE_ATTEMPT",
-            "RIGHT_CLICK",
-            "TEXT_SELECTION",
-            "KEYBOARD_SHORTCUT",
-            "DEV_TOOLS_OPEN",
-            "PAGE_REFRESH",
-            "BACK_BUTTON",
-            "TIME_OUTSIDE_EXCEEDED",
-            "HEARTBEAT_MISSED",
-            "MULTIPLE_TAB",
-            "BROWSER_MINIMIZED"
-        ],
-        required: true
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now
-    },
-    details: {
-        type: String,
-        default: ""
-    },
-    duration: {
-        type: Number, // milliseconds
-        default: 0
-    }
-}, { _id: false });
-
-const examAttemptSchema = new mongoose.Schema(
+const examSubmissionSchema = new mongoose.Schema(
     {
         exam: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Exam",
+            ref: "ManualExam",
             required: true
         },
 
@@ -113,137 +26,114 @@ const examAttemptSchema = new mongoose.Schema(
             required: true
         },
 
-        // Timing
-        startTime: {
-            type: Date,
-            required: true
+        // Answer file uploaded by student
+        answerFile: {
+            filename: {
+                type: String,
+                default: ""
+            },
+            originalName: {
+                type: String,
+                default: ""
+            },
+            contentType: {
+                type: String,
+                default: ""
+            },
+            size: {
+                type: Number,
+                default: 0
+            },
+            data: {
+                type: Buffer,
+                default: null
+            },
+            url: {
+                type: String,
+                default: ""
+            },
+            uploadedAt: {
+                type: Date,
+                default: null
+            }
         },
 
-        endTime: {
-            type: Date,
-            required: true
-        },
-
-        submittedAt: {
-            type: Date
-        },
-
-        timeTaken: {
-            type: Number, // in seconds
-            default: 0
-        },
-
-        // Status
+        // Submission status
         status: {
             type: String,
-            enum: ["NOT_STARTED", "IN_PROGRESS", "SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED", "EXPIRED", "ABANDONED"],
-            default: "NOT_STARTED"
+            enum: ["submitted", "graded", "published"],
+            default: "submitted"
         },
 
-        // Answers
-        answers: [answerSchema],
-
-        // Score
-        totalMarks: {
-            type: Number,
-            default: 0
+        // Whether submission was late
+        isLate: {
+            type: Boolean,
+            default: false
         },
 
+        // Submitted at
+        submittedAt: {
+            type: Date,
+            default: Date.now
+        },
+
+        // Marks awarded by teacher
         obtainedMarks: {
             type: Number,
             default: 0
         },
 
+        // Total marks for the exam
+        totalMarks: {
+            type: Number,
+            default: 0
+        },
+
+        // Percentage score
         percentage: {
             type: Number,
             default: 0
         },
 
+        // Whether passed
         passed: {
             type: Boolean,
             default: false
         },
 
-        // Security Tracking
-        violations: [violationSchema],
-
-        totalViolations: {
-            type: Number,
-            default: 0
-        },
-
-        tabSwitchCount: {
-            type: Number,
-            default: 0
-        },
-
-        timeOutside: {
-            type: Number, // total milliseconds outside exam
-            default: 0
-        },
-
-        fullscreenExits: {
-            type: Number,
-            default: 0
-        },
-
-        // Heartbeat tracking
-        lastHeartbeat: {
-            type: Date
-        },
-
-        heartbeatMissed: {
-            type: Number,
-            default: 0
-        },
-
-        // Auto-submit reason
-        autoSubmitReason: {
-            type: String,
-            enum: ["TIME_EXPIRED", "DISQUALIFIED", "HEARTBEAT_TIMEOUT", "SYSTEM_ERROR", "VIOLATION_LIMIT"],
-            default: null
-        },
-
-        // Disqualification
-        disqualifiedAt: {
-            type: Date
-        },
-
-        disqualifiedReason: {
-            type: String,
-            default: ""
-        },
-
-        // Results visibility
-        resultPublished: {
-            type: Boolean,
-            default: false
-        },
-
-        resultPublishedAt: {
-            type: Date
-        },
-
-        // Manual Grading Status
+        // Grading status
         gradingStatus: {
             type: String,
             enum: ["pending", "graded", "published"],
             default: "pending"
         },
 
+        // Graded at
         gradedAt: {
             type: Date
         },
 
+        // Graded by (teacher)
         gradedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Teacher"
         },
 
-        // Overall feedback for the entire exam
-        overallFeedback: {
+        // Feedback/notes from teacher
+        feedback: {
             type: String,
             default: ""
+        },
+
+        // Result published
+        resultPublished: {
+            type: Boolean,
+            default: false
+        },
+
+        // Result published at
+        resultPublishedAt: {
+            type: Date
         },
 
         // Metadata
@@ -253,149 +143,78 @@ const examAttemptSchema = new mongoose.Schema(
 
         userAgent: {
             type: String
-        },
-
-        deviceInfo: {
-            type: String,
-            default: ""
-        },
-
-        // Attempt number (for max attempts feature)
-        attemptNumber: {
-            type: Number,
-            default: 1
         }
     },
     { timestamps: true }
 );
 
 // Indexes
-examAttemptSchema.index({ exam: 1, student: 1 });
-examAttemptSchema.index({ student: 1, status: 1 });
-examAttemptSchema.index({ exam: 1, status: 1 });
-examAttemptSchema.index({ exam: 1, student: 1, attemptNumber: 1 });
+examSubmissionSchema.index({ exam: 1, student: 1 });
+examSubmissionSchema.index({ student: 1, status: 1 });
+examSubmissionSchema.index({ exam: 1, status: 1 });
+examSubmissionSchema.index({ exam: 1, gradingStatus: 1 });
 
-// Virtual for remaining time
-examAttemptSchema.virtual("remainingTime").get(function () {
-    if (this.status !== "IN_PROGRESS") return 0;
-    const now = new Date();
-    const remaining = this.endTime - now;
-    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
-});
-
-// Pre-save hook
-examAttemptSchema.pre("save", function () {
-    if (this.isModified("violations")) {
-        this.totalViolations = this.violations.length;
-    }
-    if (this.isModified("answers")) {
-        this.obtainedMarks = this.answers.reduce((sum, a) => sum + (a.marksObtained || 0), 0);
+// Pre-save hook to calculate percentage and passed status
+examSubmissionSchema.pre("save", function () {
+    if (this.isModified("obtainedMarks") || this.isModified("totalMarks")) {
         if (this.totalMarks > 0) {
             this.percentage = Math.round((this.obtainedMarks / this.totalMarks) * 100 * 100) / 100;
+        } else {
+            this.percentage = 0;
         }
     }
 });
 
-// Method to add violation
-examAttemptSchema.methods.addViolation = function (type, details = "", duration = 0) {
-    this.violations.push({
-        type,
-        timestamp: new Date(),
-        details,
-        duration
-    });
-    this.totalViolations = this.violations.length;
-
-    if (type === "TAB_SWITCH" || type === "WINDOW_BLUR") {
-        this.tabSwitchCount += 1;
-    } else if (type === "FULLSCREEN_EXIT") {
-        this.fullscreenExits += 1;
-    } else if (type === "TIME_OUTSIDE_EXCEEDED") {
-        this.timeOutside += duration;
-    } else if (type === "HEARTBEAT_MISSED") {
-        this.heartbeatMissed += 1;
-    }
+// Method to check if submission is late
+examSubmissionSchema.methods.checkLateStatus = function (dueDate) {
+    if (!dueDate) return false;
+    return new Date() > new Date(dueDate);
 };
 
-// Method to check if should be disqualified
-examAttemptSchema.methods.shouldDisqualify = function (maxTimeOutside = 300000) {
-    return this.timeOutside > maxTimeOutside;
+// Static method to get exam submissions
+examSubmissionSchema.statics.getExamSubmissions = async function (examId) {
+    return this.find({ exam: examId })
+        .populate("student", "fullName email profileImage")
+        .sort({ submittedAt: -1 });
 };
 
-// Method to calculate score
-examAttemptSchema.methods.calculateScore = function (correctAnswers = {}) {
-    let obtained = 0;
-    let total = 0;
-
-    this.answers.forEach(answer => {
-        total += answer.marksObtained || 0;
-        if (answer.isCorrect) {
-            obtained += answer.marksObtained || 0;
-        }
-    });
-
-    this.obtainedMarks = obtained;
-    this.totalMarks = total;
-    this.percentage = total > 0 ? Math.round((obtained / total) * 100 * 100) / 100 : 0;
-    this.passed = this.percentage >= (this.exam?.passingMarks || 0);
-
-    return { obtained, total, percentage: this.percentage, passed: this.passed };
-};
-
-// Static method to check if student can attempt exam
-examAttemptSchema.statics.canAttempt = async function (examId, studentId, maxAttempts = 1) {
-    const attempts = await this.countDocuments({
-        exam: examId,
-        student: studentId,
-        status: { $in: ["SUBMITTED", "AUTO_SUBMITTED", "DISQUALIFIED"] }
-    });
-    return attempts < maxAttempts;
-};
-
-// Static method to get active attempt
-examAttemptSchema.statics.getActiveAttempt = async function (examId, studentId) {
-    return this.findOne({
-        exam: examId,
-        student: studentId,
-        status: { $in: ["NOT_STARTED", "IN_PROGRESS"] }
-    });
-};
-
-// Static method to get student's attempts
-examAttemptSchema.statics.getStudentAttempts = async function (examId, studentId) {
-    return this.find({ exam: examId, student: studentId })
-        .sort({ attemptNumber: 1 });
+// Static method to get student's submission for an exam
+examSubmissionSchema.statics.getStudentSubmission = async function (examId, studentId) {
+    return this.findOne({ exam: examId, student: studentId });
 };
 
 // Static method to get exam statistics
-examAttemptSchema.statics.getExamStats = async function (examId) {
+examSubmissionSchema.statics.getExamStats = async function (examId) {
     const stats = await this.aggregate([
-        { $match: { exam: new mongoose.Types.ObjectId(examId), status: "SUBMITTED" } },
+        { $match: { exam: new mongoose.Types.ObjectId(examId) } },
         {
             $group: {
                 _id: null,
-                totalAttempts: { $sum: 1 },
+                totalSubmissions: { $sum: 1 },
+                submittedCount: { $sum: { $cond: [{ $eq: ["$status", "submitted"] }, 1, 0] } },
+                gradedCount: { $sum: { $cond: [{ $eq: ["$gradingStatus", "graded"] }, 1, 0] } },
+                publishedCount: { $sum: { $cond: [{ $eq: ["$gradingStatus", "published"] }, 1, 0] } },
+                lateCount: { $sum: { $cond: ["$isLate", 1, 0] } },
                 avgPercentage: { $avg: "$percentage" },
                 highestPercentage: { $max: "$percentage" },
                 lowestPercentage: { $min: "$percentage" },
-                avgTimeTaken: { $avg: "$timeTaken" },
-                passedCount: { $sum: { $cond: ["$passed", 1, 0] } },
-                totalViolations: { $sum: "$totalViolations" },
-                avgViolations: { $avg: "$totalViolations" }
+                passedCount: { $sum: { $cond: ["$passed", 1, 0] } }
             }
         }
     ]);
 
     return stats[0] || {
-        totalAttempts: 0,
+        totalSubmissions: 0,
+        submittedCount: 0,
+        gradedCount: 0,
+        publishedCount: 0,
+        lateCount: 0,
         avgPercentage: 0,
         highestPercentage: 0,
         lowestPercentage: 0,
-        avgTimeTaken: 0,
-        passedCount: 0,
-        totalViolations: 0,
-        avgViolations: 0
+        passedCount: 0
     };
 };
 
-export default mongoose.model("ExamAttempt", examAttemptSchema);
+export default mongoose.model("ExamSubmission", examSubmissionSchema);
+

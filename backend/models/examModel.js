@@ -1,54 +1,10 @@
 import mongoose from "mongoose";
 
-const optionSchema = new mongoose.Schema({
-    text: {
-        type: String,
-        required: true
-    },
-    isCorrect: {
-        type: Boolean,
-        default: false
-    }
-}, { _id: true });
-
-const questionSchema = new mongoose.Schema({
-    type: {
-        type: String,
-        enum: ["multiple_choice", "true_false", "short_answer", "essay", "file_upload"],
-        required: true
-    },
-    question: {
-        type: String,
-        required: true
-    },
-    options: [optionSchema],
-    correctAnswer: {
-        type: String, // For short answer
-        default: ""
-    },
-    marks: {
-        type: Number,
-        required: true,
-        min: 0
-    },
-    explanation: {
-        type: String,
-        default: ""
-    },
-    order: {
-        type: Number,
-        default: 0
-    },
-    // For file_upload questions
-    allowedFileTypes: {
-        type: [String],
-        default: ["application/pdf"]
-    },
-    maxFileSize: {
-        type: Number, // in MB
-        default: 10
-    }
-}, { _id: true });
+/**
+ * Manual Exam Model
+ * For exams where students upload answer files (PDF/DOC)
+ * and teachers grade manually
+ */
 
 const examSchema = new mongoose.Schema(
     {
@@ -75,57 +31,72 @@ const examSchema = new mongoose.Schema(
             required: true
         },
 
-        // Exam Configuration
-        duration: {
-            type: Number, // in minutes
-            required: true
-        },
-
+        // Total marks for the exam (required, manually set by teacher)
         totalMarks: {
             type: Number,
-            required: true
+            required: true,
+            min: 0
         },
 
+        // Passing marks (percentage or absolute value)
         passingMarks: {
             type: Number,
             default: 0
         },
 
-        // Questions
-        questions: [questionSchema],
-
-        // Settings
-        shuffleQuestions: {
-            type: Boolean,
-            default: false
-        },
-
-        shuffleOptions: {
-            type: Boolean,
-            default: false
-        },
-
-        showResults: {
-            type: Boolean,
-            default: false
-        },
-
-        allowReview: {
-            type: Boolean,
-            default: true
-        },
-
-        // Availability
-        startDate: {
+        // Due date for submission
+        dueDate: {
             type: Date,
             default: null
         },
 
-        endDate: {
-            type: Date,
-            default: null
+        // Instructions for students
+        instructions: {
+            type: String,
+            default: ""
         },
 
+        // Question paper file (optional)
+        questionPaper: {
+            filename: {
+                type: String,
+                default: ""
+            },
+            originalName: {
+                type: String,
+                default: ""
+            },
+            contentType: {
+                type: String,
+                default: ""
+            },
+            size: {
+                type: Number,
+                default: 0
+            },
+            url: {
+                type: String,
+                default: ""
+            },
+            uploadedAt: {
+                type: Date,
+                default: null
+            }
+        },
+
+        // Allowed file types for answer submission
+        allowedAnswerFileTypes: {
+            type: [String],
+            default: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+        },
+
+        // Max file size for answer uploads (in MB)
+        maxAnswerFileSize: {
+            type: Number,
+            default: 10 // 10MB default
+        },
+
+        // Status
         isPublished: {
             type: Boolean,
             default: false
@@ -137,44 +108,30 @@ const examSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["draft", "scheduled", "active", "closed", "archived"],
+            enum: ["draft", "published", "closed"],
             default: "draft"
         },
 
-        // Attempt Settings
-        maxAttempts: {
-            type: Number,
-            default: 1
-        },
-
-        // Security Settings
-        security: {
-            preventTabSwitch: { type: Boolean, default: true },
-            preventCopyPaste: { type: Boolean, default: true },
-            requireFullscreen: { type: Boolean, default: true },
-            maxTimeOutside: { type: Number, default: 5 }, // in minutes
-            autoSubmitOnViolation: { type: Boolean, default: false }
-        },
-
         // Statistics
-        totalAttempts: {
+        totalSubmissions: {
             type: Number,
             default: 0
         },
 
-        averageScore: {
+        gradedCount: {
             type: Number,
             default: 0
         },
 
-        highestScore: {
-            type: Number,
-            default: 0
+        // Metadata
+        allowLateSubmission: {
+            type: Boolean,
+            default: false
         },
 
-        lowestScore: {
+        latePenaltyPercentage: {
             type: Number,
-            default: 0
+            default: 0 // Percentage deduction for late submissions
         }
     },
     { timestamps: true }
@@ -184,19 +141,15 @@ const examSchema = new mongoose.Schema(
 examSchema.index({ course: 1, instructor: 1 });
 examSchema.index({ course: 1, status: 1 });
 examSchema.index({ isPublished: 1, status: 1 });
+examSchema.index({ dueDate: 1 });
 
-// Virtual for question count
-examSchema.virtual("questionCount").get(function () {
-    return this.questions.length;
-});
-
-// Pre-save hook to calculate total marks
+// Pre-save hook
 examSchema.pre("save", function () {
-    if (this.isModified("questions")) {
-        this.totalMarks = this.questions.reduce((sum, q) => sum + (q.marks || 0), 0);
-    }
     if (this.isModified("isPublished") && this.isPublished && !this.publishedAt) {
         this.publishedAt = new Date();
+    }
+    if (this.isModified("isPublished") && this.isPublished) {
+        this.status = "published";
     }
 });
 
@@ -205,7 +158,7 @@ examSchema.statics.getPublishedExams = async function (courseId) {
     return this.find({
         course: courseId,
         isPublished: true,
-        status: { $in: ["scheduled", "active"] }
+        status: "published"
     })
         .populate("instructor", "name email")
         .sort({ createdAt: -1 });
@@ -229,4 +182,5 @@ examSchema.statics.getTeacherExams = async function (teacherId, filters = {}) {
         .sort({ createdAt: -1 });
 };
 
-export default mongoose.model("Exam", examSchema);
+export default mongoose.model("ManualExam", examSchema);
+

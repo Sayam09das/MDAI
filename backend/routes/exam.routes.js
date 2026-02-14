@@ -6,22 +6,19 @@ import {
     updateExam,
     deleteExam,
     togglePublishExam,
-    getExamResults,
+    getExamSubmissions,
     getExamStats,
-    startExamAttempt,
-    submitExamAttempt,
-    sendHeartbeat,
-    reportViolation,
-    getMyAttempts,
-    getMyExamAttempts,
     getStudentExams,
-    autoSubmitExpired,
-    uploadExamFile,
-    downloadExamFile,
-    gradeExamAnswer,
-    getAttemptDetails,
-    publishExamResult,
-    publishAllExamResults
+    getMySubmission,
+    submitExam,
+    downloadAnswerFile,
+    gradeSubmission,
+    getSubmissionDetails,
+    publishResult,
+    publishAllResults,
+    getMySubmissions,
+    uploadQuestionPaper,
+    downloadQuestionPaper
 } from "../controllers/exam.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import { examUpload } from "../middlewares/multer.js";
@@ -43,17 +40,18 @@ const isValidObjectId = (id) => {
 // Available exams for student
 router.get("/student/available", getStudentExams);
 
-// Student attempts - these are LITERAL routes, must be before /:id
-router.get("/my-attempts", getMyAttempts);
-router.get("/:examId/my-attempts", getMyExamAttempts);
+// Student's own submissions
+router.get("/my-submissions", getMySubmissions);
 
-// Start exam attempt
-router.post("/:examId/start", startExamAttempt);
+// Get student's submission for specific exam
+router.get("/:examId/my-submission", getMySubmission);
 
-// Exam attempt operations - these use :attemptId which should be validated
-router.post("/attempt/:attemptId/heartbeat", sendHeartbeat);
-router.post("/attempt/:attemptId/violation", reportViolation);
-router.post("/attempt/:attemptId/submit", submitExamAttempt);
+// Submit exam (upload answer file)
+router.post(
+    "/:examId/submit",
+    examUpload.single("file"),
+    submitExam
+);
 
 // ==================== TEACHER ROUTES ====================
 
@@ -61,6 +59,20 @@ router.post("/attempt/:attemptId/submit", submitExamAttempt);
 router.post("/", teacherOnly, createExam);
 router.get("/teacher", teacherOnly, getTeacherExams);
 router.get("/teacher/stats", teacherOnly, getExamStats);
+
+// Upload question paper
+router.post(
+    "/:id/question-paper",
+    teacherOnly,
+    examUpload.single("file"),
+    uploadQuestionPaper
+);
+
+// Download question paper
+router.get(
+    "/:id/question-paper",
+    downloadQuestionPaper
+);
 
 // ==================== PARAMETERIZED EXAM ROUTES (/:id) ====================
 // These MUST come after all literal and specific routes
@@ -78,7 +90,7 @@ router.get("/:id", (req, res, next) => {
     }
     
     // Also reject common literal path values that shouldn't be treated as IDs
-    const invalidPaths = ['my-attempts', 'student', 'teacher', 'attempt', 'cron', 'start'];
+    const invalidPaths = ['my-submission', 'my-submissions', 'student', 'teacher', 'attempt', 'cron', 'start', 'submit'];
     if (invalidPaths.includes(id)) {
         return res.status(400).json({ 
             success: false, 
@@ -94,56 +106,41 @@ router.put("/:id", teacherOnly, updateExam);
 router.delete("/:id", teacherOnly, deleteExam);
 router.patch("/:id/publish", teacherOnly, togglePublishExam);
 
-// Results and Analytics
-router.get("/:id/results", teacherOnly, getExamResults);
+// Get exam submissions (for teachers)
+router.get("/:id/submissions", teacherOnly, getExamSubmissions);
 
-// ==================== ADMIN/CRON ROUTES ====================
+// Publish all results for an exam
+router.post("/:id/publish-all", teacherOnly, publishAllResults);
 
-router.post("/cron/expire", autoSubmitExpired);
+// ==================== SUBMISSION ROUTES ====================
 
-// ==================== FILE UPLOAD ROUTES ====================
-
-// Upload file for exam answer (student)
-router.post(
-    "/attempt/:attemptId/upload",
-    protect,
-    examUpload.single("file"),
-    uploadExamFile
-);
-
-// Download uploaded file (teacher or student)
+// Download student's answer file (teacher)
 router.get(
-    "/attempt/:attemptId/file/:questionId",
-    protect,
-    downloadExamFile
-);
-
-// Grade file upload question (teacher)
-router.post(
-    "/attempt/:attemptId/grade",
+    "/submission/:submissionId/download",
     teacherOnly,
-    gradeExamAnswer
+    downloadAnswerFile
 );
 
-// Publish single exam result (teacher)
+// Grade submission (teacher)
 router.post(
-    "/attempt/:attemptId/publish",
+    "/submission/:submissionId/grade",
     teacherOnly,
-    publishExamResult
+    gradeSubmission
 );
 
-// Publish all results for an exam (teacher)
+// Publish single result (teacher)
 router.post(
-    "/:examId/publish-all",
+    "/submission/:submissionId/publish",
     teacherOnly,
-    publishAllExamResults
+    publishResult
 );
 
-// Get detailed attempt info (teacher)
+// Get submission details (teacher)
 router.get(
-    "/attempt/:attemptId/details",
+    "/submission/:submissionId/details",
     teacherOnly,
-    getAttemptDetails
+    getSubmissionDetails
 );
 
 export default router;
+

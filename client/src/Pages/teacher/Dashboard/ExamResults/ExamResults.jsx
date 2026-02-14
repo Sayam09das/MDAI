@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Download,
-    Filter,
     Search,
     User,
     Clock,
@@ -16,15 +15,15 @@ import {
     Calendar,
     Users,
     TrendingUp,
-    Shield,
     File,
     Upload,
     Save,
     X,
     Send,
-    CheckSquare
+    CheckSquare,
+    Upload as UploadIcon
 } from 'lucide-react';
-import { getExamResults, getExam, getExamStats, getAttemptDetails, gradeExamAnswer, gradeExam, downloadExamFile, publishExamResult, publishAllExamResults } from '../../../../lib/api/examApi';
+import { getExamSubmissions, getExam, getExamStats, getSubmissionDetails, gradeSubmission, downloadAnswerFile, publishResult, publishAllResults, downloadQuestionPaper } from '../../../../lib/api/examApi';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -34,23 +33,19 @@ const ExamResults = () => {
     const token = localStorage.getItem("token");
 
     const [exam, setExam] = useState(null);
-    const [results, setResults] = useState(null);
+    const [submissions, setSubmissions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedAttempt, setSelectedAttempt] = useState(null);
-    const [attemptDetails, setAttemptDetails] = useState(null);
+    const [selectedSubmission, setSelectedSubmission] = useState(null);
+    const [submissionDetails, setSubmissionDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
-    const [gradingQuestion, setGradingQuestion] = useState(null);
     const [gradingMarks, setGradingMarks] = useState('');
-    const [gradingNotes, setGradingNotes] = useState('');
+    const [gradingFeedback, setGradingFeedback] = useState('');
     const [savingGrade, setSavingGrade] = useState(false);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [publishingAll, setPublishingAll] = useState(false);
-    const [overallGrading, setOverallGrading] = useState(false);
-    const [overallMarks, setOverallMarks] = useState('');
-    const [overallFeedback, setOverallFeedback] = useState('');
 
     useEffect(() => {
         fetchExamData();
@@ -66,19 +61,14 @@ const ExamResults = () => {
                 setExam(examRes.exam);
             }
             
-            // Fetch exam results
-            const resultsRes = await getExamResults(examId);
-            if (resultsRes.success) {
-                setResults(resultsRes.attempts);
-            }
-            
-            // Fetch exam stats
-            const statsRes = await getExamStats(examId);
-            if (statsRes.success) {
-                setStats(statsRes.stats);
+            // Fetch exam submissions
+            const submissionsRes = await getExamSubmissions(examId);
+            if (submissionsRes.success) {
+                setSubmissions(submissionsRes.submissions);
+                setStats(submissionsRes.stats);
             }
         } catch (err) {
-            setError('Failed to load exam results');
+            setError('Failed to load exam submissions');
             console.error(err);
         } finally {
             setLoading(false);
@@ -96,38 +86,29 @@ const ExamResults = () => {
         });
     };
 
-    const formatDuration = (seconds) => {
-        if (!seconds) return '-';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
-    };
-
-    // Handle viewing attempt details
-    const handleViewDetails = async (attempt) => {
-        setSelectedAttempt(attempt);
+    // Handle viewing submission details
+    const handleViewDetails = async (submission) => {
+        setSelectedSubmission(submission);
         setLoadingDetails(true);
-        setAttemptDetails(null);
-        setGradingQuestion(null);
+        setSubmissionDetails(null);
+        setGradingMarks(submission.obtainedMarks?.toString() || '');
+        setGradingFeedback(submission.feedback || '');
         try {
-            const detailsRes = await getAttemptDetails(attempt.id);
+            const detailsRes = await getSubmissionDetails(submission.id);
             if (detailsRes.success) {
-                setAttemptDetails(detailsRes);
+                setSubmissionDetails(detailsRes);
             }
         } catch (err) {
-            console.error('Failed to load attempt details:', err);
+            console.error('Failed to load submission details:', err);
         } finally {
             setLoadingDetails(false);
         }
     };
 
-    // Handle downloading student uploaded file
-    const handleDownloadFile = async (questionId, fileName) => {
-        if (!selectedAttempt) return;
-        
+    // Handle downloading student's answer file
+    const handleDownloadFile = async (submissionId, fileName) => {
         try {
-            const blob = await downloadExamFile(selectedAttempt.id, questionId);
-            // Create download link
+            const blob = await downloadAnswerFile(submissionId);
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -142,72 +123,29 @@ const ExamResults = () => {
         }
     };
 
-    // Handle grading question
-    const handleStartGrading = (question) => {
-        setGradingQuestion(question);
-        setGradingMarks(question.studentAnswer?.marksObtained?.toString() || '');
-        setGradingNotes(question.studentAnswer?.gradingNotes || '');
+    // Handle downloading question paper
+    const handleDownloadQuestionPaper = async () => {
+        try {
+            const blob = await downloadQuestionPaper(examId);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'question_paper.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error('Failed to download question paper:', err);
+            alert('No question paper available');
+        }
     };
 
+    // Handle grading submission
     const handleSaveGrade = async () => {
-        if (!gradingQuestion || !selectedAttempt) return;
+        if (!selectedSubmission) return;
         
         const marks = parseFloat(gradingMarks);
-        if (isNaN(marks) || marks < 0 || marks > gradingQuestion.marks) {
-            alert(`Marks must be between 0 and ${gradingQuestion.marks}`);
-            return;
-        }
-
-        setSavingGrade(true);
-        try {
-            const res = await gradeExamAnswer(
-                selectedAttempt.id,
-                gradingQuestion._id,
-                marks,
-                gradingNotes
-            );
-            
-            if (res.success) {
-                // Refresh attempt details
-                const detailsRes = await getAttemptDetails(selectedAttempt.id);
-                if (detailsRes.success) {
-                    setAttemptDetails(detailsRes);
-                    // Update the selected attempt with new marks
-                    setSelectedAttempt(prev => ({
-                        ...prev,
-                        marks: res.attempt.obtainedMarks,
-                        percentage: res.attempt.percentage,
-                        passed: res.attempt.passed
-                    }));
-                }
-                setGradingQuestion(null);
-                alert('Grade saved successfully!');
-            }
-        } catch (err) {
-            console.error('Failed to save grade:', err);
-            alert('Failed to save grade');
-        } finally {
-            setSavingGrade(false);
-        }
-    };
-
-    const handleCloseGrading = () => {
-        setGradingQuestion(null);
-        setGradingMarks('');
-        setGradingNotes('');
-    };
-
-    // Handle grading entire exam at once
-    const handleStartOverallGrading = () => {
-        setOverallGrading(true);
-        setOverallMarks(selectedAttempt?.marks?.toString() || '0');
-        setOverallFeedback(selectedAttempt?.overallFeedback || '');
-    };
-
-    const handleSaveOverallGrade = async () => {
-        if (!selectedAttempt) return;
-        
-        const marks = parseFloat(overallMarks);
         if (isNaN(marks) || marks < 0 || marks > exam?.totalMarks) {
             alert(`Marks must be between 0 and ${exam?.totalMarks}`);
             return;
@@ -215,28 +153,31 @@ const ExamResults = () => {
 
         setSavingGrade(true);
         try {
-            const res = await gradeExam(
-                selectedAttempt.id,
+            const res = await gradeSubmission(
+                selectedSubmission.id,
                 marks,
-                overallFeedback
+                gradingFeedback
             );
             
             if (res.success) {
-                // Refresh attempt details
-                const detailsRes = await getAttemptDetails(selectedAttempt.id);
-                if (detailsRes.success) {
-                    setAttemptDetails(detailsRes);
-                }
-                // Refresh exam data
+                // Refresh data
                 await fetchExamData();
-                setOverallGrading(false);
-                setSelectedAttempt(prev => ({
+                
+                // Update selected submission
+                setSelectedSubmission(prev => ({
                     ...prev,
-                    marks: res.attempt.obtainedMarks,
-                    percentage: res.attempt.percentage,
-                    passed: res.attempt.passed,
-                    gradingStatus: res.attempt.gradingStatus
+                    obtainedMarks: res.grade.obtainedMarks,
+                    percentage: res.grade.percentage,
+                    passed: res.grade.passed,
+                    gradingStatus: res.grade.gradingStatus
                 }));
+                
+                // Refresh details
+                const detailsRes = await getSubmissionDetails(selectedSubmission.id);
+                if (detailsRes.success) {
+                    setSubmissionDetails(detailsRes);
+                }
+                
                 alert('Grade saved successfully!');
             }
         } catch (err) {
@@ -248,13 +189,13 @@ const ExamResults = () => {
     };
 
     // Handle publishing single result
-    const handlePublishResult = async (attemptId) => {
+    const handlePublishResult = async (submissionId) => {
         if (!confirm('Are you sure you want to publish this result? Students will be able to see their marks.')) {
             return;
         }
 
         try {
-            const res = await publishExamResult(attemptId);
+            const res = await publishResult(submissionId);
             if (res.success) {
                 alert('Result published successfully!');
                 await fetchExamData();
@@ -273,7 +214,7 @@ const ExamResults = () => {
 
         setPublishingAll(true);
         try {
-            const res = await publishAllExamResults(examId);
+            const res = await publishAllResults(examId);
             if (res.success) {
                 alert(`${res.publishedCount} results published successfully!`);
                 await fetchExamData();
@@ -296,16 +237,6 @@ const ExamResults = () => {
         }
     };
 
-    // Get grading status icon
-    const getGradingStatusIcon = (status) => {
-        switch (status) {
-            case 'graded': return <CheckCircle className="w-4 h-4 text-green-500" />;
-            case 'published': return <Eye className="w-4 h-4 text-blue-500" />;
-            case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
-            default: return <Clock className="w-4 h-4 text-gray-500" />;
-        }
-    };
-
     // Get grading status text
     const getGradingStatusText = (status) => {
         switch (status) {
@@ -316,43 +247,29 @@ const ExamResults = () => {
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'SUBMITTED': return 'bg-green-100 text-green-700';
-            case 'AUTO_SUBMITTED': return 'bg-yellow-100 text-yellow-700';
-            case 'DISQUALIFIED': return 'bg-red-100 text-red-700';
-            case 'EXPIRED': return 'bg-gray-100 text-gray-700';
-            default: return 'bg-gray-100 text-gray-700';
-        }
+    const getStatusColor = (submission) => {
+        if (submission.isLate) return 'bg-orange-100 text-orange-700';
+        return 'bg-green-100 text-green-700';
     };
 
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'SUBMITTED': return <CheckCircle className="w-4 h-4 text-green-500" />;
-            case 'AUTO_SUBMITTED': return <Clock className="w-4 h-4 text-yellow-500" />;
-            case 'DISQUALIFIED': return <XCircle className="w-4 h-4 text-red-500" />;
-            default: return <Clock className="w-4 h-4 text-gray-500" />;
-        }
-    };
-
-    // Filter attempts
-    const filteredAttempts = results?.filter(attempt => {
+    // Filter submissions
+    const filteredSubmissions = submissions.filter(submission => {
         const matchesFilter = filter === 'all' || 
-            (filter === 'passed' && attempt.passed) ||
-            (filter === 'failed' && !attempt.passed) ||
-            (filter === 'disqualified' && attempt.status === 'DISQUALIFIED');
+            (filter === 'graded' && submission.gradingStatus === 'graded') ||
+            (filter === 'pending' && submission.gradingStatus === 'pending') ||
+            (filter === 'published' && submission.gradingStatus === 'published');
         
-        const matchesSearch = attempt.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            attempt.student?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = submission.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            submission.student?.email?.toLowerCase().includes(searchTerm.toLowerCase());
         
         return matchesFilter && matchesSearch;
     }) || [];
 
     // Calculate stats
-    const passedCount = filteredAttempts.filter(a => a.passed).length;
-    const failedCount = filteredAttempts.filter(a => !a.passed && a.status === 'SUBMITTED').length;
-    const avgScore = filteredAttempts.length > 0 
-        ? filteredAttempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / filteredAttempts.length 
+    const gradedCount = filteredSubmissions.filter(s => s.gradingStatus === 'graded' || s.gradingStatus === 'published').length;
+    const pendingCount = filteredSubmissions.filter(s => s.gradingStatus === 'pending').length;
+    const avgScore = filteredSubmissions.length > 0 
+        ? filteredSubmissions.reduce((sum, s) => sum + (s.percentage || 0), 0) / filteredSubmissions.filter(s => s.percentage).length 
         : 0;
 
     if (loading) {
@@ -400,15 +317,24 @@ const ExamResults = () => {
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
                                 <BarChart3 className="w-8 h-8 text-indigo-600" />
-                                Exam Results
+                                Exam Submissions
                             </h1>
-                            <p className="text-gray-600 mt-1">{exam?.title || 'Exam Results'}</p>
+                            <p className="text-gray-600 mt-1">{exam?.title || 'Exam Submissions'}</p>
                         </div>
                         
                         <div className="flex gap-3">
+                            {exam?.hasQuestionPaper && (
+                                <button
+                                    onClick={handleDownloadQuestionPaper}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    Question Paper
+                                </button>
+                            )}
                             <button
                                 onClick={handlePublishAllResults}
-                                disabled={publishingAll}
+                                disabled={publishingAll || gradedCount === 0}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                             >
                                 {publishingAll ? (
@@ -417,13 +343,6 @@ const ExamResults = () => {
                                     <Send className="w-5 h-5" />
                                 )}
                                 Publish All Results
-                            </button>
-                            <button
-                                onClick={() => window.print()}
-                                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50"
-                            >
-                                <Download className="w-5 h-5" />
-                                Export
                             </button>
                         </div>
                     </div>
@@ -437,8 +356,20 @@ const ExamResults = () => {
                                 <Users className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-800">{results?.length || 0}</p>
-                                <p className="text-sm text-gray-500">Total Attempts</p>
+                                <p className="text-2xl font-bold text-gray-800">{stats?.totalSubmissions || 0}</p>
+                                <p className="text-sm text-gray-500">Total Submissions</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-yellow-100 rounded-lg">
+                                <Clock className="w-5 h-5 text-yellow-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-800">{pendingCount}</p>
+                                <p className="text-sm text-gray-500">Pending</p>
                             </div>
                         </div>
                     </div>
@@ -449,32 +380,8 @@ const ExamResults = () => {
                                 <CheckCircle className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-800">{passedCount}</p>
-                                <p className="text-sm text-gray-500">Passed</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-100 rounded-lg">
-                                <XCircle className="w-5 h-5 text-red-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">{failedCount}</p>
-                                <p className="text-sm text-gray-500">Failed</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-yellow-100 rounded-lg">
-                                <TrendingUp className="w-5 h-5 text-yellow-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">{avgScore.toFixed(1)}%</p>
-                                <p className="text-sm text-gray-500">Average Score</p>
+                                <p className="text-2xl font-bold text-gray-800">{gradedCount}</p>
+                                <p className="text-sm text-gray-500">Graded</p>
                             </div>
                         </div>
                     </div>
@@ -482,13 +389,23 @@ const ExamResults = () => {
                     <div className="bg-white rounded-xl shadow-lg p-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-purple-100 rounded-lg">
-                                <Shield className="w-5 h-5 text-purple-600" />
+                                <TrendingUp className="w-5 h-5 text-purple-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-800">
-                                    {stats?.avgViolations?.toFixed(1) || 0}
-                                </p>
-                                <p className="text-sm text-gray-500">Avg Violations</p>
+                                <p className="text-2xl font-bold text-gray-800">{avgScore.toFixed(1)}%</p>
+                                <p className="text-sm text-gray-500">Avg Score</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                                <AlertTriangle className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-800">{stats?.late || 0}</p>
+                                <p className="text-sm text-gray-500">Late</p>
                             </div>
                         </div>
                     </div>
@@ -513,16 +430,16 @@ const ExamResults = () => {
                                 onChange={(e) => setFilter(e.target.value)}
                                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             >
-                                <option value="all">All Attempts</option>
-                                <option value="passed">Passed Only</option>
-                                <option value="failed">Failed Only</option>
-                                <option value="disqualified">Disqualified</option>
+                                <option value="all">All Submissions</option>
+                                <option value="pending">Pending</option>
+                                <option value="graded">Graded</option>
+                                <option value="published">Published</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                {/* Results Table */}
+                {/* Submissions Table */}
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -541,12 +458,6 @@ const ExamResults = () => {
                                         Score
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Time Taken
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Violations
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Submitted
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -555,14 +466,14 @@ const ExamResults = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredAttempts.map((attempt) => (
-                                    <tr key={attempt.id} className="hover:bg-gray-50">
+                                {filteredSubmissions.map((submission) => (
+                                    <tr key={submission.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                {attempt.student?.profileImage?.url ? (
+                                                {submission.student?.profileImage?.url ? (
                                                     <img
-                                                        src={attempt.student.profileImage.url}
-                                                        alt={attempt.student.fullName || 'Student'}
+                                                        src={submission.student.profileImage.url}
+                                                        alt={submission.student.fullName || 'Student'}
                                                         className="w-10 h-10 rounded-full object-cover"
                                                     />
                                                 ) : (
@@ -572,66 +483,51 @@ const ExamResults = () => {
                                                 )}
                                                 <div>
                                                     <p className="font-medium text-gray-800">
-                                                        {attempt.student?.fullName || 'Unknown Student'}
+                                                        {submission.student?.fullName || 'Unknown Student'}
                                                     </p>
                                                     <p className="text-sm text-gray-500">
-                                                        {attempt.student?.email || ''}
+                                                        {submission.student?.email || ''}
                                                     </p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(attempt.status)}`}>
-                                                {getStatusIcon(attempt.status)}
-                                                {attempt.status}
+                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(submission)}`}>
+                                                {submission.isLate ? 'Late' : 'On Time'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getGradingStatusColor(attempt.gradingStatus)}`}>
-                                                {getGradingStatusIcon(attempt.gradingStatus)}
-                                                {getGradingStatusText(attempt.gradingStatus)}
+                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getGradingStatusColor(submission.gradingStatus)}`}>
+                                                {getGradingStatusText(submission.gradingStatus)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`font-bold ${attempt.passed ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {attempt.marks}/{attempt.totalMarks}
-                                                </span>
-                                                <span className="text-sm text-gray-500">
-                                                    ({attempt.percentage?.toFixed(1)}%)
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 text-gray-600">
-                                                <Clock className="w-4 h-4" />
-                                                {formatDuration(attempt.timeTaken)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1">
-                                                <AlertTriangle className={`w-4 h-4 ${attempt.totalViolations > 0 ? 'text-yellow-500' : 'text-green-500'}`} />
-                                                <span className={attempt.totalViolations > 2 ? 'text-red-600 font-medium' : 'text-gray-600'}>
-                                                    {attempt.totalViolations || 0}
-                                                </span>
-                                                {attempt.tabSwitchCount > 0 && (
-                                                    <span className="text-xs text-gray-500">
-                                                        ({attempt.tabSwitchCount} tab switches)
+                                            {submission.gradingStatus !== 'pending' ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-bold ${submission.passed ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {submission.obtainedMarks}/{submission.totalMarks}
                                                     </span>
-                                                )}
-                                            </div>
+                                                    <span className="text-sm text-gray-500">
+                                                        ({submission.percentage?.toFixed(1)}%)
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            {formatDate(attempt.submittedAt)}
+                                            {formatDate(submission.submittedAt)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => handleViewDetails(attempt)}
-                                                className="flex items-center gap-1 px-3 py-1 text-indigo-600 hover:bg-indigo-50 rounded-lg text-sm font-medium"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                View Details
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleViewDetails(submission)}
+                                                    className="flex items-center gap-1 px-3 py-1 text-indigo-600 hover:bg-indigo-50 rounded-lg text-sm font-medium"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    View & Grade
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -639,23 +535,23 @@ const ExamResults = () => {
                         </table>
                     </div>
 
-                    {filteredAttempts.length === 0 && (
+                    {filteredSubmissions.length === 0 && (
                         <div className="text-center py-12">
                             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-600">No attempts found matching your filters</p>
+                            <p className="text-gray-600">No submissions found</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Attempt Details Modal */}
-            {selectedAttempt && (
+            {/* Submission Details Modal */}
+            {selectedSubmission && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-                            <h2 className="text-xl font-bold">Attempt Details</h2>
+                            <h2 className="text-xl font-bold">Submission Details</h2>
                             <button
-                                onClick={() => { setSelectedAttempt(null); setAttemptDetails(null); }}
+                                onClick={() => { setSelectedSubmission(null); setSubmissionDetails(null); }}
                                 className="p-2 hover:bg-gray-100 rounded-lg"
                             >
                                 <XCircle className="w-6 h-6" />
@@ -666,10 +562,10 @@ const ExamResults = () => {
                             <div className="mb-6">
                                 <h3 className="text-lg font-semibold mb-3">Student Information</h3>
                                 <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-4">
-                                    {selectedAttempt.student?.profileImage?.url ? (
+                                    {selectedSubmission.student?.profileImage?.url ? (
                                         <img
-                                            src={selectedAttempt.student.profileImage.url}
-                                            alt={selectedAttempt.student.fullName || 'Student'}
+                                            src={selectedSubmission.student.profileImage.url}
+                                            alt={selectedSubmission.student.fullName || 'Student'}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
                                     ) : (
@@ -678,255 +574,156 @@ const ExamResults = () => {
                                         </div>
                                     )}
                                     <div>
-                                        <p className="font-bold text-gray-800">{selectedAttempt.student?.fullName}</p>
-                                        <p className="text-sm text-gray-500">{selectedAttempt.student?.email}</p>
+                                        <p className="font-bold text-gray-800">{selectedSubmission.student?.fullName}</p>
+                                        <p className="text-sm text-gray-500">{selectedSubmission.student?.email}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Score Summary */}
+                            {/* Submission Info */}
                             <div className="mb-6">
-                                <h3 className="text-lg font-semibold mb-3">Score Summary</h3>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-blue-50 rounded-lg p-4 text-center">
-                                        <p className="text-2xl font-bold text-blue-600">{selectedAttempt.marks}</p>
-                                        <p className="text-sm text-gray-600">Marks Obtained</p>
+                                <h3 className="text-lg font-semibold mb-3">Submission Information</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Submitted</p>
+                                        <p className="font-medium">{formatDate(selectedSubmission.submittedAt)}</p>
                                     </div>
-                                    <div className="bg-green-50 rounded-lg p-4 text-center">
-                                        <p className="text-2xl font-bold text-green-600">{selectedAttempt.totalMarks}</p>
-                                        <p className="text-sm text-gray-600">Total Marks</p>
-                                    </div>
-                                    <div className={`rounded-lg p-4 text-center ${selectedAttempt.passed ? 'bg-green-100' : 'bg-red-100'}`}>
-                                        <p className={`text-2xl font-bold ${selectedAttempt.passed ? 'text-green-600' : 'text-red-600'}`}>
-                                            {selectedAttempt.percentage?.toFixed(1)}%
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Status</p>
+                                        <p className="font-medium">
+                                            <span className={`px-2 py-1 rounded text-xs ${getStatusColor(selectedSubmission)}`}>
+                                                {selectedSubmission.isLate ? 'Late' : 'On Time'}
+                                            </span>
                                         </p>
-                                        <p className="text-sm text-gray-600">{selectedAttempt.passed ? 'Passed' : 'Failed'}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Loading Details */}
-                            {loadingDetails && (
-                                <div className="text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                                    <p className="text-gray-500 mt-2">Loading details...</p>
-                                </div>
-                            )}
-
-                            {/* Questions & Answers */}
-                            {attemptDetails && !loadingDetails && (
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-semibold mb-3">Questions & Answers</h3>
-                                    <div className="space-y-4">
-                                        {attemptDetails.questions?.map((question, index) => (
-                                            <div key={question._id} className="border border-gray-200 rounded-lg p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-500">Question {index + 1}</span>
-                                                        <span className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-full capitalize">
-                                                            {question.type.replace('_', ' ')}
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-sm font-medium text-indigo-600">
-                                                        {question.studentAnswer?.marksObtained || 0}/{question.marks} marks
-                                                    </span>
-                                                </div>
-                                                
-                                                <p className="font-medium text-gray-800 mb-3">{question.question}</p>
-
-                                                {/* Multiple Choice / True-False */}
-                                                {question.type === 'multiple_choice' || question.type === 'true_false' ? (
-                                                    <div className="space-y-2">
-                                                        {question.options?.map((option) => {
-                                                            const isSelected = question.studentAnswer?.selectedOption === option._id;
-                                                            const isCorrect = option.isCorrect;
-                                                            
-                                                            return (
-                                                                <div
-                                                                    key={option._id}
-                                                                    className={`p-3 rounded-lg border ${
-                                                                        isCorrect ? 'border-green-500 bg-green-50' :
-                                                                        isSelected ? 'border-red-500 bg-red-50' :
-                                                                        'border-gray-200'
-                                                                    }`}
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        {isCorrect && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                                                        {isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-500" />}
-                                                                        <span className={isCorrect ? 'font-medium text-green-700' : ''}>
-                                                                            {option.text}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : null}
-
-                                                {/* Short Answer */}
-                                                {question.type === 'short_answer' && (
-                                                    <div className={`p-3 rounded-lg border ${
-                                                        question.studentAnswer?.isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                                                    }`}>
-                                                        <p className="text-sm text-gray-600 mb-1">Student's Answer:</p>
-                                                        <p className="font-medium">{question.studentAnswer?.textAnswer || 'No answer'}</p>
-                                                        {question.correctAnswer && (
-                                                            <p className="text-sm text-gray-500 mt-2">
-                                                                Correct Answer: {question.correctAnswer}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* File Upload Question */}
-                                                {question.type === 'file_upload' && (
-                                                    <div className="space-y-3">
-                                                        {question.studentAnswer?.uploadedFile ? (
-                                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <File className="w-8 h-8 text-blue-600" />
-                                                                        <div>
-                                                                            <p className="font-medium text-gray-800">
-                                                                                {question.studentAnswer.uploadedFile.originalName}
-                                                                            </p>
-                                                                            <p className="text-sm text-gray-500">
-                                                                                {question.studentAnswer.uploadedFile.size && 
-                                                                                    `${(question.studentAnswer.uploadedFile.size / 1024 / 1024).toFixed(2)} MB`}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={() => handleDownloadFile(
-                                                                            question._id, 
-                                                                            question.studentAnswer.uploadedFile.originalName
-                                                                        )}
-                                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                                                    >
-                                                                        <Download className="w-4 h-4" />
-                                                                        Download
-                                                                    </button>
-                                                                </div>
-
-                                                                {/* Grading Section */}
-                                                                <div className="mt-4 pt-4 border-t border-blue-200">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <span className="text-sm font-medium">
-                                                                            Status: {question.studentAnswer.isGraded ? (
-                                                                                <span className="text-green-600">Graded</span>
-                                                                            ) : (
-                                                                                <span className="text-yellow-600">Pending</span>
-                                                                            )}
-                                                                        </span>
-                                                                        <span className="text-sm text-gray-500">
-                                                                            Max Marks: {question.marks}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {gradingQuestion?._id === question._id ? (
-                                                                        <div className="bg-white rounded-lg p-4">
-                                                                            <div className="grid grid-cols-2 gap-4 mb-3">
-                                                                                <div>
-                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                        Marks (0-{question.marks})
-                                                                                    </label>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        min="0"
-                                                                                        max={question.marks}
-                                                                                        value={gradingMarks}
-                                                                                        onChange={(e) => setGradingMarks(e.target.value)}
-                                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="mb-3">
-                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Feedback/Notes
-                                                                                </label>
-                                                                                <textarea
-                                                                                    value={gradingNotes}
-                                                                                    onChange={(e) => setGradingNotes(e.target.value)}
-                                                                                    rows={2}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                                                                    placeholder="Add feedback for the student..."
-                                                                                />
-                                                                            </div>
-                                                                            <div className="flex gap-2">
-                                                                                <button
-                                                                                    onClick={handleSaveGrade}
-                                                                                    disabled={savingGrade}
-                                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                                                                                >
-                                                                                    {savingGrade ? (
-                                                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                                                    ) : (
-                                                                                        <Save className="w-4 h-4" />
-                                                                                    )}
-                                                                                    Save Grade
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={handleCloseGrading}
-                                                                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                                                                                >
-                                                                                    Cancel
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <button
-                                                                            onClick={() => handleStartGrading(question)}
-                                                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                                                                        >
-                                                                            <Upload className="w-4 h-4" />
-                                                                            {question.studentAnswer.isGraded ? 'Update Grade' : 'Grade'}
-                                                                        </button>
-                                                                    )}
-
-                                                                    {question.studentAnswer.isGraded && question.studentAnswer.gradingNotes && (
-                                                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                                                                            <p className="text-sm text-gray-600">Feedback:</p>
-                                                                            <p className="text-sm">{question.studentAnswer.gradingNotes}</p>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                                                                <File className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                                                <p className="text-gray-500">No file uploaded</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Timing */}
+                            {/* Answer File */}
                             <div className="mb-6">
-                                <h3 className="text-lg font-semibold mb-3">Timing Information</h3>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between py-2 border-b">
-                                        <span className="text-gray-500">Started</span>
-                                        <span className="text-gray-800">
-                                            {selectedAttempt.startTime ? formatDate(selectedAttempt.startTime) : '-'}
-                                        </span>
+                                <h3 className="text-lg font-semibold mb-3">Answer File</h3>
+                                {submissionDetails?.submission?.answerFile ? (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <FileText className="w-8 h-8 text-blue-600" />
+                                                <div>
+                                                    <p className="font-medium text-gray-800">
+                                                        {submissionDetails.submission.answerFile.originalName}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {submissionDetails.submission.answerFile.size && 
+                                                            `${(submissionDetails.submission.answerFile.size / 1024 / 1024).toFixed(2)} MB`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDownloadFile(
+                                                    selectedSubmission.id, 
+                                                    submissionDetails.submission.answerFile.originalName
+                                                )}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Download
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b">
-                                        <span className="text-gray-500">Submitted</span>
-                                        <span className="text-gray-800">
-                                            {selectedAttempt.submittedAt ? formatDate(selectedAttempt.submittedAt) : '-'}
-                                        </span>
+                                ) : (
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                                        <p className="text-gray-500">No answer file uploaded</p>
                                     </div>
-                                    <div className="flex justify-between py-2">
-                                        <span className="text-gray-500">Time Taken</span>
-                                        <span className="text-gray-800">{formatDuration(selectedAttempt.timeTaken)}</span>
+                                )}
+                            </div>
+
+                            {/* Grading Section */}
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold mb-3">Grading</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Marks (0-{exam?.totalMarks || 100})
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max={exam?.totalMarks || 100}
+                                            value={gradingMarks}
+                                            onChange={(e) => setGradingMarks(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="Enter marks"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Feedback (Optional)
+                                        </label>
+                                        <textarea
+                                            value={gradingFeedback}
+                                            onChange={(e) => setGradingFeedback(e.target.value)}
+                                            rows={3}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="Add feedback for the student..."
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleSaveGrade}
+                                            disabled={savingGrade}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                        >
+                                            {savingGrade ? (
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            ) : (
+                                                <Save className="w-4 h-4" />
+                                            )}
+                                            Save Grade
+                                        </button>
+                                        {selectedSubmission.gradingStatus === 'graded' && selectedSubmission.gradingStatus !== 'published' && (
+                                            <button
+                                                onClick={() => handlePublishResult(selectedSubmission.id)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            >
+                                                <Send className="w-4 h-4" />
+                                                Publish Result
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Current Grade Display */}
+                            {selectedSubmission.gradingStatus !== 'pending' && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 className="font-semibold text-green-800 mb-2">Current Grade</h4>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-green-600">
+                                                {selectedSubmission.obtainedMarks}/{selectedSubmission.totalMarks}
+                                            </p>
+                                            <p className="text-sm text-gray-600">Marks</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-green-600">
+                                                {selectedSubmission.percentage?.toFixed(1)}%
+                                            </p>
+                                            <p className="text-sm text-gray-600">Score</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className={`text-2xl font-bold ${selectedSubmission.passed ? 'text-green-600' : 'text-red-600'}`}>
+                                                {selectedSubmission.passed ? 'PASSED' : 'FAILED'}
+                                            </p>
+                                            <p className="text-sm text-gray-600">Status</p>
+                                        </div>
+                                    </div>
+                                    {submissionDetails?.submission?.feedback && (
+                                        <div className="mt-4 pt-4 border-t border-green-200">
+                                            <p className="text-sm text-gray-600">Feedback:</p>
+                                            <p className="text-gray-800">{submissionDetails.submission.feedback}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
