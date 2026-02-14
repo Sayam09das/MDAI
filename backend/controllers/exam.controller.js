@@ -328,7 +328,7 @@ export const getExamResults = async (req, res) => {
         }
 
         const attempts = await ExamAttempt.find({ exam: exam._id })
-            .populate("student", "name email profileImage")
+            .populate("student", "fullName email profileImage")
             .sort({ submittedAt: -1 });
 
         // Calculate statistics
@@ -873,7 +873,7 @@ export const getMyAttempts = async (req, res) => {
         const attempts = await ExamAttempt.find(query)
             .populate("exam", "title totalMarks passingMarks")
             .populate("course", "title")
-            .populate("student", "name email profileImage")
+            .populate("student", "fullName email profileImage")
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -882,7 +882,7 @@ export const getMyAttempts = async (req, res) => {
                 id: a._id,
                 student: {
                     _id: a.student?._id,
-                    name: a.student?.name || 'Unknown',
+                    fullName: a.student?.fullName || 'Unknown',
                     email: a.student?.email || '',
                     profileImage: a.student?.profileImage || null
                 },
@@ -1322,7 +1322,7 @@ export const getAttemptDetails = async (req, res) => {
 
         const attempt = await ExamAttempt.findById(attemptId)
             .populate("exam", "title totalMarks passingMarks questions instructor")
-            .populate("student", "name email profileImage");
+            .populate("student", "fullName email profileImage");
 
         if (!attempt) {
             return res.status(404).json({ message: "Exam attempt not found" });
@@ -1372,7 +1372,7 @@ export const getAttemptDetails = async (req, res) => {
                 id: attempt._id,
                 student: {
                     _id: attempt.student._id,
-                    name: attempt.student.name,
+                    fullName: attempt.student.fullName,
                     email: attempt.student.email,
                     profileImage: attempt.student.profileImage
                 },

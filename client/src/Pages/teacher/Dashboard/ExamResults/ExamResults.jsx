@@ -217,7 +217,7 @@ const ExamResults = () => {
             (filter === 'failed' && !attempt.passed) ||
             (filter === 'disqualified' && attempt.status === 'DISQUALIFIED');
         
-        const matchesSearch = attempt.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = attempt.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             attempt.student?.email?.toLowerCase().includes(searchTerm.toLowerCase());
         
         return matchesFilter && matchesSearch;
@@ -422,7 +422,7 @@ const ExamResults = () => {
                                                 {attempt.student?.profileImage?.url ? (
                                                     <img
                                                         src={attempt.student.profileImage.url}
-                                                        alt={attempt.student.name || 'Student'}
+                                                        alt={attempt.student.fullName || 'Student'}
                                                         className="w-10 h-10 rounded-full object-cover"
                                                     />
                                                 ) : (
@@ -432,7 +432,7 @@ const ExamResults = () => {
                                                 )}
                                                 <div>
                                                     <p className="font-medium text-gray-800">
-                                                        {attempt.student?.name || 'Unknown Student'}
+                                                        {attempt.student?.fullName || 'Unknown Student'}
                                                     </p>
                                                     <p className="text-sm text-gray-500">
                                                         {attempt.student?.email || ''}
@@ -523,7 +523,7 @@ const ExamResults = () => {
                                     {selectedAttempt.student?.profileImage?.url ? (
                                         <img
                                             src={selectedAttempt.student.profileImage.url}
-                                            alt={selectedAttempt.student.name || 'Student'}
+                                            alt={selectedAttempt.student.fullName || 'Student'}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
                                     ) : (
@@ -532,7 +532,7 @@ const ExamResults = () => {
                                         </div>
                                     )}
                                     <div>
-                                        <p className="font-bold text-gray-800">{selectedAttempt.student?.name}</p>
+                                        <p className="font-bold text-gray-800">{selectedAttempt.student?.fullName}</p>
                                         <p className="text-sm text-gray-500">{selectedAttempt.student?.email}</p>
                                     </div>
                                 </div>
