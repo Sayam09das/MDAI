@@ -1015,7 +1015,7 @@ export const getSubmissionDetails = async (req, res) => {
         const { submissionId } = req.params;
 
         const submission = await ExamSubmission.findById(submissionId)
-            .populate("exam", "title totalMarks passingMarks dueDate instructions")
+            .populate("exam", "title totalMarks passingMarks dueDate instructions instructor")
             .populate("student", "fullName email profileImage")
             .populate("gradedBy", "name");
 
