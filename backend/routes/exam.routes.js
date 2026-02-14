@@ -60,17 +60,61 @@ router.post("/", teacherOnly, createExam);
 router.get("/teacher", teacherOnly, getTeacherExams);
 router.get("/teacher/stats", teacherOnly, getExamStats);
 
-// Upload question paper
+// Upload question paper - with validation
 router.post(
     "/:id/question-paper",
     teacherOnly,
+    (req, res, next) => {
+        const { id } = req.params;
+        
+        // Check if the ID is a valid MongoDB ObjectId
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid exam ID format. ID must be a valid 24-character hex string." 
+            });
+        }
+        
+        // Also reject common literal path values
+        const invalidPaths = ['my-submission', 'my-submissions', 'student', 'teacher', 'attempt', 'cron', 'start', 'submit'];
+        if (invalidPaths.includes(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid route. '${id}' is not a valid exam ID.` 
+            });
+        }
+        
+        next();
+    },
     examUpload.single("file"),
     uploadQuestionPaper
 );
 
-// Download question paper
+// Download question paper - with validation
 router.get(
     "/:id/question-paper",
+    (req, res, next) => {
+        const { id } = req.params;
+        
+        // Check if the ID is a valid MongoDB ObjectId
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid exam ID format. ID must be a valid 24-character hex string." 
+            });
+        }
+        
+        // Also reject common literal path values
+        const invalidPaths = ['my-submission', 'my-submissions', 'student', 'teacher', 'attempt', 'cron', 'start', 'submit'];
+        if (invalidPaths.includes(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid route. '${id}' is not a valid exam ID.` 
+            });
+        }
+        
+        next();
+    },
     downloadQuestionPaper
 );
 
