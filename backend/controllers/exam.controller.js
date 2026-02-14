@@ -447,19 +447,64 @@ export const downloadQuestionPaper = async (req, res) => {
             }
         }
 
-        if (!exam.questionPaper || !exam.questionPaper.data) {
+        // Check if question paper exists
+        if (!exam.questionPaper) {
             return res.status(404).json({ message: "Question paper not found" });
         }
 
-        const file = exam.questionPaper;
+        // Priority 1: If there's a URL (Cloudinary or external storage), fetch and send the file
+        if (exam.questionPaper.url && exam.questionPaper.url.trim() !== "") {
+            try {
+                // Fetch the file from the URL
+                const fileResponse = await fetch(exam.questionPaper.url);
+                
+                if (!fileResponse.ok) {
+                    return res.status(404).json({ 
+                        message: "Question paper file is not accessible. Please contact your teacher." 
+                    });
+                }
 
-        res.set({
-            "Content-Type": file.contentType || "application/pdf",
-            "Content-Disposition": `attachment; filename="${file.originalName || "question_paper.pdf"}"`,
-            "Content-Length": file.size
-        });
+                // Get the file buffer
+                const fileBuffer = await fileResponse.arrayBuffer();
+                const contentType = exam.questionPaper.contentType || fileResponse.headers.get('content-type') || 'application/pdf';
+                const fileSize = fileBuffer.byteLength;
 
-        res.send(file.data);
+                res.set({
+                    "Content-Type": contentType,
+                    "Content-Disposition": `attachment; filename="${exam.questionPaper.originalName || "question_paper.pdf"}"`,
+                    "Content-Length": fileSize
+                });
+
+                return res.send(Buffer.from(fileBuffer));
+            } catch (fetchError) {
+                console.error("Error fetching question paper from URL:", fetchError);
+                return res.status(404).json({ 
+                    message: "Question paper file is not accessible. Please contact your teacher." 
+                });
+            }
+        }
+
+        // Priority 2: Check if there's a filename with binary data in the model (legacy storage)
+        if (exam.questionPaper.filename && exam.questionPaper.filename.trim() !== "") {
+            // If there's data in the model (binary stored in DB)
+            if (exam.questionPaper.data) {
+                const file = exam.questionPaper;
+                res.set({
+                    "Content-Type": file.contentType || "application/pdf",
+                    "Content-Disposition": `attachment; filename="${file.originalName || "question_paper.pdf"}"`,
+                    "Content-Length": file.size
+                });
+                return res.send(file.data);
+            }
+            
+            // If filename exists but no URL and no data, the file might be stored elsewhere
+            return res.status(404).json({ 
+                message: "Question paper file is not accessible. Please contact your teacher." 
+            });
+        }
+
+        // No question paper uploaded
+        return res.status(404).json({ message: "Question paper not found" });
     } catch (error) {
         console.error("Download question paper error:", error);
         res.status(500).json({ message: error.message });
