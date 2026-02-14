@@ -82,13 +82,26 @@ export const uploadQuestionPaper = async (req, res) => {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        // Store the file data directly in the database
+        // Import cloudinary dynamically
+        const cloudinary = (await import("../config/cloudinary.js")).default;
+        
+        // Upload to Cloudinary
+        const uploadResult = await cloudinary.uploader.upload(
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+            {
+                folder: `exams/${exam._id}`,
+                resource_type: "raw",
+                public_id: `question_paper`
+            }
+        );
+
+        // Store the Cloudinary URL and metadata in the database
         exam.questionPaper = {
-            filename: req.file.filename || `question_${exam._id}.pdf`,
+            filename: uploadResult.public_id,
             originalName: req.file.originalname,
             contentType: req.file.mimetype,
             size: req.file.size,
-            data: req.file.buffer, // Store the file buffer in database
+            url: uploadResult.secure_url,
             uploadedAt: new Date()
         };
 
@@ -102,6 +115,7 @@ export const uploadQuestionPaper = async (req, res) => {
                 originalName: exam.questionPaper.originalName,
                 contentType: exam.questionPaper.contentType,
                 size: exam.questionPaper.size,
+                url: exam.questionPaper.url,
                 uploadedAt: exam.questionPaper.uploadedAt
             }
         });
@@ -459,36 +473,9 @@ export const downloadQuestionPaper = async (req, res) => {
             return res.status(404).json({ message: "Question paper not found" });
         }
 
-        // Priority 1: If there's a URL (Cloudinary or external storage), fetch and send the file
+        // Priority 1: If there's a URL (Cloudinary or external storage), redirect to it
         if (exam.questionPaper.url && exam.questionPaper.url.trim() !== "") {
-            try {
-                // Fetch the file from the URL
-                const fileResponse = await fetch(exam.questionPaper.url);
-                
-                if (!fileResponse.ok) {
-                    return res.status(404).json({ 
-                        message: "Question paper file is not accessible. Please contact your teacher." 
-                    });
-                }
-
-                // Get the file buffer
-                const fileBuffer = await fileResponse.arrayBuffer();
-                const contentType = exam.questionPaper.contentType || fileResponse.headers.get('content-type') || 'application/pdf';
-                const fileSize = fileBuffer.byteLength;
-
-                res.set({
-                    "Content-Type": contentType,
-                    "Content-Disposition": `attachment; filename="${exam.questionPaper.originalName || "question_paper.pdf"}"`,
-                    "Content-Length": fileSize
-                });
-
-                return res.send(Buffer.from(fileBuffer));
-            } catch (fetchError) {
-                console.error("Error fetching question paper from URL:", fetchError);
-                return res.status(404).json({ 
-                    message: "Question paper file is not accessible. Please contact your teacher." 
-                });
-            }
+            return res.redirect(exam.questionPaper.url);
         }
 
         // Priority 2: Check if there's a filename with binary data in the model (legacy storage)
@@ -504,9 +491,9 @@ export const downloadQuestionPaper = async (req, res) => {
                 return res.send(file.data);
             }
             
-            // If filename exists but no URL and no data, the file might be stored elsewhere
+            // If filename exists but no URL and no data, the file needs to be re-uploaded
             return res.status(404).json({ 
-                message: "Question paper file is not accessible. Please contact your teacher." 
+                message: "Question paper file is missing. Please contact your teacher to re-upload the question paper." 
             });
         }
 
