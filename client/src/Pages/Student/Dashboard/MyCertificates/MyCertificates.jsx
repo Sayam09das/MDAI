@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { Award, Download, CheckCircle, Clock, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
+import { Award, Download, CheckCircle, Clock, AlertCircle, ExternalLink, RefreshCw, Info, X } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -21,6 +21,7 @@ const MyCertificates = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState(null);
+  const [eligibilityModal, setEligibilityModal] = useState({ open: false, courseId: null, data: null, loading: false });
 
   useEffect(() => {
     fetchCertificates();
@@ -35,6 +36,19 @@ const MyCertificates = () => {
       console.error("Error fetching certificates:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Check eligibility for a course
+  const checkEligibility = async (courseId) => {
+    try {
+      setEligibilityModal({ open: true, courseId, data: null, loading: true });
+      const response = await api.get(`/api/certificates/eligibility/${courseId}`);
+      setEligibilityModal(prev => ({ ...prev, loading: false, data: response.data }));
+    } catch (error) {
+      console.error("Error checking eligibility:", error);
+      toast.error("Failed to load eligibility details");
+      setEligibilityModal({ open: false, courseId: null, data: null, loading: false });
     }
   };
 
@@ -245,6 +259,100 @@ const MyCertificates = () => {
                 </p>
                 <p className="text-sm text-gray-600">Total Courses</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Eligibility Details Modal */}
+      {eligibilityModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Info className="w-5 h-5 text-blue-600" />
+                  Certificate Requirements
+                </h3>
+                <button 
+                  onClick={() => setEligibilityModal({ open: false, courseId: null, data: null, loading: false })}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {eligibilityModal.loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : eligibilityModal.data ? (
+                <div className="space-y-4">
+                  {/* Status */}
+                  <div className={`p-4 rounded-lg ${
+                    eligibilityModal.data.eligible ? "bg-green-50 border border-green-200" : "bg-yellow-50 border border-yellow-200"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {eligibilityModal.data.eligible ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                      )}
+                      <span className={`font-semibold ${
+                        eligibilityModal.data.eligible ? "text-green-700" : "text-yellow-700"
+                      }`}>
+                        {eligibilityModal.data.eligible ? "Eligible for Certificate!" : "Not Eligible Yet"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{eligibilityModal.data.reason}</p>
+                  </div>
+
+                  {/* Criteria */}
+                  {eligibilityModal.data.criteria && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Requirements:</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Minimum Progress</span>
+                          <span className="font-medium">
+                            {eligibilityModal.data.details?.progress?.current || 0}% / {eligibilityModal.data.criteria.minProgress}%
+                            {eligibilityModal.data.details?.progress?.met && <CheckCircle className="w-4 h-4 text-green-500 inline ml-1" />}
+                          </span>
+                        </div>
+                        
+                        {eligibilityModal.data.criteria.requireAssignments && (
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600">Assignments</span>
+                            <span className="font-medium">
+                              {eligibilityModal.data.details?.assignments?.submitted || 0} / {eligibilityModal.data.details?.assignments?.required || 0} submitted
+                              {eligibilityModal.data.details?.assignments?.met && <CheckCircle className="w-4 h-4 text-green-500 inline ml-1" />}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {eligibilityModal.data.criteria.requireExam && (
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600">Exam</span>
+                            <span className="font-medium">
+                              {eligibilityModal.data.details?.exam?.score || 0}% (need {eligibilityModal.data.criteria.passingMarks}%)
+                              {eligibilityModal.data.details?.exam?.met && <CheckCircle className="w-4 h-4 text-green-500 inline ml-1" />}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {eligibilityModal.data.status === "issued" && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-blue-700 font-medium">Certificate Already Issued!</p>
+                      <p className="text-sm text-blue-600 mt-1">
+                        Certificate ID: {eligibilityModal.data.certificateId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
