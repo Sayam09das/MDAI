@@ -341,6 +341,7 @@ const checkCompletionCriteria = async (studentId, courseId, course) => {
 
 /* ======================================================
    GET STUDENT'S CERTIFICATES
+   Modified to show certificates even if enrollment has issues
 ====================================================== */
 export const getMyCertificates = async (req, res) => {
     try {
@@ -409,10 +410,11 @@ export const getMyCertificates = async (req, res) => {
         }));
 
         // Filter out null entries (deleted courses)
-        const filteredResult = result.filter(item => item !== null);
+        let filteredResult = result.filter(item => item !== null);
 
         // Also add any certificates that might not be in enrollments (fallback)
         // This handles cases where course was deleted but certificate exists
+        // Also handles cases where enrollment exists but paymentStatus is PENDING
         certificates.forEach(cert => {
             const courseIdStr = cert.course?._id?.toString() || cert.course?.toString();
             const alreadyAdded = filteredResult.some(r => 
@@ -433,6 +435,28 @@ export const getMyCertificates = async (req, res) => {
                 });
             }
         });
+
+        // Additional fallback: Check if there are any certificates that need to be shown
+        // even if there's NO enrollment (direct certificate lookup)
+        // This fixes the issue where certificate exists but enrollment has PENDING status
+        if (filteredResult.length === 0 && certificates.length > 0) {
+            // Add all certificates as fallback - user might have certificates 
+            // but their enrollments have payment issues
+            filteredResult = certificates.map(cert => {
+                const courseIdStr = cert.course?._id?.toString() || cert.course?.toString();
+                return {
+                    courseId: cert.course?._id || cert.course,
+                    courseTitle: cert.courseName || "Unknown Course",
+                    thumbnail: null,
+                    status: "issued",
+                    reason: "Certificate earned",
+                    certificateId: cert.certificateId,
+                    certificateUrl: cert.certificateUrl,
+                    issuedAt: cert.issuedAt,
+                    completionDate: cert.completionDate
+                };
+            });
+        }
 
         res.status(200).json({
             success: true,
