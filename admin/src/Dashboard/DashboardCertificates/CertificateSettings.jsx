@@ -9,11 +9,14 @@ import {
   Settings, 
   Check,
   X,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api",
+  baseURL: BACKEND_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -51,7 +54,7 @@ const CertificateSettings = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/certificates/settings");
+      const response = await api.get("/api/certificates/settings");
       if (response.data.settings) {
         setSettings(prev => ({
           ...prev,
@@ -68,7 +71,7 @@ const CertificateSettings = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await api.put("/certificates/settings", settings);
+      await api.put("/api/certificates/settings", settings);
       toast.success("Certificate settings saved successfully!");
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -95,7 +98,7 @@ const CertificateSettings = () => {
       toast.info("Uploading image...");
       // Upload to Cloudinary via backend endpoint would be needed
       // For now, we'll use a direct upload approach
-      const response = await api.post("/admin/upload-image", formData, {
+      const response = await api.post("/api/admin/upload-image", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       
