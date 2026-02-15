@@ -84,6 +84,7 @@ import ReturnTeacherAssignments from "./Pages/teacher/Dashboard/MainAssignments/
 import CreateAssignment from "./Pages/teacher/Dashboard/CreateAssignment/CreateAssignment"
 import SubmitAssignment from "./Pages/Student/Dashboard/SubmitAssignment/SubmitAssignment"
 import SubmissionDetail from "./Pages/Student/Dashboard/SubmissionDetail/SubmissionDetail"
+import ReturnMyCertificates from "./Pages/Student/Dashboard/MyCertificates/ReturnMyCertificates"
 
 const App = () => {
   return (
@@ -156,6 +157,8 @@ const App = () => {
           <Route path="exams" element={<ExamPage />} />
           <Route path="exams/:examId" element={<ExamPage />} />
           <Route path="exam-results" element={<StudentExamResults />} />
+
+          <Route path="certificates" element={<ReturnMyCertificates />} />
         </Route>
 
         {/* Teacher Routes */}
