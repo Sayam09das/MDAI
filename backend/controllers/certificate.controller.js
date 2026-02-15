@@ -183,6 +183,7 @@ export const deleteBackgroundImage = async (req, res) => {
 
 /* ======================================================
    CHECK STUDENT CERTIFICATE ELIGIBILITY
+   FIXED: Now checks if certificate already exists before checking course settings
 ====================================================== */
 export const checkEligibility = async (req, res) => {
     try {
@@ -195,7 +196,26 @@ export const checkEligibility = async (req, res) => {
             return res.status(404).json({ message: "Course not found" });
         }
 
-        // Check if certificate is enabled for this course
+        // FIXED: Check if already has certificate FIRST (before checking course settings)
+        // This ensures certificates show even if course settings changed after certificate was issued
+        const existingCert = await Certificate.hasCertificate(studentId, courseId);
+        if (existingCert) {
+            return res.status(200).json({
+                eligible: true,
+                status: "issued",
+                certificateId: existingCert.certificateId,
+                certificateUrl: existingCert.certificateUrl,
+                reason: "Certificate already issued",
+                criteria: course.certificateEnabled ? {
+                    minProgress: course.certificateMinProgress,
+                    requireAssignments: course.certificateRequireAssignments,
+                    requireExam: course.certificateRequireExam,
+                    passingMarks: course.certificatePassingMarks
+                } : null
+            });
+        }
+
+        // Check if certificate is enabled for this course (only if no certificate exists yet)
         if (!course.certificateEnabled) {
             return res.status(200).json({
                 eligible: false,
@@ -216,24 +236,6 @@ export const checkEligibility = async (req, res) => {
                 eligible: false,
                 reason: "Not enrolled in this course",
                 criteria: null
-            });
-        }
-
-        // Check if already has certificate
-        const existingCert = await Certificate.hasCertificate(studentId, courseId);
-        if (existingCert) {
-            return res.status(200).json({
-                eligible: true,
-                status: "issued",
-                certificateId: existingCert.certificateId,
-                certificateUrl: existingCert.certificateUrl,
-                reason: "Certificate already issued",
-                criteria: course.certificateEnabled ? {
-                    minProgress: course.certificateMinProgress,
-                    requireAssignments: course.certificateRequireAssignments,
-                    requireExam: course.certificateRequireExam,
-                    passingMarks: course.certificatePassingMarks
-                } : null
             });
         }
 
@@ -383,21 +385,22 @@ export const getMyCertificates = async (req, res) => {
             let status = "not_eligible";
             let reason = "";
 
-            if (enrollment.course.certificateEnabled) {
-                if (cert) {
-                    status = "issued";
-                    reason = "Certificate earned";
-                } else {
-                    // Check eligibility
-                    const eligibility = await checkCompletionCriteria(
-                        studentId, 
-                        enrollment.course._id, 
-                        enrollment.course
-                    );
-                    status = eligibility.eligible ? "eligible" : "not_eligible";
-                    reason = eligibility.reason;
-                }
+            // FIXED: Show certificate as issued even if course doesn't have certificate enabled
+            // as long as certificate already exists
+            if (cert) {
+                status = "issued";
+                reason = "Certificate earned";
+            } else if (enrollment.course.certificateEnabled) {
+                // Check eligibility only if certificate is enabled for the course
+                const eligibility = await checkCompletionCriteria(
+                    studentId, 
+                    enrollment.course._id, 
+                    enrollment.course
+                );
+                status = eligibility.eligible ? "eligible" : "not_eligible";
+                reason = eligibility.reason;
             }
+            // If no certificate and certificate not enabled, status remains "not_eligible"
 
             return {
                 courseId: enrollment.course._id,
