@@ -39,7 +39,7 @@ const PaymentRoutes = () => {
 
 
             {/* Demo / Test Page */}
-            <Route path="/payment-demo" element={<PaymentDemo />} />
+            <Route path="/payment-demo/:courseId" element={<PaymentDemo />} />
         </Routes>
     );
 };

@@ -296,7 +296,7 @@ const Payment = () => {
 
                                         <button
                                             onClick={() => {
-                                                navigate(`/pay-later/${courseId}`);
+                                                navigate(`/payment-demo/${courseId}`);
                                             }}
                                             className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                                         >

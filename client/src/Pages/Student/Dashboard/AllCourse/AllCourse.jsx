@@ -66,8 +66,8 @@ const AllCourse = () => {
                 throw new Error(data.message || "Enrollment failed");
             }
 
-            toast.success("Redirecting to course details...");
-            navigate(`/course/${courseId}`);
+            toast.success("Redirecting to payment...");
+            navigate(`/payment/${courseId}`);
         } catch (error) {
             toast.error(error.message);
         }

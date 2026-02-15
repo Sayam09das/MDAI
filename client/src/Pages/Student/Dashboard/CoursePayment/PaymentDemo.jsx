@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
     CreditCard,
     Lock,
@@ -19,6 +19,7 @@ import {
 
 const PaymentDemo = () => {
     const navigate = useNavigate();
+    const { courseId } = useParams();
     const [step, setStep] = useState(1); // 1: form, 2: processing, 3: success
     const [processing, setProcessing] = useState(false);
     const [formData, setFormData] = useState({
@@ -70,13 +71,13 @@ const PaymentDemo = () => {
 
     useEffect(() => {
         if (step === 3) {
-            // Auto redirect after success
+            // Auto redirect after success to course page
             const timer = setTimeout(() => {
-                navigate('/student-dashboard');
+                navigate(`/course/${courseId}`);
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [step, navigate]);
+    }, [step, navigate, courseId]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -368,10 +369,10 @@ const PaymentDemo = () => {
                                 </p>
 
                                 <button
-                                    onClick={() => navigate('/student-dashboard')}
+                                    onClick={() => navigate(`/course/${courseId}`)}
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg"
                                 >
-                                    Go to Dashboard Now
+                                    Go to Course Now
                                 </button>
                             </div>
                         </div>
