@@ -57,17 +57,23 @@ export const updateCertificateSettings = async (req, res) => {
         if (certificateTitle) settings.certificateTitle = certificateTitle;
         if (isEnabled !== undefined) settings.isEnabled = isEnabled;
 
-        // Handle background image upload
-        if (backgroundImage) {
-            // Delete old image if exists
-            if (settings.backgroundImage.public_id) {
-                try {
-                    await cloudinary.uploader.destroy(settings.backgroundImage.public_id);
-                } catch (err) {
-                    console.error("Error deleting old background:", err);
+        // Handle background image upload (only if it's a proper URL, not a blob URL)
+        if (backgroundImage && typeof backgroundImage === 'object') {
+            // Only accept non-blob URLs (Cloudinary URLs or external URLs)
+            if (backgroundImage.url && 
+                !backgroundImage.url.startsWith('blob:') && 
+                !backgroundImage.url.startsWith('http://localhost')) {
+                // Delete old image if exists
+                if (settings.backgroundImage.public_id && 
+                    settings.backgroundImage.public_id !== backgroundImage.public_id) {
+                    try {
+                        await cloudinary.uploader.destroy(settings.backgroundImage.public_id);
+                    } catch (err) {
+                        console.error("Error deleting old background:", err);
+                    }
                 }
+                settings.backgroundImage = backgroundImage;
             }
-            settings.backgroundImage = backgroundImage;
         }
 
         settings.updatedBy = req.user.id;
@@ -80,6 +86,107 @@ export const updateCertificateSettings = async (req, res) => {
         });
     } catch (error) {
         console.error("Update certificate settings error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* ======================================================
+   UPLOAD BACKGROUND IMAGE (Admin Only)
+   Handles direct file upload to Cloudinary
+====================================================== */
+export const uploadBackgroundImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+            return res.status(400).json({ 
+                message: "Invalid file type. Only JPEG, PNG, and WebP images are allowed." 
+            });
+        }
+
+        // Upload to Cloudinary
+        const result = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "certificates/backgrounds",
+                    resource_type: "image",
+                    transformation: [
+                        { quality: "auto:best" },
+                        { fetch_format: "auto" }
+                    ]
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+            
+            // Convert buffer to stream
+            const Stream = require('stream');
+            const bufferStream = new Stream.PassThrough();
+            bufferStream.end(req.file.buffer);
+            bufferStream.pipe(uploadStream);
+        });
+
+        // Get current settings to delete old image if exists
+        const settings = await CertificateSettings.getSettings();
+        if (settings.backgroundImage && settings.backgroundImage.public_id) {
+            try {
+                await cloudinary.uploader.destroy(settings.backgroundImage.public_id);
+            } catch (err) {
+                console.error("Error deleting old background:", err);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Background image uploaded successfully",
+            backgroundImage: {
+                public_id: result.public_id,
+                url: result.secure_url
+            }
+        });
+    } catch (error) {
+        console.error("Upload background image error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+/* ======================================================
+   DELETE BACKGROUND IMAGE (Admin Only)
+   Clears the background image from settings
+====================================================== */
+export const deleteBackgroundImage = async (req, res) => {
+    try {
+        const settings = await CertificateSettings.getSettings();
+
+        // Delete old image from Cloudinary if exists
+        if (settings.backgroundImage && settings.backgroundImage.public_id && 
+            !settings.backgroundImage.public_id.startsWith('local/')) {
+            try {
+                await cloudinary.uploader.destroy(settings.backgroundImage.public_id);
+            } catch (err) {
+                console.error("Error deleting background from Cloudinary:", err);
+            }
+        }
+
+        // Clear the background image from settings
+        settings.backgroundImage = {
+            public_id: "",
+            url: ""
+        };
+        await settings.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Background image deleted successfully"
+        });
+    } catch (error) {
+        console.error("Delete background image error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -384,8 +491,8 @@ export const generateCertificate = async (studentId, courseId) => {
         // Generate certificate ID
         const certificateId = await Certificate.generateCertificateId();
 
-        // Prepare certificate data for image overlay
-        const certificateData = {
+        // Prepare certificate data mapping
+        const certificateDataMap = {
             studentName: student.fullName || student.name,
             courseName: course.title,
             teacherName: course.instructor?.fullName || "Instructor",
@@ -403,30 +510,32 @@ export const generateCertificate = async (studentId, courseId) => {
             certificateTitle: settings.certificateTitle
         };
 
+        // Build transformation array from placeholders settings
+        const textOverlays = [];
+        
+        // Get enabled placeholders from settings
+        const enabledPlaceholders = settings.placeholders || [];
+        
+        for (const placeholder of enabledPlaceholders) {
+            if (placeholder.isEnabled && certificateDataMap[placeholder.fieldName]) {
+                textOverlays.push({
+                    overlay: `text:${encodeURIComponent(certificateDataMap[placeholder.fieldName])}`,
+                    font_family: placeholder.fontFamily || "Helvetica",
+                    font_size: placeholder.fontSize || 24,
+                    color: placeholder.fontColor || "#000000",
+                    x: placeholder.x || 400,
+                    y: placeholder.y || 300
+                });
+            }
+        }
+
         // Upload certificate to Cloudinary
         // We'll use the background image URL and add text overlay
         const uploadResult = await cloudinary.uploader.upload(settings.backgroundImage.url, {
             public_id: `certificates/${certificateId}`,
             folder: "certificates",
             resource_type: "image",
-            transformation: [
-                // Add text overlays based on placeholders
-                { overlay: `text:${encodeURIComponent(certificateData.studentName)}`, 
-                  font_family: "Helvetica", font_size: 36, color: "#2C3E50",
-                  x: 400, y: 300 },
-                { overlay: `text:${encodeURIComponent(certificateData.courseName)}`,
-                  font_family: "Helvetica", font_size: 28, color: "#34495E",
-                  x: 400, y: 400 },
-                { overlay: `text:${encodeURIComponent(certificateData.teacherName)}`,
-                  font_family: "Helvetica", font_size: 20, color: "#7F8C8D",
-                  x: 400, y: 480 },
-                { overlay: `text:${encodeURIComponent(certificateData.completionDate)}`,
-                  font_family: "Helvetica", font_size: 18, color: "#95A5A6",
-                  x: 400, y: 540 },
-                { overlay: `text:${encodeURIComponent(certificateData.certificateId)}`,
-                  font_family: "Courier", font_size: 14, color: "#BDC3C7",
-                  x: 400, y: 600 }
-            ]
+            transformation: textOverlays
         });
 
         // Save certificate to database

@@ -51,6 +51,34 @@ const CertificateSettings = () => {
     fetchSettings();
   }, []);
 
+  const handleDeleteImage = async () => {
+    try {
+      setSaving(true);
+      const response = await api.delete('/api/certificates/settings/background-image');
+      
+      if (response.data.success) {
+        setSettings({
+          ...settings,
+          backgroundImage: { public_id: "", url: "" }
+        });
+        toast.success("Background image deleted successfully!");
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      // Fallback to local clear
+      setSettings({
+        ...settings,
+        backgroundImage: { public_id: "", url: "" }
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Check if current image is invalid (blob URL)
+  const isInvalidImage = settings.backgroundImage?.url?.startsWith('blob:') || 
+                         settings.backgroundImage?.url?.startsWith('http://localhost');
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
@@ -91,18 +119,55 @@ const CertificateSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // For now, use the file as a local preview URL (Blob URL)
-    // In production, you would upload to Cloudinary via backend
-    const previewUrl = URL.createObjectURL(file);
-    
-    setSettings({
-      ...settings,
-      backgroundImage: {
-        public_id: `local/${file.name}`,
-        url: previewUrl
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, and WebP images are allowed");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append('backgroundImage', file);
+
+      // Upload to backend which will upload to Cloudinary
+      const response = await api.post('/api/certificates/settings/upload-background', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        setSettings({
+          ...settings,
+          backgroundImage: response.data.backgroundImage
+        });
+        toast.success("Background image uploaded successfully!");
       }
-    });
-    toast.success("Image selected! Click Save to persist.");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      // Fallback to local preview if upload fails (for development)
+      const previewUrl = URL.createObjectURL(file);
+      setSettings({
+        ...settings,
+        backgroundImage: {
+          public_id: `local/${file.name}`,
+          url: previewUrl
+        }
+      });
+      toast.warning("Upload failed. Using local preview (will not work for certificate generation).");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -215,6 +280,19 @@ const CertificateSettings = () => {
       {/* Background Image */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Background Image</h2>
+        
+        {/* Warning for invalid image */}
+        {isInvalidImage && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600 font-medium">
+              ⚠️ Invalid background image detected! This is a temporary/local URL that won't work for certificate generation.
+            </p>
+            <p className="text-xs text-red-500 mt-1">
+              Please delete this image and upload a new one.
+            </p>
+          </div>
+        )}
+        
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -226,11 +304,18 @@ const CertificateSettings = () => {
                     className="max-h-64 mx-auto rounded"
                   />
                   <button
-                    onClick={() => setSettings({ ...settings, backgroundImage: { public_id: "", url: "" } })}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                    onClick={handleDeleteImage}
+                    disabled={saving}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 disabled:bg-gray-400"
+                    title="Delete background image"
                   >
                     <X size={16} />
                   </button>
+                  {isInvalidImage && (
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                      Invalid URL
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="py-8">

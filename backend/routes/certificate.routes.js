@@ -2,6 +2,8 @@ import express from "express";
 import {
     getCertificateSettings,
     updateCertificateSettings,
+    uploadBackgroundImage,
+    deleteBackgroundImage,
     checkEligibility,
     getMyCertificates,
     getMyCertificate,
@@ -12,6 +14,7 @@ import {
 } from "../controllers/certificate.controller.js";
 
 import { protect, adminOnly, teacherOnly } from "../middlewares/auth.middleware.js";
+import { imageUpload } from "../middlewares/multer.js";
 
 const router = express.Router();
 
@@ -54,6 +57,12 @@ router.get("/settings", protect, adminOnly, getCertificateSettings);
 
 // Update certificate settings
 router.put("/settings", protect, adminOnly, updateCertificateSettings);
+
+// Upload certificate background image
+router.post("/settings/upload-background", protect, adminOnly, imageUpload.single('backgroundImage'), uploadBackgroundImage);
+
+// Delete certificate background image
+router.delete("/settings/background-image", protect, adminOnly, deleteBackgroundImage);
 
 // Get all certificates (admin)
 router.get("/all", protect, adminOnly, getAllCertificates);
