@@ -77,6 +77,10 @@ import NotFound from "./Pages/NotFound/NotFound"
 
 // Payment Routes
 import PaymentRoutes from "./routes/PaymentRoutes"
+import Payment from "./Pages/Student/Dashboard/CoursePayment/Payment"
+import PaymentInfo from "./Pages/Student/Dashboard/CoursePayment/PaymentInfo"
+import PaymentDemo from "./Pages/Student/Dashboard/CoursePayment/PaymentDemo"
+import PayLaterRequest from "./Pages/Student/Dashboard/CoursePayment/PayLaterRequest"
 import StudentComplaints from "./Pages/Student/Dashboard/Complaints/StudentComplaints"
 import TeacherComplaints from "./Pages/teacher/Dashboard/Complaints/TeacherComplaints"
 import ReturnStudentAssignments from "./Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments"
@@ -205,6 +209,27 @@ const App = () => {
 
         {/* Payment Routes - Specific paths only */}
         <Route path="/payment/*" element={<PaymentRoutes />} />
+        
+        {/* Payment Info Route */}
+        <Route path="/payment-info/:courseId" element={
+            <StudentProtectedRoute>
+                <PaymentInfo />
+            </StudentProtectedRoute>
+        } />
+        
+        {/* Payment Demo Route */}
+        <Route path="/payment-demo/:courseId" element={
+            <StudentProtectedRoute>
+                <PaymentDemo />
+            </StudentProtectedRoute>
+        } />
+        
+        {/* Pay Later Route */}
+        <Route path="/pay-later/:courseId" element={
+            <StudentProtectedRoute>
+                <PayLaterRequest />
+            </StudentProtectedRoute>
+        } />
 
         {/* Redirect old exam route to new route */}
         <Route path="/teacher-exams" element={<Navigate to="/teacher-dashboard/exams" replace />} />
