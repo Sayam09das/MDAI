@@ -155,6 +155,7 @@ const App = () => {
           <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
           
           {/* Exam Routes - Students view and take exams */}
+          <Route path="exam/:assignmentId" element={<ExamPage />} />
           <Route path="exams" element={<ExamPage />} />
           <Route path="exams/:examId" element={<ExamPage />} />
           <Route path="exam-results" element={<StudentExamResults />} />
