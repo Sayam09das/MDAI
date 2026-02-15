@@ -15,6 +15,16 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Helper function to make Cloudinary URLs viewable in browser (not downloadable)
+// Converts /raw/upload/ to /upload/ to allow browser viewing
+const makeUrlViewable = (url) => {
+    if (!url) return url;
+    if (url.includes('/raw/')) {
+        return url.replace('/raw/upload/', '/upload/');
+    }
+    return url;
+};
+
 /* ======================================================
    GET CERTIFICATE SETTINGS (Admin)
 ====================================================== */
@@ -204,7 +214,7 @@ export const checkEligibility = async (req, res) => {
                 eligible: true,
                 status: "issued",
                 certificateId: existingCert.certificateId,
-                certificateUrl: existingCert.certificateUrl,
+                certificateUrl: makeUrlViewable(existingCert.certificateUrl),
                 reason: "Certificate already issued",
                 criteria: course.certificateEnabled ? {
                     minProgress: course.certificateMinProgress,

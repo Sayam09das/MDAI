@@ -166,7 +166,7 @@ const generateCertificatePDF = async (studentId, courseId, course, enrollment, s
         const uploadResult = await cloudinary.uploader.upload(dataURI, {
             public_id: `certificates/${certificateId}`,
             folder: "certificates",
-            resource_type: "raw",
+            resource_type: "auto",
             format: "pdf"
         });
 
