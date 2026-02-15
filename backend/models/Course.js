@@ -106,6 +106,18 @@ const courseSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+
+    // Whether certificates have been generated for this course
+    certificateGenerated: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Course completion date
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

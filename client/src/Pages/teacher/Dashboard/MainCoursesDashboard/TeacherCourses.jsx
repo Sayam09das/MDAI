@@ -18,7 +18,8 @@ import {
     BookMarked,
     X,
     Loader2,
-    FileText
+    FileText,
+    Award
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -31,6 +32,7 @@ const TeacherCourses = () => {
     const [filterStatus, setFilterStatus] = useState("all");
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [viewMode, setViewMode] = useState("grid"); // grid or list
+    const [generatingCerts, setGeneratingCerts] = useState(null); // courseId of course generating certs
 
     /* ================= FETCH COURSES ================= */
     const fetchTeacherCourses = async () => {
@@ -78,6 +80,35 @@ const TeacherCourses = () => {
             );
         } catch (err) {
             toast.error(err.message);
+        }
+    };
+
+    /* ================= GENERATE CERTIFICATES ================= */
+    const generateCertificates = async (courseId) => {
+        try {
+            setGeneratingCerts(courseId);
+            
+            const res = await fetch(
+                `${BACKEND_URL}/api/certificates/course/${courseId}/generate`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            toast.success(`🎉 ${data.message}`);
+            
+            // Refresh courses to show completion status
+            fetchTeacherCourses();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setGeneratingCerts(null);
         }
     };
 
@@ -325,6 +356,14 @@ const TeacherCourses = () => {
                                                 )}
                                             </span>
                                         </div>
+                                        {course.certificateGenerated && (
+                                            <div className="absolute top-3 right-3">
+                                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg bg-amber-500 text-white">
+                                                    <Award className="w-3 h-3" />
+                                                    Completed
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Course Content */}
@@ -374,6 +413,20 @@ const TeacherCourses = () => {
                                                 <Eye className="w-4 h-4" />
                                                 View
                                             </Link>
+                                            )}
+                                            {course.isPublished && (
+                                                <button
+                                                    onClick={() => generateCertificates(course._id)}
+                                                    disabled={generatingCerts === course._id}
+                                                    className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all disabled:opacity-50"
+                                                    title="Mark as Complete & Generate Certificates"
+                                                >
+                                                    {generatingCerts === course._id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Award className="w-4 h-4" />
+                                                    )}
+                                                </button>
                                             )}
                                             <Link
                                                 to={`/teacher-dashboard/edit-course/${course._id}`}

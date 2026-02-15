@@ -7,10 +7,11 @@ import {
     getMyCertificate,
     verifyCertificate,
     getCourseCertificates,
-    getAllCertificates
+    getAllCertificates,
+    generateCourseCertificates
 } from "../controllers/certificate.controller.js";
 
-import { protect, adminOnly } from "../middlewares/auth.middleware.js";
+import { protect, adminOnly, teacherOnly } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -40,6 +41,9 @@ router.get("/eligibility/:courseId", protect, checkEligibility);
 
 // Get certificates for a course (teacher can see their course students)
 router.get("/course/:courseId", protect, getCourseCertificates);
+
+// Generate certificates for a course (teacher marks course as complete)
+router.post("/course/:courseId/generate", protect, teacherOnly, generateCourseCertificates);
 
 /* =====================================
    ADMIN ROUTES

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { Award, Download, CheckCircle, Clock, AlertCircle, ExternalLink } from "lucide-react";
+import { Award, Download, CheckCircle, Clock, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: BACKEND_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -27,7 +29,7 @@ const MyCertificates = () => {
   const fetchCertificates = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/certificates/my-certificates");
+      const response = await api.get("/api/certificates/my-certificates");
       setCertificates(response.data.certificates || []);
     } catch (error) {
       console.error("Error fetching certificates:", error);

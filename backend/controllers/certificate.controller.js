@@ -549,3 +549,104 @@ export const getAllCertificates = async (req, res) => {
     }
 };
 
+/* ======================================================
+   GENERATE CERTIFICATES FOR COURSE (Teacher)
+   Mark course as complete and generate certificates for eligible students
+====================================================== */
+export const generateCourseCertificates = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const teacherId = req.user.id;
+
+        // Verify teacher owns the course
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
+        }
+
+        if (course.instructor.toString() !== teacherId && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Get certificate settings
+        const settings = await CertificateSettings.getSettings();
+        
+        if (!settings.isEnabled) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Certificate system is not enabled" 
+            });
+        }
+
+        // Get all paid enrollments for this course
+        const enrollments = await Enrollment.find({
+            course: courseId,
+            paymentStatus: "PAID"
+        }).populate("student", "fullName email");
+
+        if (enrollments.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No enrolled students found",
+                generated: 0,
+                skipped: 0
+            });
+        }
+
+        // Generate certificates for eligible students
+        const results = {
+            generated: 0,
+            skipped: 0,
+            errors: []
+        };
+
+        for (const enrollment of enrollments) {
+            try {
+                // Check completion criteria
+                const eligibility = await checkCompletionCriteria(
+                    enrollment.student._id,
+                    courseId,
+                    course
+                );
+
+                if (eligibility.eligible) {
+                    const result = await generateCertificate(
+                        enrollment.student._id,
+                        courseId
+                    );
+
+                    if (result.success) {
+                        results.generated++;
+                    } else {
+                        results.errors.push({
+                            student: enrollment.student.fullName,
+                            error: result.error
+                        });
+                    }
+                } else {
+                    results.skipped++;
+                }
+            } catch (err) {
+                results.errors.push({
+                    student: enrollment.student.fullName,
+                    error: err.message
+                });
+            }
+        }
+
+        // Update course completion status
+        course.completedAt = new Date();
+        course.certificateGenerated = true;
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Generated ${results.generated} certificates, skipped ${results.skipped} students`,
+            results
+        });
+    } catch (error) {
+        console.error("Generate course certificates error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
