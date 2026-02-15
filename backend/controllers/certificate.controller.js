@@ -369,8 +369,13 @@ export const getMyCertificates = async (req, res) => {
         }).populate("course", "title thumbnail certificateEnabled certificateMinProgress certificateRequireAssignments certificateRequireExam certificatePassingMarks");
 
         const result = await Promise.all(enrollments.map(async (enrollment) => {
+            // Skip if course is null (deleted course)
+            if (!enrollment.course) {
+                return null;
+            }
+
             const cert = certificates.find(c => 
-                c.course._id.toString() === enrollment.course._id.toString()
+                c.course && c.course._id.toString() === enrollment.course._id.toString()
             );
 
             let status = "not_eligible";
@@ -405,9 +410,12 @@ export const getMyCertificates = async (req, res) => {
             };
         }));
 
+        // Filter out null entries (deleted courses)
+        const filteredResult = result.filter(item => item !== null);
+
         res.status(200).json({
             success: true,
-            certificates: result,
+            certificates: filteredResult,
             settings: {
                 isEnabled: settings.isEnabled,
                 organizationName: settings.organizationName
@@ -545,9 +553,9 @@ export const generateCertificate = async (studentId, courseId) => {
             certificateId,
             certificateUrl: uploadResult.secure_url,
             certificatePublicId: uploadResult.public_id,
-            studentName: certificateData.studentName,
-            courseName: certificateData.courseName,
-            teacherName: certificateData.teacherName,
+            studentName: certificateDataMap.studentName,
+            courseName: certificateDataMap.courseName,
+            teacherName: certificateDataMap.teacherName,
             completionDate: enrollment?.completedAt || new Date(),
             issuedAt: new Date(),
             status: "issued",
