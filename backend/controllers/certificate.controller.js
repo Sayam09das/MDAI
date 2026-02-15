@@ -204,11 +204,11 @@ export const checkEligibility = async (req, res) => {
             });
         }
 
-        // Get enrollment
+        // Get enrollment - FIXED: Check all payment statuses
         const enrollment = await Enrollment.findOne({
             student: studentId,
             course: courseId,
-            paymentStatus: "PAID"
+            paymentStatus: { $in: ["PAID", "PENDING", "LATER"] }
         });
 
         if (!enrollment) {
@@ -342,21 +342,24 @@ const checkCompletionCriteria = async (studentId, courseId, course) => {
 /* ======================================================
    GET STUDENT'S CERTIFICATES
    Modified to show certificates even if enrollment has issues
+   FIXED: Now queries all payment statuses to show certificates
+           for students who may have PENDING/LATER payments
 ====================================================== */
 export const getMyCertificates = async (req, res) => {
     try {
         const studentId = req.user.id;
         
-        // Get all certificates for the student
+        // Get all certificates for the student (regardless of enrollment status)
         const certificates = await Certificate.getByStudent(studentId, "issued");
         
         // Get certificate settings for additional info
         const settings = await CertificateSettings.getSettings();
 
-        // For each enrollment, check eligibility status
+        // FIXED: Query enrollments with ALL payment statuses (PAID, PENDING, LATER)
+        // This ensures certificates show even if payment is pending or "pay later" was selected
         const enrollments = await Enrollment.find({
             student: studentId,
-            paymentStatus: "PAID"
+            paymentStatus: { $in: ["PAID", "PENDING", "LATER"] }
         }).populate("course", "title thumbnail certificateEnabled certificateMinProgress certificateRequireAssignments certificateRequireExam certificatePassingMarks");
 
         // Create a map of course certificates for quick lookup
