@@ -102,6 +102,7 @@ const App = () => {
             }
           />
           <Route path="/courses" element={<ReturnCoursepage />} />
+          <Route path="/course/:courseId" element={<CourseView />} />
           <Route path="/about" element={<ReturnAboutpage />} />
           <Route path="/contact" element={<ReturnContactpage />} />
         </Route>
