@@ -358,15 +358,23 @@ export const getMyCertificates = async (req, res) => {
             paymentStatus: "PAID"
         }).populate("course", "title thumbnail certificateEnabled certificateMinProgress certificateRequireAssignments certificateRequireExam certificatePassingMarks");
 
+        // Create a map of course certificates for quick lookup
+        const certMap = {};
+        certificates.forEach(cert => {
+            const courseIdStr = cert.course?._id?.toString() || cert.course?.toString();
+            if (courseIdStr) {
+                certMap[courseIdStr] = cert;
+            }
+        });
+
         const result = await Promise.all(enrollments.map(async (enrollment) => {
             // Skip if course is null (deleted course)
             if (!enrollment.course) {
                 return null;
             }
 
-            const cert = certificates.find(c => 
-                c.course && c.course._id.toString() === enrollment.course._id.toString()
-            );
+            const courseIdStr = enrollment.course._id.toString();
+            const cert = certMap[courseIdStr];
 
             let status = "not_eligible";
             let reason = "";
@@ -402,6 +410,29 @@ export const getMyCertificates = async (req, res) => {
 
         // Filter out null entries (deleted courses)
         const filteredResult = result.filter(item => item !== null);
+
+        // Also add any certificates that might not be in enrollments (fallback)
+        // This handles cases where course was deleted but certificate exists
+        certificates.forEach(cert => {
+            const courseIdStr = cert.course?._id?.toString() || cert.course?.toString();
+            const alreadyAdded = filteredResult.some(r => 
+                r.courseId.toString() === courseIdStr
+            );
+            
+            if (!alreadyAdded && cert.courseName) {
+                filteredResult.push({
+                    courseId: cert.course?._id || cert.course,
+                    courseTitle: cert.courseName,
+                    thumbnail: null,
+                    status: "issued",
+                    reason: "Certificate earned",
+                    certificateId: cert.certificateId,
+                    certificateUrl: cert.certificateUrl,
+                    issuedAt: cert.issuedAt,
+                    completionDate: cert.completionDate
+                });
+            }
+        });
 
         res.status(200).json({
             success: true,
