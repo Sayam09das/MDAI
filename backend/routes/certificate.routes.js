@@ -10,7 +10,8 @@ import {
     verifyCertificate,
     getCourseCertificates,
     getAllCertificates,
-    generateCourseCertificates
+    generateCourseCertificates,
+    regenerateCertificate
 } from "../controllers/certificate.controller.js";
 
 import { protect, adminOnly, teacherOnly } from "../middlewares/auth.middleware.js";
@@ -66,6 +67,9 @@ router.delete("/settings/background-image", protect, adminOnly, deleteBackground
 
 // Get all certificates (admin)
 router.get("/all", protect, adminOnly, getAllCertificates);
+
+// Regenerate certificate (re-upload to fix /raw/ issue)
+router.post("/regenerate/:certificateId", protect, adminOnly, regenerateCertificate);
 
 export default router;
 

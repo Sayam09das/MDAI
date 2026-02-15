@@ -4,6 +4,7 @@ import Course from "../models/Course.js";
 import Enrollment from "../models/enrollmentModel.js";
 import Submission from "../models/submissionModel.js";
 import ExamSubmission from "../models/examAttemptModel.js";
+import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import PDFDocument from "pdfkit";
 import mongoose from "mongoose";
@@ -841,6 +842,99 @@ export const verifyCertificate = async (req, res) => {
     } catch (error) {
         console.error("Verify certificate error:", error);
         res.status(500).json({ message: error.message });
+    }
+};
+
+/* ======================================================
+   REGENERATE CERTIFICATE (Admin/Teacher)
+   Regenerates a certificate with a fresh Cloudinary URL
+   Fixes the /raw/upload/ issue by re-uploading with resource_type: "auto"
+====================================================== */
+export const regenerateCertificate = async (req, res) => {
+    try {
+        const { certificateId } = req.params;
+
+        // Find the existing certificate
+        const existingCert = await Certificate.findOne({ certificateId });
+        
+        if (!existingCert) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Certificate not found" 
+            });
+        }
+
+        // Delete old file from Cloudinary if it exists
+        if (existingCert.certificatePublicId) {
+            try {
+                await cloudinary.uploader.destroy(existingCert.certificatePublicId);
+                console.log("Deleted old certificate from Cloudinary:", existingCert.certificatePublicId);
+            } catch (err) {
+                console.error("Error deleting old certificate:", err);
+            }
+        }
+
+        // Get fresh data from database
+        const course = await Course.findById(existingCert.course).populate("instructor", "fullName");
+        const student = await User.findById(existingCert.student);
+        
+        if (!course || !student) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Course or student not found" 
+            });
+        }
+
+        const settings = await CertificateSettings.getSettings();
+
+        // Generate PDF using the same data
+        const pdfBuffer = await generatePDFBuffer({
+            studentName: existingCert.studentName,
+            courseName: existingCert.courseName,
+            teacherName: existingCert.teacherName,
+            completionDate: existingCert.completionDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            certificateId: existingCert.certificateId,
+            organizationName: settings.organizationName || "MDAI",
+            certificateTitle: settings.certificateTitle || "Certificate of Completion"
+        });
+
+        // Upload with resource_type: "auto" to ensure it's viewable
+        const b64 = pdfBuffer.toString('base64');
+        const dataURI = `data:application/pdf;base64,${b64}`;
+        
+        const uploadResult = await cloudinary.uploader.upload(dataURI, {
+            public_id: `certificates/${existingCert.certificateId}`,
+            folder: "certificates",
+            resource_type: "auto",
+            format: "pdf"
+        });
+
+        // Update certificate with new URL
+        existingCert.certificateUrl = uploadResult.secure_url;
+        existingCert.certificatePublicId = uploadResult.public_id;
+        await existingCert.save();
+
+        console.log(`Certificate regenerated: ${certificateId}`);
+        console.log(`New URL: ${uploadResult.secure_url}`);
+
+        res.status(200).json({
+            success: true,
+            message: "Certificate regenerated successfully",
+            certificate: {
+                certificateId: existingCert.certificateId,
+                certificateUrl: makeUrlViewable(existingCert.certificateUrl)
+            }
+        });
+    } catch (error) {
+        console.error("Regenerate certificate error:", error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
