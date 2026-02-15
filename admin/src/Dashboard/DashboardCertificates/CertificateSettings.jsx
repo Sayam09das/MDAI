@@ -91,39 +91,18 @@ const CertificateSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      toast.info("Uploading image...");
-      // Upload to Cloudinary via backend endpoint would be needed
-      // For now, we'll use a direct upload approach
-      const response = await api.post("/api/admin/upload-image", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      
-      if (response.data) {
-        setSettings({
-          ...settings,
-          backgroundImage: {
-            public_id: response.data.public_id,
-            url: response.data.url
-          }
-        });
-        toast.success("Image uploaded successfully!");
+    // For now, use the file as a local preview URL (Blob URL)
+    // In production, you would upload to Cloudinary via backend
+    const previewUrl = URL.createObjectURL(file);
+    
+    setSettings({
+      ...settings,
+      backgroundImage: {
+        public_id: `local/${file.name}`,
+        url: previewUrl
       }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      // For demo purposes, use a placeholder
-      setSettings({
-        ...settings,
-        backgroundImage: {
-          public_id: "demo/certificate-bg",
-          url: "https://res.cloudinary.com/demo/image/upload/v1/samples/certificate-template.jpg"
-        }
-      });
-      toast.info("Using demo image for preview");
-    }
+    });
+    toast.success("Image selected! Click Save to persist.");
   };
 
   if (loading) {
