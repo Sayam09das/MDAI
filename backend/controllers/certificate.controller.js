@@ -373,6 +373,16 @@ export const getMyCertificates = async (req, res) => {
             }
         });
 
+        // Helper function to make Cloudinary raw URLs viewable in browser
+        const makeUrlViewable = (url) => {
+            if (!url) return url;
+            // If the URL contains /raw/, convert it to allow viewing
+            if (url.includes('/raw/')) {
+                return url.replace('/raw/upload/', '/upload/');
+            }
+            return url;
+        };
+
         const result = await Promise.all(enrollments.map(async (enrollment) => {
             // Skip if course is null (deleted course)
             if (!enrollment.course) {
@@ -409,7 +419,7 @@ export const getMyCertificates = async (req, res) => {
                 status,
                 reason,
                 certificateId: cert?.certificateId || null,
-                certificateUrl: cert?.certificateUrl || null,
+                certificateUrl: makeUrlViewable(cert?.certificateUrl) || null,
                 issuedAt: cert?.issuedAt || null,
                 completionDate: cert?.completionDate || null
             };
@@ -435,7 +445,7 @@ export const getMyCertificates = async (req, res) => {
                     status: "issued",
                     reason: "Certificate earned",
                     certificateId: cert.certificateId,
-                    certificateUrl: cert.certificateUrl,
+                    certificateUrl: makeUrlViewable(cert.certificateUrl),
                     issuedAt: cert.issuedAt,
                     completionDate: cert.completionDate
                 });
@@ -457,7 +467,7 @@ export const getMyCertificates = async (req, res) => {
                     status: "issued",
                     reason: "Certificate earned",
                     certificateId: cert.certificateId,
-                    certificateUrl: cert.certificateUrl,
+                    certificateUrl: makeUrlViewable(cert.certificateUrl),
                     issuedAt: cert.issuedAt,
                     completionDate: cert.completionDate
                 };
@@ -580,10 +590,12 @@ export const generateCertificate = async (studentId, courseId) => {
         const b64 = pdfBuffer.toString('base64');
         const dataURI = `data:application/pdf;base64,${b64}`;
         
+        // Use "auto" resource type to let Cloudinary detect the file type
+        // This ensures PDFs are properly accessible for viewing/downloading
         const uploadResult = await cloudinary.uploader.upload(dataURI, {
             public_id: `certificates/${certificateId}`,
             folder: "certificates",
-            resource_type: "raw", // Use raw for PDF files
+            resource_type: "auto",
             format: "pdf"
         });
 
@@ -795,6 +807,15 @@ export const verifyCertificate = async (req, res) => {
             });
         }
 
+        // Generate a signed URL that allows viewing (not just download)
+        let viewableUrl = certificate.certificateUrl;
+        
+        // If the URL contains /raw/, convert it to allow viewing
+        if (certificate.certificateUrl && certificate.certificateUrl.includes('/raw/')) {
+            // Replace /raw/ with /upload/ to make it viewable in browser
+            viewableUrl = certificate.certificateUrl.replace('/raw/upload/', '/upload/');
+        }
+
         res.status(200).json({
             valid: true,
             certificate: {
@@ -803,7 +824,8 @@ export const verifyCertificate = async (req, res) => {
                 courseName: certificate.courseName,
                 teacherName: certificate.teacherName,
                 completionDate: certificate.completionDate,
-                issuedAt: certificate.issuedAt
+                issuedAt: certificate.issuedAt,
+                certificateUrl: viewableUrl
             }
         });
     } catch (error) {
