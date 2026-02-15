@@ -193,20 +193,37 @@ const MyCertificates = () => {
                         <Download className="w-4 h-4" />
                         Download
                       </a>
+                      <button
+                        onClick={() => checkEligibility(cert.courseId)}
+                        className="flex-none px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        title="View Requirements"
+                      >
+                        <Info className="w-4 h-4 text-gray-600" />
+                      </button>
                     </>
                   ) : cert.status === "eligible" ? (
-                    <button
-                      onClick={() => toast.info("Certificate will be generated automatically. Please check back later.")}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-                    >
-                      <Clock className="w-4 h-4" />
-                      Generating...
-                    </button>
+                    <>
+                      <button
+                        onClick={() => toast.info("Certificate will be generated automatically. Please check back later.")}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                      >
+                        <Clock className="w-4 h-4" />
+                        Generating...
+                      </button>
+                      <button
+                        onClick={() => checkEligibility(cert.courseId)}
+                        className="flex-none px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        title="View Requirements"
+                      >
+                        <Info className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </>
                   ) : (
                     <button
-                      onClick={() => toast.info(cert.reason || "Complete all requirements to earn this certificate.")}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600"
+                      onClick={() => checkEligibility(cert.courseId)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
                     >
+                      <Info className="w-4 h-4" />
                       View Requirements
                     </button>
                   )}
