@@ -108,28 +108,18 @@ export const uploadBackgroundImage = async (req, res) => {
             });
         }
 
+        // Convert buffer to base64 for upload
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
         // Upload to Cloudinary
-        const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: "certificates/backgrounds",
-                    resource_type: "image",
-                    transformation: [
-                        { quality: "auto:best" },
-                        { fetch_format: "auto" }
-                    ]
-                },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            
-            // Convert buffer to stream
-            const Stream = require('stream');
-            const bufferStream = new Stream.PassThrough();
-            bufferStream.end(req.file.buffer);
-            bufferStream.pipe(uploadStream);
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: "certificates/backgrounds",
+            resource_type: "image",
+            transformation: [
+                { quality: "auto:best" },
+                { fetch_format: "auto" }
+            ]
         });
 
         // Get current settings to delete old image if exists
