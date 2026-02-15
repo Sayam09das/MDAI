@@ -9,9 +9,9 @@ import PayLaterRequest from "../Pages/Student/Dashboard/CoursePayment/PayLaterRe
 const PaymentRoutes = () => {
     return (
         <Routes>
-            {/* Actual Payment Page (later real gateway) */}
+            {/* Actual Payment Page (later real gateway) - /payment/:courseId */}
             <Route
-                path="/payment/:courseId"
+                path=":courseId"
                 element={
                     <StudentProtectedRoute>
                         <Payment />
@@ -19,15 +19,17 @@ const PaymentRoutes = () => {
                 }
             />
 
-            {/* Manual Payment Info Page */}
+            {/* Manual Payment Info Page - /payment/payment-info/:courseId */}
             <Route
-                path="/payment-info/:courseId"
+                path="payment-info/:courseId"
                 element={
                     <StudentProtectedRoute>
                         <PaymentInfo />
                     </StudentProtectedRoute>
                 }
             />
+            
+            {/* Pay Later Request - /payment/pay-later/:courseId */}
             <Route
                 path="pay-later/:courseId"
                 element={
@@ -38,8 +40,8 @@ const PaymentRoutes = () => {
             />
 
 
-            {/* Demo / Test Page */}
-            <Route path="/payment-demo/:courseId" element={<PaymentDemo />} />
+            {/* Demo / Test Page - /payment/payment-demo/:courseId */}
+            <Route path="payment-demo/:courseId" element={<PaymentDemo />} />
         </Routes>
     );
 };
