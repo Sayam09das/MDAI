@@ -9,8 +9,7 @@ import {
   Settings, 
   Check,
   X,
-  RefreshCw,
-  ExternalLink
+  RefreshCw
 } from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -32,7 +31,6 @@ const CertificateSettings = () => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     templateName: "",
-    canvaDesignLink: "",
     backgroundImage: { public_id: "", url: "" },
     pageSize: "Landscape_A4",
     placeholders: [
@@ -42,7 +40,7 @@ const CertificateSettings = () => {
       { fieldName: "completionDate", x: 400, y: 540, fontSize: 18, fontFamily: "Helvetica", fontColor: "#95A5A6", isEnabled: true },
       { fieldName: "certificateId", x: 400, y: 600, fontSize: 14, fontFamily: "Courier", fontColor: "#BDC3C7", isEnabled: true }
     ],
-    organizationName: "MDAI Learning Platform",
+    organizationName: "MDAI",
     certificateTitle: "Certificate of Completion",
     isEnabled: true
   });
@@ -74,10 +72,6 @@ const CertificateSettings = () => {
       setSaving(false);
     }
   };
-
-  // Check if current image is invalid (blob URL)
-  const isInvalidImage = settings.backgroundImage?.url?.startsWith('blob:') || 
-                         settings.backgroundImage?.url?.startsWith('http://localhost');
 
   const fetchSettings = async () => {
     try {
@@ -227,25 +221,14 @@ const CertificateSettings = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Canva Design Link
-            </label>
-            <input
-              type="url"
-              value={settings.canvaDesignLink}
-              onChange={(e) => setSettings({ ...settings, canvaDesignLink: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-              placeholder="https://canva.com/design/..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Organization Name
+              Organization Name (Fixed: MDAI)
             </label>
             <input
               type="text"
               value={settings.organizationName}
               onChange={(e) => setSettings({ ...settings, organizationName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              placeholder="MDAI"
             />
           </div>
           <div>
@@ -277,21 +260,13 @@ const CertificateSettings = () => {
         </div>
       </div>
 
-      {/* Background Image */}
+      {/* Background Image - Optional for watermark */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Background Image</h2>
-        
-        {/* Warning for invalid image */}
-        {isInvalidImage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600 font-medium">
-              ⚠️ Invalid background image detected! This is a temporary/local URL that won't work for certificate generation.
-            </p>
-            <p className="text-xs text-red-500 mt-1">
-              Please delete this image and upload a new one.
-            </p>
-          </div>
-        )}
+        <h2 className="text-lg font-semibold mb-4">Background Image (Optional)</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          This is optional. Certificates are now generated using PDFKit with professional design. 
+          You can upload a background image if you want to use it as a watermark.
+        </p>
         
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
@@ -340,23 +315,11 @@ const CertificateSettings = () => {
           <div className="flex-1">
             <h3 className="font-medium text-gray-900 mb-2">Instructions:</h3>
             <ol className="list-decimal list-inside text-sm text-gray-600 space-y-2">
-              <li>Create your certificate design in Canva</li>
-              <li>Export it as a high-quality PNG (recommended 2000x1500)</li>
-              <li>Leave spaces for dynamic text fields (name, course, date, etc.)</li>
-              <li>Upload the background image here</li>
-              <li>Configure the placeholder positions below</li>
+              <li>Background image is now optional - certificates are generated using PDFKit</li>
+              <li>If you upload an image, it will be used as a watermark overlay</li>
+              <li>Recommended: PNG with transparency, max 2MB</li>
+              <li>Save settings to apply changes</li>
             </ol>
-            {settings.canvaDesignLink && (
-              <a
-                href={settings.canvaDesignLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center text-blue-600 hover:underline"
-              >
-                Open Canva Design
-                <ExternalLink className="ml-1 w-4 h-4" />
-              </a>
-            )}
           </div>
         </div>
       </div>

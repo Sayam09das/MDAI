@@ -5,6 +5,7 @@ import Enrollment from "../models/enrollmentModel.js";
 import Submission from "../models/submissionModel.js";
 import ExamSubmission from "../models/examAttemptModel.js";
 import { v2 as cloudinary } from "cloudinary";
+import PDFDocument from "pdfkit";
 import mongoose from "mongoose";
 
 // Configure Cloudinary
@@ -32,12 +33,12 @@ export const getCertificateSettings = async (req, res) => {
 
 /* ======================================================
    UPDATE CERTIFICATE SETTINGS (Admin Only)
+   Removed Canva integration - using PDFKit now
 ====================================================== */
 export const updateCertificateSettings = async (req, res) => {
     try {
         const {
             templateName,
-            canvaDesignLink,
             backgroundImage,
             pageSize,
             placeholders,
@@ -50,14 +51,13 @@ export const updateCertificateSettings = async (req, res) => {
 
         // Update fields
         if (templateName) settings.templateName = templateName;
-        if (canvaDesignLink !== undefined) settings.canvaDesignLink = canvaDesignLink;
         if (pageSize) settings.pageSize = pageSize;
         if (placeholders) settings.placeholders = placeholders;
         if (organizationName) settings.organizationName = organizationName;
         if (certificateTitle) settings.certificateTitle = certificateTitle;
         if (isEnabled !== undefined) settings.isEnabled = isEnabled;
 
-        // Handle background image upload (only if it's a proper URL, not a blob URL)
+        // Handle background image upload (optional - for watermark/overlay)
         if (backgroundImage && typeof backgroundImage === 'object') {
             // Only accept non-blob URLs (Cloudinary URLs or external URLs)
             if (backgroundImage.url && 
@@ -447,7 +447,9 @@ export const getMyCertificate = async (req, res) => {
 
 /* ======================================================
    GENERATE CERTIFICATE (Automatic)
-   Called when student meets completion criteria
+   Using PDFKit - generates professional PDF certificates
+   Auto-populates: student name, course name, teacher name from database
+   Fixed: organization name (MDAI)
 ====================================================== */
 export const generateCertificate = async (studentId, courseId) => {
     try {
@@ -463,13 +465,6 @@ export const generateCertificate = async (studentId, courseId) => {
 
         if (!settings.isEnabled) {
             return { success: false, error: "Certificate system is not enabled" };
-        }
-
-        // Check if background image URL is valid (not a blob URL)
-        if (!settings.backgroundImage.url || 
-            settings.backgroundImage.url.startsWith('blob:') ||
-            settings.backgroundImage.url.startsWith('http://localhost')) {
-            return { success: false, error: "Please upload a valid certificate background image in admin settings" };
         }
 
         // Get student info
@@ -489,51 +484,46 @@ export const generateCertificate = async (studentId, courseId) => {
         // Generate certificate ID
         const certificateId = await Certificate.generateCertificateId();
 
-        // Prepare certificate data mapping
-        const certificateDataMap = {
-            studentName: student.fullName || student.name,
-            courseName: course.title,
-            teacherName: course.instructor?.fullName || "Instructor",
-            completionDate: enrollment?.completedAt ? new Date(enrollment.completedAt).toLocaleDateString('en-US', {
+        // Auto-populate certificate data from database
+        const studentName = student.fullName || student.name || "Student";
+        const courseName = course.title || "Course";
+        const teacherName = course.instructor?.fullName || course.instructor?.name || "Instructor";
+        
+        const completionDate = enrollment?.completedAt 
+            ? new Date(enrollment.completedAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
-            }) : new Date().toLocaleDateString('en-US', {
+            })
+            : new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
-            }),
-            certificateId: certificateId,
-            organizationName: settings.organizationName,
-            certificateTitle: settings.certificateTitle
-        };
+            });
 
-        // Build transformation array from placeholders settings
-        const textOverlays = [];
-        
-        // Get enabled placeholders from settings
-        const enabledPlaceholders = settings.placeholders || [];
-        
-        for (const placeholder of enabledPlaceholders) {
-            if (placeholder.isEnabled && certificateDataMap[placeholder.fieldName]) {
-                textOverlays.push({
-                    overlay: `text:${encodeURIComponent(certificateDataMap[placeholder.fieldName])}`,
-                    font_family: placeholder.fontFamily || "Helvetica",
-                    font_size: placeholder.fontSize || 24,
-                    color: placeholder.fontColor || "#000000",
-                    x: placeholder.x || 400,
-                    y: placeholder.y || 300
-                });
-            }
-        }
+        const organizationName = settings.organizationName || "MDAI";
+        const certificateTitle = settings.certificateTitle || "Certificate of Completion";
 
-        // Upload certificate to Cloudinary
-        // We'll use the background image URL and add text overlay
-        const uploadResult = await cloudinary.uploader.upload(settings.backgroundImage.url, {
+        // Generate PDF using PDFKit
+        const pdfBuffer = await generatePDFBuffer({
+            studentName,
+            courseName,
+            teacherName,
+            completionDate,
+            certificateId,
+            organizationName,
+            certificateTitle
+        });
+
+        // Upload PDF to Cloudinary
+        const b64 = pdfBuffer.toString('base64');
+        const dataURI = `data:application/pdf;base64,${b64}`;
+        
+        const uploadResult = await cloudinary.uploader.upload(dataURI, {
             public_id: `certificates/${certificateId}`,
             folder: "certificates",
-            resource_type: "image",
-            transformation: textOverlays
+            resource_type: "raw", // Use raw for PDF files
+            format: "pdf"
         });
 
         // Save certificate to database
@@ -543,9 +533,9 @@ export const generateCertificate = async (studentId, courseId) => {
             certificateId,
             certificateUrl: uploadResult.secure_url,
             certificatePublicId: uploadResult.public_id,
-            studentName: certificateDataMap.studentName,
-            courseName: certificateDataMap.courseName,
-            teacherName: certificateDataMap.teacherName,
+            studentName,
+            courseName,
+            teacherName,
             completionDate: enrollment?.completedAt || new Date(),
             issuedAt: new Date(),
             status: "issued",
@@ -554,11 +544,175 @@ export const generateCertificate = async (studentId, courseId) => {
             }
         });
 
+        console.log(`Certificate generated for student ${studentName} in course ${courseName}: ${certificateId}`);
+
         return { success: true, certificate, alreadyGenerated: false };
     } catch (error) {
         console.error("Generate certificate error:", error);
         return { success: false, error: error.message };
     }
+};
+
+/* ======================================================
+   HELPER: Generate PDF Buffer using PDFKit
+   Creates a professional certificate PDF
+====================================================== */
+const generatePDFBuffer = (certificateData) => {
+    return new Promise((resolve, reject) => {
+        try {
+            // Landscape A4 dimensions in points (1pt = 1/72 inch)
+            // A4: 595 x 842 points, Landscape: 842 x 595
+            const pageWidth = 842;
+            const pageHeight = 595;
+
+            const doc = new PDFDocument({
+                size: 'A4',
+                layout: 'landscape',
+                margins: { top: 50, bottom: 50, left: 50, right: 50 }
+            });
+
+            const chunks = [];
+            doc.on('data', chunk => chunks.push(chunk));
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', reject);
+
+            // Colors
+            const primaryColor = '#1a365d';    // Dark blue
+            const secondaryColor = '#2c5282';  // Medium blue
+            const accentColor = '#c53030';      // Red accent
+            const textColor = '#1a202c';        // Dark gray
+            const lightGray = '#718096';        // Gray
+
+            // Draw border
+            doc.rect(20, 20, pageWidth - 40, pageHeight - 40)
+               .strokeColor(primaryColor)
+               .lineWidth(3)
+               .stroke();
+
+            doc.rect(30, 30, pageWidth - 60, pageHeight - 60)
+               .strokeColor(secondaryColor)
+               .lineWidth(1)
+               .stroke();
+
+            // Organization name at top (Fixed: MDAI)
+            doc.fontSize(14)
+               .font('Helvetica')
+               .fillColor(lightGray)
+               .text(certificateData.organizationName.toUpperCase(), 0, 60, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Certificate title
+            doc.fontSize(36)
+               .font('Helvetica-Bold')
+               .fillColor(primaryColor)
+               .text(certificateData.certificateTitle, 0, 100, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Decorative line
+            const lineY = 160;
+            doc.moveTo(pageWidth/2 - 150, lineY)
+               .lineTo(pageWidth/2 + 150, lineY)
+               .strokeColor(accentColor)
+               .lineWidth(2)
+               .stroke();
+
+            // "This is to certify that"
+            doc.fontSize(14)
+               .font('Helvetica')
+               .fillColor(textColor)
+               .text('This is to certify that', 0, 190, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Student name (prominent)
+            doc.fontSize(32)
+               .font('Helvetica-Bold')
+               .fillColor(secondaryColor)
+               .text(certificateData.studentName, 0, 220, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Decorative underline for name
+            const nameWidth = doc.widthOfString(certificateData.studentName);
+            doc.moveTo(pageWidth/2 - nameWidth/2, 260)
+               .lineTo(pageWidth/2 + nameWidth/2, 260)
+               .strokeColor(accentColor)
+               .lineWidth(1)
+               .stroke();
+
+            // "has successfully completed the course"
+            doc.fontSize(14)
+               .font('Helvetica')
+               .fillColor(textColor)
+               .text('has successfully completed the course', 0, 280, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Course name (prominent)
+            doc.fontSize(26)
+               .font('Helvetica-Bold')
+               .fillColor(primaryColor)
+               .text(certificateData.courseName, 0, 310, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Completion date
+            doc.fontSize(12)
+               .font('Helvetica')
+               .fillColor(lightGray)
+               .text(`Completed on ${certificateData.completionDate}`, 0, 360, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Instructor/Teacher name
+            doc.fontSize(14)
+               .font('Helvetica-Bold')
+               .fillColor(textColor)
+               .text(certificateData.teacherName, 0, 420, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            doc.fontSize(10)
+               .font('Helvetica')
+               .fillColor(lightGray)
+               .text('Course Instructor', 0, 438, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // Certificate ID at bottom
+            doc.fontSize(10)
+               .font('Courier')
+               .fillColor(lightGray)
+               .text(`Certificate ID: ${certificateData.certificateId}`, 0, pageHeight - 60, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            // MDAI branding
+            doc.fontSize(8)
+               .font('Helvetica')
+               .fillColor(lightGray)
+               .text('MDAI Learning Platform', 0, pageHeight - 40, {
+                   align: 'center',
+                   width: pageWidth
+               });
+
+            doc.end();
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 /* ======================================================

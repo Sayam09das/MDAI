@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Certificate Settings Model
- * Admin-controlled template configuration for certificates
- * This template applies globally to all courses
- */
-
 const placeholderPositionSchema = new mongoose.Schema({
     fieldName: {
         type: String,
@@ -47,13 +41,7 @@ const certificateSettingsSchema = new mongoose.Schema({
         default: 'Default Certificate Template'
     },
 
-    // Canva design link (for admin reference)
-    canvaDesignLink: {
-        type: String,
-        default: ''
-    },
-
-    // Background image from Canva (uploaded by admin)
+    // Background image (optional - can be used as watermark/overlay)
     backgroundImage: {
         public_id: {
             type: String,
@@ -72,7 +60,7 @@ const certificateSettingsSchema = new mongoose.Schema({
         default: 'Landscape_A4'
     },
 
-    // Placeholder positions and styling
+    // Placeholder positions and styling (for reference, not used in PDFKit)
     placeholders: {
         type: [placeholderPositionSchema],
         default: [
@@ -84,10 +72,10 @@ const certificateSettingsSchema = new mongoose.Schema({
         ]
     },
 
-    // Organization name displayed on certificate
+    // Organization name displayed on certificate (Fixed: MDAI)
     organizationName: {
         type: String,
-        default: 'MDAI Learning Platform'
+        default: 'MDAI'
     },
 
     // Certificate title
