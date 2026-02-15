@@ -356,8 +356,15 @@ export const generateCertificate = async (studentId, courseId) => {
         const course = await Course.findById(courseId).populate("instructor", "fullName");
         const settings = await CertificateSettings.getSettings();
 
-        if (!settings.isEnabled || !settings.backgroundImage.url) {
-            return { success: false, error: "Certificate system is not configured" };
+        if (!settings.isEnabled) {
+            return { success: false, error: "Certificate system is not enabled" };
+        }
+
+        // Check if background image URL is valid (not a blob URL)
+        if (!settings.backgroundImage.url || 
+            settings.backgroundImage.url.startsWith('blob:') ||
+            settings.backgroundImage.url.startsWith('http://localhost')) {
+            return { success: false, error: "Please upload a valid certificate background image in admin settings" };
         }
 
         // Get student info
