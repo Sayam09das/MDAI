@@ -9,30 +9,12 @@ gsap.registerPlugin(ScrollTrigger);
 
 const HowItWorks = () => {
   const [activeStep, setActiveStep] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
   const headerRef = useRef(null);
   const stepsRef = useRef([]);
   const ctaRef = useRef(null);
+  const lineRef = useRef(null);
   const navigate = useNavigate()
-
-  // Intersection Observer for visibility
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   // Add refs to array
   const addToStepsRef = (el) => {
@@ -41,46 +23,77 @@ const HowItWorks = () => {
     }
   };
 
-  // GSAP Scroll Animations
+  // GSAP Scroll Animations with scrub - works on scroll up and down
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header animation
+      // Header animation with scrub
       gsap.fromTo(headerRef.current,
-        { opacity: 0, y: 40 },
+        { opacity: 0, y: 50 },
         {
           opacity: 1,
           y: 0,
           duration: 1,
-          ease: "power3.out",
+          ease: "power2.out",
           scrollTrigger: {
             trigger: headerRef.current,
-            start: "top 80%",
+            start: "top 85%",
+            end: "top 50%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
           }
         }
       );
 
-      // Steps stagger animation
-      if (stepsRef.current.length > 0) {
-        gsap.fromTo(stepsRef.current,
-          { opacity: 0, y: 60, scale: 0.9 },
+      // Steps stagger animation with scrub - each step animates independently
+      stepsRef.current.forEach((step, index) => {
+        gsap.fromTo(step,
+          { 
+            opacity: 0, 
+            y: 80, 
+            scale: 0.9,
+            rotate: index % 2 === 0 ? -5 : 5
+          },
           {
             opacity: 1,
             y: 0,
             scale: 1,
+            rotate: 0,
             duration: 0.8,
-            stagger: 0.2,
-            ease: "back.out(1.7)",
+            ease: "power3.out",
             scrollTrigger: {
-              trigger: stepsRef.current[0],
-              start: "top 85%",
+              trigger: step,
+              start: "top 90%",
+              end: "top 60%",
+              scrub: 1.5,
+              toggleActions: "play reverse play reverse"
+            }
+          }
+        );
+      });
+
+      // Connection line animation with scrub
+      if (lineRef.current) {
+        gsap.fromTo(lineRef.current,
+          { scaleX: 0, opacity: 0 },
+          {
+            scaleX: 1,
+            opacity: 1,
+            duration: 1.5,
+            ease: "power2.inOut",
+            scrollTrigger: {
+              trigger: lineRef.current,
+              start: "top 80%",
+              end: "center center",
+              scrub: 2,
+              toggleActions: "play reverse play reverse"
             }
           }
         );
       }
 
-      // CTA animation
+      // CTA animation with scrub
       gsap.fromTo(ctaRef.current,
-        { opacity: 0, y: 40, scale: 0.95 },
+        { opacity: 0, y: 50, scale: 0.95 },
         {
           opacity: 1,
           y: 0,
@@ -90,14 +103,50 @@ const HowItWorks = () => {
           scrollTrigger: {
             trigger: ctaRef.current,
             start: "top 90%",
+            end: "top 60%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
           }
         }
       );
+
+      // Parallax background elements
+      gsap.to(".blob-1", {
+        y: -100,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1
+        }
+      });
+
+      gsap.to(".blob-2", {
+        y: -150,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5
+        }
+      });
+
+      gsap.to(".blob-3", {
+        y: -200,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 2
+        }
+      });
+
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
 
+  // Auto-cycle through steps
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % 3);
@@ -138,109 +187,19 @@ const HowItWorks = () => {
     }
   ];
 
-
-
   return (
     <section
       ref={sectionRef}
       className="relative py-16 md:py-24 lg:py-32 bg-gradient-to-b from-gray-50 via-white to-gray-50 overflow-hidden"
     >
-      {/* Animated Background Elements */}
+      {/* Animated Background Elements with Parallax */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-1/3 -right-32 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        <div className="blob-1 absolute top-1/4 -left-32 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+        <div className="blob-2 absolute top-1/3 -right-32 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+        <div className="blob-3 absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
       </div>
 
       <style>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes drawLine {
-          from {
-            stroke-dashoffset: 1000;
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.8s ease-out forwards;
-        }
-
-        .animate-fadeInScale {
-          animation: fadeInScale 0.6s ease-out forwards;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.8s ease-out forwards;
-        }
-
-        .animate-slideInRight {
-          animation: slideInRight 0.8s ease-out forwards;
-        }
-
-        .animate-drawLine {
-          animation: drawLine 2s ease-out forwards;
-        }
-
         .step-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -291,28 +250,29 @@ const HowItWorks = () => {
 
         {/* Steps Container */}
         <div className="relative">
-          {/* Connection Lines - Desktop Only */}
+          {/* Connection Lines - Desktop Only with scroll animation */}
           <div className="hidden lg:block absolute top-32 left-0 right-0 h-0.5 z-0">
-            <svg className="w-full h-full" preserveAspectRatio="none">
-              <line
-                x1="16.66%"
-                y1="0"
-                x2="83.33%"
-                y2="0"
-                stroke="url(#gradient)"
-                strokeWidth="2"
-                strokeDasharray="1000"
-                className={isVisible ? 'animate-drawLine' : ''}
-                style={{ strokeDashoffset: 1000 }}
-              />
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="50%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <div ref={lineRef} className="w-full h-full origin-left">
+              <svg className="w-full h-full" preserveAspectRatio="none">
+                <line
+                  x1="16.66%"
+                  y1="0"
+                  x2="83.33%"
+                  y2="0"
+                  stroke="url(#gradient2)"
+                  strokeWidth="3"
+                  strokeDasharray="8 4"
+                  className="opacity-80"
+                />
+                <defs>
+                  <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="50%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
           </div>
 
           {/* Steps Grid */}
@@ -324,24 +284,20 @@ const HowItWorks = () => {
               return (
                 <div
                   key={index}
-                  className={`step-card ${isActive ? 'active' : ''} ${isVisible ? 'animate-fadeInScale' : 'opacity-0'
-                    }`}
-                  style={{
-                    animationDelay: `${0.2 + index * 0.2}s`,
-                    transformOrigin: 'center'
-                  }}
+                  ref={addToStepsRef}
+                  className={`step-card ${isActive ? 'active' : ''}`}
                   onMouseEnter={() => setActiveStep(index)}
                 >
-                  <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl p-6 md:p-8 h-full border-2 border-transparent hover:border-indigo-100 transition-all duration-300">
+                  <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl p-6 md:p-8 h-full border-2 border-transparent hover:border-indigo-100 transition-all duration-300 group">
                     {/* Step Number Badge */}
-                    <div className="absolute -top-4 -right-4 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg transform rotate-12 hover:rotate-0 transition-transform duration-300">
+                    <div className="absolute -top-4 -right-4 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg transform rotate-12 hover:rotate-0 transition-transform duration-300 group-hover:scale-110">
                       <span className="text-white font-bold text-lg md:text-xl">
                         {step.number}
                       </span>
                     </div>
 
                     {/* Icon Container */}
-                    <div className={`${step.bgColor} w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110 hover:rotate-6`}>
+                    <div className={`${step.bgColor} w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110 hover:rotate-6 group-hover:scale-110 group-hover:rotate-6`}>
                       <div className={`w-full h-full rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg`}>
                         <Icon className="w-8 h-8 md:w-10 md:h-10 text-white" strokeWidth={2.5} />
                       </div>
@@ -361,7 +317,8 @@ const HowItWorks = () => {
                       {step.features.map((feature, fIndex) => (
                         <div
                           key={fIndex}
-                          className="flex items-center gap-2 md:gap-3 text-sm md:text-base text-gray-700 group"
+                          className="flex items-center gap-2 md:gap-3 text-sm md:text-base text-gray-700 group-hover:translate-x-2 transition-transform duration-300"
+                          style={{ transitionDelay: `${fIndex * 50}ms` }}
                         >
                           <CheckCircle className={`w-4 h-4 md:w-5 md:h-5 ${step.iconColor} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`} />
                           <span className="group-hover:text-gray-900 transition-colors duration-200">
@@ -373,13 +330,13 @@ const HowItWorks = () => {
 
                     {/* Arrow Indicator - Desktop Only */}
                     {index < steps.length - 1 && (
-                      <div className="hidden lg:block absolute -right-6 top-1/2 transform -translate-y-1/2 z-20">
-                        <ArrowRight className="w-8 h-8 text-indigo-300 animate-pulse" />
+                      <div className="hidden lg:block absolute -right-6 top-1/2 transform -translate-y-1/2 z-20 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <ArrowRight className="w-8 h-8 text-indigo-400 group-hover:translate-x-2 transition-transform duration-300" />
                       </div>
                     )}
 
                     {/* Hover Glow Effect */}
-                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}></div>
+                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`}></div>
                   </div>
                 </div>
               );
@@ -389,11 +346,10 @@ const HowItWorks = () => {
 
         {/* CTA Section */}
         <div
-          className={`text-center mt-12 md:mt-16 lg:mt-20 ${isVisible ? 'animate-fadeInUp' : 'opacity-0'
-            }`}
-          style={{ animationDelay: '0.8s' }}
+          ref={ctaRef}
+          className="text-center mt-12 md:mt-16 lg:mt-20"
         >
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 md:p-12 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 md:p-12 shadow-2xl transform hover:scale-105 transition-transform duration-300 group">
             <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
               Ready to Start Your AI Journey?
             </h3>
@@ -415,3 +371,4 @@ const HowItWorks = () => {
 };
 
 export default HowItWorks;
+
