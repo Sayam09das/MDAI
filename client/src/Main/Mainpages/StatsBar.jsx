@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Users, GraduationCap, Star, TrendingUp, Award } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 // Get backend URL
 const getBackendURL = () => {
@@ -30,7 +35,13 @@ const StatsBar = () => {
         students: 0,
         rating: 0,
     });
+    
+    // Refs for GSAP
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const statsRef = useRef([]);
+    const separatorRef = useRef(null);
+    const trustRef = useRef(null);
 
     // Default fallback values
     const defaultStats = {
@@ -55,12 +66,10 @@ const StatsBar = () => {
                         rating: data.stats.rating || 4.8,
                     });
                 } else {
-                    // Use defaults if API fails
                     setPlatformStats(defaultStats);
                 }
             } catch (error) {
                 console.error("Failed to fetch stats:", error);
-                // Use defaults on error
                 setPlatformStats(defaultStats);
             } finally {
                 setLoading(false);
@@ -70,35 +79,84 @@ const StatsBar = () => {
         fetchStats();
     }, []);
 
+    // GSAP Scroll Animations
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
+        const ctx = gsap.context(() => {
+            // Header animation
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 40 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 80%",
+                    }
                 }
-            },
-            { threshold: 0.2 }
-        );
+            );
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+            // Stats cards stagger animation
+            if (statsRef.current.length > 0) {
+                gsap.fromTo(statsRef.current,
+                    { opacity: 0, y: 60, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.8,
+                        stagger: 0.15,
+                        ease: "back.out(1.7)",
+                        scrollTrigger: {
+                            trigger: statsRef.current[0],
+                            start: "top 85%",
+                        }
+                    }
+                );
             }
-        };
-    }, []);
 
-    // Animation effect using real data
+            // Separator line animation
+            gsap.fromTo(separatorRef.current,
+                { opacity: 0, scaleX: 0 },
+                {
+                    opacity: 1,
+                    scaleX: 1,
+                    duration: 0.8,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: separatorRef.current,
+                        start: "top 90%",
+                    }
+                }
+            );
+
+            // Trust badge animation
+            gsap.fromTo(trustRef.current,
+                { opacity: 0, y: 20 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: trustRef.current,
+                        start: "top 95%",
+                    }
+                }
+            );
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [loading]);
+
+    // Animation effect using real data (count up)
     useEffect(() => {
-        if (!isVisible || loading) return;
+        if (loading) return;
 
         const duration = 2000;
         const steps = 60;
         const stepDuration = duration / steps;
-
         let currentStep = 0;
 
         const timer = setInterval(() => {
@@ -124,7 +182,7 @@ const StatsBar = () => {
         }, stepDuration);
 
         return () => clearInterval(timer);
-    }, [isVisible, loading, platformStats]);
+    }, [loading, platformStats]);
 
     const formatNumber = (num) => {
         if (num >= 10000) {
@@ -133,7 +191,6 @@ const StatsBar = () => {
         return num.toLocaleString();
     };
 
-    // Determine which counts to display
     const currentCounts = loading ? { courses: 0, teachers: 0, students: 0, rating: 0 } : 
                          (displayCounts.courses > 0 || displayCounts.teachers > 0 ? displayCounts : platformStats);
 
@@ -176,6 +233,13 @@ const StatsBar = () => {
         },
     ];
 
+    // Add ref to stats array
+    const addToStatsRef = (el) => {
+        if (el && !statsRef.current.includes(el)) {
+            statsRef.current.push(el);
+        }
+    };
+
     return (
         <div
             ref={sectionRef}
@@ -196,8 +260,7 @@ const StatsBar = () => {
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Section Header */}
-                <div className={`text-center mb-8 md:mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                    }`}>
+                <div ref={headerRef} className="text-center mb-8 md:mb-12">
                     <div className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 rounded-full mb-4">
                         <TrendingUp className="w-4 h-4 text-indigo-600" />
                         <span className="text-sm font-semibold text-indigo-600">Our Impact</span>
@@ -217,11 +280,8 @@ const StatsBar = () => {
                         return (
                             <div
                                 key={index}
-                                className={`group relative transition-all duration-700 ${isVisible
-                                        ? 'opacity-100 translate-y-0'
-                                        : 'opacity-0 translate-y-10'
-                                    }`}
-                                style={{ transitionDelay: `${index * 150}ms` }}
+                                ref={addToStatsRef}
+                                className="group relative"
                             >
                                 {/* Card */}
                                 <div className="relative bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
@@ -236,9 +296,7 @@ const StatsBar = () => {
                                         </div>
 
                                         {/* Pulsing Ring */}
-                                        {isVisible && (
-                                            <div className={`absolute inset-0 ${stat.iconBg} rounded-xl animate-ping opacity-20`} />
-                                        )}
+                                        <div className={`absolute inset-0 ${stat.iconBg} rounded-xl animate-ping opacity-20`} />
                                     </div>
 
                                     {/* Value */}
@@ -265,11 +323,8 @@ const StatsBar = () => {
                                     {/* Progress Bar */}
                                     <div className="mt-4 h-1 bg-gray-100 rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full bg-gradient-to-r ${stat.color} transition-all duration-1000 ease-out`}
-                                            style={{
-                                                width: isVisible ? '100%' : '0%',
-                                                transitionDelay: `${index * 150 + 500}ms`
-                                            }}
+                                            className={`h-full bg-gradient-to-r ${stat.color}`}
+                                            style={{ width: '100%' }}
                                         />
                                     </div>
                                 </div>
@@ -284,14 +339,12 @@ const StatsBar = () => {
                 </div>
 
                 {/* Bottom Separator Line */}
-                <div className={`mt-12 flex items-center justify-center transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
-                    }`}>
+                <div ref={separatorRef} className="mt-12 flex items-center justify-center">
                     <div className="h-1 w-24 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" />
                 </div>
 
                 {/* Trust Badge */}
-                <div className={`mt-8 text-center transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                    }`}>
+                <div ref={trustRef} className="mt-8 text-center">
                     <div className="inline-flex items-center space-x-2 text-sm text-gray-600">
                         <Award className="w-4 h-4 text-indigo-600" />
                         <span>Certified by leading educational boards</span>

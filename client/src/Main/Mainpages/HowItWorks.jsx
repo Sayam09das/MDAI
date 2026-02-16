@@ -1,39 +1,90 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Search, CreditCard, Video, ArrowRight, CheckCircle, Play } from 'lucide-react';
 import { useNavigate } from "react-router-dom"
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const HowItWorks = () => {
-  const [isVisible, setIsVisible] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const stepsRef = useRef([]);
+  const ctaRef = useRef(null);
   const navigate = useNavigate()
 
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+  // Add refs to array
+  const addToStepsRef = (el) => {
+    if (el && !stepsRef.current.includes(el)) {
+      stepsRef.current.push(el);
     }
+  };
 
-    return () => observer.disconnect();
+  // GSAP Scroll Animations
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header animation
+      gsap.fromTo(headerRef.current,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 80%",
+          }
+        }
+      );
+
+      // Steps stagger animation
+      if (stepsRef.current.length > 0) {
+        gsap.fromTo(stepsRef.current,
+          { opacity: 0, y: 60, scale: 0.9 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: "back.out(1.7)",
+            scrollTrigger: {
+              trigger: stepsRef.current[0],
+              start: "top 85%",
+            }
+          }
+        );
+      }
+
+      // CTA animation
+      gsap.fromTo(ctaRef.current,
+        { opacity: 0, y: 40, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: ctaRef.current,
+            start: "top 90%",
+          }
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, []);
 
   useEffect(() => {
-    if (isVisible) {
-      const interval = setInterval(() => {
-        setActiveStep((prev) => (prev + 1) % 3);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [isVisible]);
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 3);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const steps = [
     {
@@ -197,9 +248,8 @@ const HowItWorks = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Section Header */}
         <div
-          className={`text-center mb-12 md:mb-20 ${isVisible ? 'animate-fadeInUp' : 'opacity-0'
-            }`}
-          style={{ animationDelay: '0.1s' }}
+          ref={headerRef}
+          className="text-center mb-12 md:mb-20"
         >
           <div className="inline-flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full mb-6">
             <Play className="w-5 h-5 text-indigo-600" />
