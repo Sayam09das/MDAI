@@ -7,11 +7,15 @@ import {
   getCourseById,
   searchCourses,
   updateCourse,
+  getPublicStats,
 } from "../controllers/course.controller.js";
 import { protect, teacherOnly } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.js";
 
 const router = express.Router();
+
+// PUBLIC: Get platform stats (no auth required)
+router.get("/public-stats", getPublicStats);
 
 // CREATE COURSE
 router.post(

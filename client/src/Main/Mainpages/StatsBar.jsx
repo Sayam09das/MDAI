@@ -1,9 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Users, GraduationCap, Star, TrendingUp, Award } from 'lucide-react';
 
+// Get backend URL
+const getBackendURL = () => {
+    const envUrl = import.meta.env.VITE_BACKEND_URL;
+    if (envUrl && envUrl.trim() !== '' && envUrl !== 'undefined') {
+        return envUrl.replace(/\/+$/, '');
+    }
+    if (import.meta.env.PROD || import.meta.env.NODE_ENV === 'production') {
+        return 'https://mdai-self.vercel.app';
+    }
+    return 'http://localhost:5000';
+};
+
+const BACKEND_URL = getBackendURL();
+
 const StatsBar = () => {
     const [isVisible, setIsVisible] = useState(false);
-    const [counts, setCounts] = useState({
+    const [loading, setLoading] = useState(true);
+    const [platformStats, setPlatformStats] = useState({
+        courses: 0,
+        teachers: 0,
+        students: 0,
+        rating: 0,
+    });
+    const [displayCounts, setDisplayCounts] = useState({
         courses: 0,
         teachers: 0,
         students: 0,
@@ -11,12 +32,43 @@ const StatsBar = () => {
     });
     const sectionRef = useRef(null);
 
-    const finalStats = {
+    // Default fallback values
+    const defaultStats = {
         courses: 500,
         teachers: 120,
         students: 10000,
         rating: 4.8,
     };
+
+    // Fetch real stats from backend
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/courses/public-stats`);
+                const data = await response.json();
+                
+                if (response.ok && data.stats) {
+                    setPlatformStats({
+                        courses: data.stats.courses || 0,
+                        teachers: data.stats.teachers || 0,
+                        students: data.stats.students || 0,
+                        rating: data.stats.rating || 4.8,
+                    });
+                } else {
+                    // Use defaults if API fails
+                    setPlatformStats(defaultStats);
+                }
+            } catch (error) {
+                console.error("Failed to fetch stats:", error);
+                // Use defaults on error
+                setPlatformStats(defaultStats);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -39,8 +91,9 @@ const StatsBar = () => {
         };
     }, []);
 
+    // Animation effect using real data
     useEffect(() => {
-        if (!isVisible) return;
+        if (!isVisible || loading) return;
 
         const duration = 2000;
         const steps = 60;
@@ -52,26 +105,26 @@ const StatsBar = () => {
             currentStep++;
             const progress = currentStep / steps;
 
-            setCounts({
-                courses: Math.floor(finalStats.courses * progress),
-                teachers: Math.floor(finalStats.teachers * progress),
-                students: Math.floor(finalStats.students * progress),
-                rating: (finalStats.rating * progress).toFixed(1),
+            setDisplayCounts({
+                courses: Math.floor(platformStats.courses * progress),
+                teachers: Math.floor(platformStats.teachers * progress),
+                students: Math.floor(platformStats.students * progress),
+                rating: (platformStats.rating * progress).toFixed(1),
             });
 
             if (currentStep >= steps) {
                 clearInterval(timer);
-                setCounts({
-                    courses: finalStats.courses,
-                    teachers: finalStats.teachers,
-                    students: finalStats.students,
-                    rating: finalStats.rating,
+                setDisplayCounts({
+                    courses: platformStats.courses,
+                    teachers: platformStats.teachers,
+                    students: platformStats.students,
+                    rating: platformStats.rating,
                 });
             }
         }, stepDuration);
 
         return () => clearInterval(timer);
-    }, [isVisible]);
+    }, [isVisible, loading, platformStats]);
 
     const formatNumber = (num) => {
         if (num >= 10000) {
@@ -80,10 +133,14 @@ const StatsBar = () => {
         return num.toLocaleString();
     };
 
-    const stats = [
+    // Determine which counts to display
+    const currentCounts = loading ? { courses: 0, teachers: 0, students: 0, rating: 0 } : 
+                         (displayCounts.courses > 0 || displayCounts.teachers > 0 ? displayCounts : platformStats);
+
+    const statsItems = [
         {
             icon: BookOpen,
-            value: `${counts.courses}+`,
+            value: `${currentCounts.courses}+`,
             label: 'Courses',
             color: 'from-indigo-500 to-indigo-600',
             iconBg: 'bg-indigo-100',
@@ -92,7 +149,7 @@ const StatsBar = () => {
         },
         {
             icon: Users,
-            value: `${counts.teachers}+`,
+            value: `${currentCounts.teachers}+`,
             label: 'Teachers',
             color: 'from-purple-500 to-purple-600',
             iconBg: 'bg-purple-100',
@@ -101,7 +158,7 @@ const StatsBar = () => {
         },
         {
             icon: GraduationCap,
-            value: `${formatNumber(counts.students)}+`,
+            value: `${formatNumber(currentCounts.students)}+`,
             label: 'Students',
             color: 'from-blue-500 to-blue-600',
             iconBg: 'bg-blue-100',
@@ -110,7 +167,7 @@ const StatsBar = () => {
         },
         {
             icon: Star,
-            value: counts.rating,
+            value: currentCounts.rating,
             label: 'Rating',
             color: 'from-yellow-500 to-yellow-600',
             iconBg: 'bg-yellow-100',
@@ -155,7 +212,7 @@ const StatsBar = () => {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                    {stats.map((stat, index) => {
+                    {statsItems.map((stat, index) => {
                         const Icon = stat.icon;
                         return (
                             <div
@@ -187,7 +244,11 @@ const StatsBar = () => {
                                     {/* Value */}
                                     <div className="text-center mb-2">
                                         <div className={`text-4xl md:text-5xl font-extrabold bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}>
-                                            {stat.value}
+                                            {loading ? (
+                                                <div className="h-12 w-24 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                                            ) : (
+                                                stat.value
+                                            )}
                                         </div>
                                     </div>
 
@@ -272,3 +333,4 @@ const StatsBar = () => {
 };
 
 export default StatsBar;
+

@@ -1,5 +1,45 @@
 import Course from "../models/Course.js";
+import User from "../models/userModel.js";
+import Teacher from "../models/teacherModel.js";
+import Enrollment from "../models/enrollmentModel.js";
 import cloudinary from "../config/cloudinary.js";
+
+/* =====================================================
+   PUBLIC: GET PLATFORM STATS (No auth required)
+===================================================== */
+export const getPublicStats = async (req, res) => {
+    try {
+        // Get counts from database
+        const totalCourses = await Course.countDocuments({ isPublished: true });
+        const totalStudents = await User.countDocuments();
+        const totalTeachers = await Teacher.countDocuments();
+        
+        // Get total enrollments (students who enrolled in courses)
+        const totalEnrollments = await Enrollment.countDocuments();
+        
+        // Calculate average rating from courses that have ratings
+        const coursesWithRating = await Course.find({ 
+            isPublished: true, 
+            rating: { $exists: true, $gt: 0 } 
+        });
+        const avgRating = coursesWithRating.length > 0
+            ? coursesWithRating.reduce((sum, c) => sum + (c.rating || 0), 0) / coursesWithRating.length
+            : 4.8;
+
+        res.status(200).json({
+            success: true,
+            stats: {
+                courses: totalCourses,
+                students: totalStudents,
+                teachers: totalTeachers,
+                enrollments: totalEnrollments,
+                rating: Math.round(avgRating * 10) / 10,
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 export const createCourse = async (req, res) => {
     try {

@@ -78,10 +78,19 @@ const CourseCard = ({ course, index, isRealCourse = false }) => {
         e.preventDefault();
         
         if (isRealCourse) {
-            // Navigate to AllCourse page for real courses
-            navigate('/student/all-courses');
+            // Check if user is logged in
+            const token = localStorage.getItem("token");
+            if (token) {
+                // User is logged in, navigate to All Courses page
+                navigate('/student/all-courses');
+            } else {
+                // User is not logged in, save redirect URL and go to login
+                localStorage.setItem("redirectUrl", "/student/all-courses");
+                window.location.href = "/login";
+            }
         } else {
             // Redirect to login for demo courses
+            localStorage.setItem("redirectUrl", "/student/all-courses");
             window.location.href = "/login";
         }
     };

@@ -76,11 +76,22 @@ const Login = () => {
             localStorage.setItem("role", data.role);
             localStorage.setItem("user", JSON.stringify(data.user));  // ✅ Save user object
 
-            navigate(
-                data.role === "teacher"
-                    ? "/teacher-dashboard"
-                    : "/student-dashboard"
-            );
+            // Check for redirect URL saved by Course.jsx or other pages
+            const redirectUrl = localStorage.getItem("redirectUrl");
+            
+            if (redirectUrl) {
+                // Clear the saved redirect URL
+                localStorage.removeItem("redirectUrl");
+                // Navigate to the saved redirect URL
+                navigate(redirectUrl);
+            } else {
+                // Default navigation based on role
+                navigate(
+                    data.role === "teacher"
+                        ? "/teacher-dashboard"
+                        : "/student-dashboard"
+                );
+            }
         } catch (err) {
             setError(
                 err.message === "Failed to fetch"
