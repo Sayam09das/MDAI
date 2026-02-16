@@ -6,7 +6,7 @@ import Submission from "../models/submissionModel.js";
 import ExamSubmission from "../models/examAttemptModel.js";
 import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
-import PDFDocument from "pdfkit";
+import { createCanvas, loadImage } from "canvas";
 import mongoose from "mongoose";
 
 // Configure Cloudinary
@@ -586,8 +586,8 @@ export const generateCertificate = async (studentId, courseId) => {
         const organizationName = settings.organizationName || "MDAI";
         const certificateTitle = settings.certificateTitle || "Certificate of Completion";
 
-        // Generate PDF using PDFKit
-        const pdfBuffer = await generatePDFBuffer({
+        // Generate PNG image using canvas
+        const imageBuffer = await generateImageBuffer({
             studentName,
             courseName,
             teacherName,
@@ -597,17 +597,15 @@ export const generateCertificate = async (studentId, courseId) => {
             certificateTitle
         });
 
-        // Upload PDF to Cloudinary
-        const b64 = pdfBuffer.toString('base64');
-        const dataURI = `data:application/pdf;base64,${b64}`;
-        
-        // Use "auto" resource type to let Cloudinary detect the file type
-        // This ensures PDFs are properly accessible for viewing/downloading
+        // Upload PNG to Cloudinary as image
+        const b64 = imageBuffer.toString('base64');
+        const dataURI = `data:image/png;base64,${b64}`;
+
         const uploadResult = await cloudinary.uploader.upload(dataURI, {
             public_id: `certificates/${certificateId}`,
             folder: "certificates",
-            resource_type: "auto",
-            format: "pdf"
+            resource_type: "image",
+            format: "png"
         });
 
         // Save certificate to database
@@ -638,161 +636,156 @@ export const generateCertificate = async (studentId, courseId) => {
 };
 
 /* ======================================================
-   HELPER: Generate PDF Buffer using PDFKit
-   Creates a professional certificate PDF
+   HELPER: Generate Image Buffer using canvas
+   Creates a professional certificate PNG image
 ====================================================== */
-const generatePDFBuffer = (certificateData) => {
+const generateImageBuffer = (certificateData) => {
     return new Promise((resolve, reject) => {
         try {
-            // Landscape A4 dimensions in points (1pt = 1/72 inch)
-            // A4: 595 x 842 points, Landscape: 842 x 595
-            const pageWidth = 842;
-            const pageHeight = 595;
-
-            const doc = new PDFDocument({
-                size: 'A4',
-                layout: 'landscape',
-                margins: { top: 50, bottom: 50, left: 50, right: 50 }
-            });
-
-            const chunks = [];
-            doc.on('data', chunk => chunks.push(chunk));
-            doc.on('end', () => resolve(Buffer.concat(chunks)));
-            doc.on('error', reject);
+            // Create canvas - Landscape A4 equivalent at 150 DPI
+            const width = 1754;
+            const height = 1240;
+            const canvas = createCanvas(width, height);
+            const ctx = canvas.getContext('2d');
 
             // Colors
-            const primaryColor = '#1a365d';    // Dark blue
-            const secondaryColor = '#2c5282';  // Medium blue
-            const accentColor = '#c53030';      // Red accent
-            const textColor = '#1a202c';        // Dark gray
-            const lightGray = '#718096';        // Gray
+            const primaryColor = '#1a365d';
+            const secondaryColor = '#2c5282';
+            const accentColor = '#c53030';
+            const textColor = '#1a202c';
+            const lightGray = '#718096';
+            const white = '#ffffff';
+            const lightBlue = '#ebf8ff';
 
-            // Draw border
-            doc.rect(20, 20, pageWidth - 40, pageHeight - 40)
-               .strokeColor(primaryColor)
-               .lineWidth(3)
-               .stroke();
+            // Fill background
+            ctx.fillStyle = white;
+            ctx.fillRect(0, 0, width, height);
 
-            doc.rect(30, 30, pageWidth - 60, pageHeight - 60)
-               .strokeColor(secondaryColor)
-               .lineWidth(1)
-               .stroke();
+            // Draw border - outer
+            ctx.strokeStyle = primaryColor;
+            ctx.lineWidth = 10;
+            ctx.strokeRect(30, 30, width - 60, height - 60);
 
-            // Organization name at top (Fixed: MDAI)
-            doc.fontSize(14)
-               .font('Helvetica')
-               .fillColor(lightGray)
-               .text(certificateData.organizationName.toUpperCase(), 0, 60, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            // Draw border - inner
+            ctx.strokeStyle = secondaryColor;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(50, 50, width - 100, height - 100);
+
+            // Decorative corners
+            const cornerSize = 80;
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 4;
+            
+            // Top left corner
+            ctx.beginPath();
+            ctx.moveTo(60, 60 + cornerSize);
+            ctx.lineTo(60, 60);
+            ctx.lineTo(60 + cornerSize, 60);
+            ctx.stroke();
+
+            // Top right corner
+            ctx.beginPath();
+            ctx.moveTo(width - 60 - cornerSize, 60);
+            ctx.lineTo(width - 60, 60);
+            ctx.lineTo(width - 60, 60 + cornerSize);
+            ctx.stroke();
+
+            // Bottom left corner
+            ctx.beginPath();
+            ctx.moveTo(60, height - 60 - cornerSize);
+            ctx.lineTo(60, height - 60);
+            ctx.lineTo(60 + cornerSize, height - 60);
+            ctx.stroke();
+
+            // Bottom right corner
+            ctx.beginPath();
+            ctx.moveTo(width - 60 - cornerSize, height - 60);
+            ctx.lineTo(width - 60, height - 60);
+            ctx.lineTo(width - 60, height - 60 - cornerSize);
+            ctx.stroke();
+
+            // Organization name at top
+            ctx.fillStyle = lightGray;
+            ctx.font = 'bold 28px Helvetica';
+            ctx.textAlign = 'center';
+            ctx.fillText(certificateData.organizationName.toUpperCase(), width / 2, 120);
 
             // Certificate title
-            doc.fontSize(36)
-               .font('Helvetica-Bold')
-               .fillColor(primaryColor)
-               .text(certificateData.certificateTitle, 0, 100, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = primaryColor;
+            ctx.font = 'bold 72px Helvetica';
+            ctx.fillText(certificateData.certificateTitle, width / 2, 200);
 
-            // Decorative line
-            const lineY = 160;
-            doc.moveTo(pageWidth/2 - 150, lineY)
-               .lineTo(pageWidth/2 + 150, lineY)
-               .strokeColor(accentColor)
-               .lineWidth(2)
-               .stroke();
+            // Decorative line under title
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(width / 2 - 250, 240);
+            ctx.lineTo(width / 2 + 250, 240);
+            ctx.stroke();
 
             // "This is to certify that"
-            doc.fontSize(14)
-               .font('Helvetica')
-               .fillColor(textColor)
-               .text('This is to certify that', 0, 190, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = textColor;
+            ctx.font = '28px Helvetica';
+            ctx.fillText('This is to certify that', width / 2, 320);
 
             // Student name (prominent)
-            doc.fontSize(32)
-               .font('Helvetica-Bold')
-               .fillColor(secondaryColor)
-               .text(certificateData.studentName, 0, 220, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = secondaryColor;
+            ctx.font = 'bold 64px Helvetica';
+            ctx.fillText(certificateData.studentName, width / 2, 400);
 
             // Decorative underline for name
-            const nameWidth = doc.widthOfString(certificateData.studentName);
-            doc.moveTo(pageWidth/2 - nameWidth/2, 260)
-               .lineTo(pageWidth/2 + nameWidth/2, 260)
-               .strokeColor(accentColor)
-               .lineWidth(1)
-               .stroke();
+            const nameWidth = ctx.measureText(certificateData.studentName).width;
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(width / 2 - nameWidth / 2 - 20, 420);
+            ctx.lineTo(width / 2 + nameWidth / 2 + 20, 420);
+            ctx.stroke();
 
             // "has successfully completed the course"
-            doc.fontSize(14)
-               .font('Helvetica')
-               .fillColor(textColor)
-               .text('has successfully completed the course', 0, 280, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = textColor;
+            ctx.font = '28px Helvetica';
+            ctx.fillText('has successfully completed the course', width / 2, 480);
 
             // Course name (prominent)
-            doc.fontSize(26)
-               .font('Helvetica-Bold')
-               .fillColor(primaryColor)
-               .text(certificateData.courseName, 0, 310, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = primaryColor;
+            ctx.font = 'bold 52px Helvetica';
+            ctx.fillText(certificateData.courseName, width / 2, 550);
 
             // Completion date
-            doc.fontSize(12)
-               .font('Helvetica')
-               .fillColor(lightGray)
-               .text(`Completed on ${certificateData.completionDate}`, 0, 360, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = lightGray;
+            ctx.font = '24px Helvetica';
+            ctx.fillText(`Completed on ${certificateData.completionDate}`, width / 2, 620);
+
+            // Signature line
+            ctx.strokeStyle = lightGray;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(width / 2 - 150, 750);
+            ctx.lineTo(width / 2 + 150, 750);
+            ctx.stroke();
 
             // Instructor/Teacher name
-            doc.fontSize(14)
-               .font('Helvetica-Bold')
-               .fillColor(textColor)
-               .text(certificateData.teacherName, 0, 420, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 32px Helvetica';
+            ctx.fillText(certificateData.teacherName, width / 2, 720);
 
-            doc.fontSize(10)
-               .font('Helvetica')
-               .fillColor(lightGray)
-               .text('Course Instructor', 0, 438, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = lightGray;
+            ctx.font = '20px Helvetica';
+            ctx.fillText('Course Instructor', width / 2, 780);
 
             // Certificate ID at bottom
-            doc.fontSize(10)
-               .font('Courier')
-               .fillColor(lightGray)
-               .text(`Certificate ID: ${certificateData.certificateId}`, 0, pageHeight - 60, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.fillStyle = lightGray;
+            ctx.font = '18px Courier';
+            ctx.fillText(`Certificate ID: ${certificateData.certificateId}`, width / 2, height - 80);
 
             // MDAI branding
-            doc.fontSize(8)
-               .font('Helvetica')
-               .fillColor(lightGray)
-               .text('MDAI Learning Platform', 0, pageHeight - 40, {
-                   align: 'center',
-                   width: pageWidth
-               });
+            ctx.font = '16px Helvetica';
+            ctx.fillText('MDAI Learning Platform', width / 2, height - 50);
 
-            doc.end();
+            // Convert to buffer
+            const buffer = canvas.toBuffer('image/png');
+            resolve(buffer);
         } catch (error) {
             reject(error);
         }
@@ -887,8 +880,8 @@ export const regenerateCertificate = async (req, res) => {
 
         const settings = await CertificateSettings.getSettings();
 
-        // Generate PDF using the same data
-        const pdfBuffer = await generatePDFBuffer({
+        // Generate PNG image using canvas
+        const imageBuffer = await generateImageBuffer({
             studentName: existingCert.studentName,
             courseName: existingCert.courseName,
             teacherName: existingCert.teacherName,
@@ -902,15 +895,15 @@ export const regenerateCertificate = async (req, res) => {
             certificateTitle: settings.certificateTitle || "Certificate of Completion"
         });
 
-        // Upload with resource_type: "auto" to ensure it's viewable
-        const b64 = pdfBuffer.toString('base64');
-        const dataURI = `data:application/pdf;base64,${b64}`;
+        // Upload with resource_type: "image" for PNG
+        const b64 = imageBuffer.toString('base64');
+        const dataURI = `data:image/png;base64,${b64}`;
         
         const uploadResult = await cloudinary.uploader.upload(dataURI, {
             public_id: `certificates/${existingCert.certificateId}`,
             folder: "certificates",
-            resource_type: "auto",
-            format: "pdf"
+            resource_type: "image",
+            format: "png"
         });
 
         // Update certificate with new URL
