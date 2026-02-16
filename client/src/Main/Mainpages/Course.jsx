@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { Clock, Users, BookOpen, ChevronRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import coursesData from "../../../data/courses.json";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 // Get backend URL
 const getBackendURL = () => {
@@ -163,6 +168,19 @@ const CoursesSection = () => {
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [useRealCourses, setUseRealCourses] = useState(false);
 
+    // Refs for GSAP animations
+    const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const gridRef = useRef(null);
+    const cardsRef = useRef([]);
+
+    // Add card ref to array
+    const addToCardsRef = (el) => {
+        if (el && !cardsRef.current.includes(el)) {
+            cardsRef.current.push(el);
+        }
+    };
+
     // Fetch real courses from backend
     useEffect(() => {
         const fetchRealCourses = async () => {
@@ -192,6 +210,53 @@ const CoursesSection = () => {
         fetchRealCourses();
     }, []);
 
+    // GSAP Scroll Animations
+    useEffect(() => {
+        if (loadingCourses) return;
+
+        const ctx = gsap.context(() => {
+            // Header animation
+            if (headerRef.current) {
+                gsap.fromTo(headerRef.current,
+                    { opacity: 0, y: 50 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: headerRef.current,
+                            start: "top 80%",
+                            toggleActions: "play none none none"
+                        }
+                    }
+                );
+            }
+
+            // Course cards stagger animation
+            if (cardsRef.current.length > 0) {
+                gsap.fromTo(cardsRef.current,
+                    { opacity: 0, y: 60, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.8,
+                        stagger: 0.15,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: gridRef.current,
+                            start: "top 75%",
+                            toggleActions: "play none none none"
+                        }
+                    }
+                );
+            }
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [loadingCourses, courses]);
+
     const loadMoreCourses = () => {
         setIsLoading(true);
 
@@ -209,25 +274,12 @@ const CoursesSection = () => {
     return (
         <section
             id="courses"
+            ref={sectionRef}
             className="py-16 md:py-24 bg-gradient-to-b from-white to-gray-50"
         >
-            {/* Animation */}
-            <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center mb-12 md:mb-16">
+                <div ref={headerRef} className="text-center mb-12 md:mb-16">
                     <div className="inline-flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full mb-4">
                         <BookOpen className="w-5 h-5 text-indigo-600" />
                         <span className="text-sm font-semibold text-indigo-600">
@@ -267,9 +319,18 @@ const CoursesSection = () => {
 
                 {/* Grid */}
                 {!loadingCourses && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12">
+                    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12">
                         {coursesToShow.map((course, index) => (
-                            <CourseCard key={course._id || course.id} course={course} index={index} isRealCourse={useRealCourses} />
+                            <div 
+                                key={course._id || course.id} 
+                                ref={addToCardsRef}
+                            >
+                                <CourseCard 
+                                    course={course} 
+                                    index={index} 
+                                    isRealCourse={useRealCourses} 
+                                />
+                            </div>
                         ))}
                     </div>
                 )}

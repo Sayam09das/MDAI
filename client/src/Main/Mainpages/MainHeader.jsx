@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BookOpen, Video, FileText, Sparkles } from "lucide-react";
 import Viedopage from "./Viedopage";
 import { WordRotate } from "@/components/ui/word-rotate";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import AnnouncementMarquee from "../AnnouncementMarquee/AnnouncementMarquee";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const MainHeader = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -14,6 +19,15 @@ const MainHeader = () => {
         courses: 500,
         teachers: 100,
     });
+
+    // Refs for GSAP animations
+    const containerRef = useRef(null);
+    const badgeRef = useRef(null);
+    const titleRef = useRef(null);
+    const subtitleRef = useRef(null);
+    const featuresRef = useRef(null);
+    const statsRef = useRef(null);
+    const videoRef = useRef(null);
 
     useEffect(() => {
         setIsVisible(true);
@@ -29,6 +43,49 @@ const MainHeader = () => {
         return () => window.removeEventListener("mousemove", handleMouseMove);
     }, []);
 
+    // GSAP Entrance Animations on Load
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Badge animation
+            gsap.fromTo(badgeRef.current,
+                { opacity: 0, y: -20 },
+                { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: 0.2 }
+            );
+
+            // Title animation
+            gsap.fromTo(titleRef.current,
+                { opacity: 0, y: 30 },
+                { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.4 }
+            );
+
+            // Subtitle animation
+            gsap.fromTo(subtitleRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: 0.6 }
+            );
+
+            // Features animation (stagger)
+            gsap.fromTo(featuresRef.current.children,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power3.out", delay: 0.8 }
+            );
+
+            // Stats animation (stagger)
+            gsap.fromTo(statsRef.current.children,
+                { opacity: 0, scale: 0.8 },
+                { opacity: 1, scale: 1, duration: 0.6, stagger: 0.15, ease: "back.out(1.7)", delay: 1 }
+            );
+
+            // Video animation
+            gsap.fromTo(videoRef.current,
+                { opacity: 0, x: 50 },
+                { opacity: 1, x: 0, duration: 1.2, ease: "power3.out", delay: 0.5 }
+            );
+        }, containerRef);
+
+        return () => ctx.revert();
+    }, []);
+
     const features = [
         { icon: Video, text: "Live Classes", color: "text-indigo-600" },
         { icon: BookOpen, text: "Expert Courses", color: "text-blue-600" },
@@ -36,7 +93,7 @@ const MainHeader = () => {
     ];
 
     return (
-        <div className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3">
+        <div ref={containerRef} className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3">
             <div className="mt-20">
                 <AnnouncementMarquee />
             </div>
@@ -59,7 +116,7 @@ const MainHeader = () => {
                         }`}
                 >
                     {/* Badge */}
-                    <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow border">
+                    <div ref={badgeRef} className="inline-flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow border">
                         <Sparkles className="w-4 h-4 text-indigo-600" />
                         <span className="text-sm font-medium text-gray-700">
                             AI-Powered Learning
@@ -67,7 +124,7 @@ const MainHeader = () => {
                     </div>
 
                     {/* HEADLINE */}
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 flex flex-wrap items-center gap-x-3 leading-tight">
+                    <h1 ref={titleRef} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 flex flex-wrap items-center gap-x-3 leading-tight">
                         <span>Learn from</span>
 
                         {/* FIXED WordRotate */}
@@ -83,13 +140,13 @@ const MainHeader = () => {
                     </h1>
 
                     {/* Subheading */}
-                    <p className="text-lg sm:text-xl text-gray-600 max-w-xl">
+                    <p ref={subtitleRef} className="text-lg sm:text-xl text-gray-600 max-w-xl">
                         Courses, live classes, PDFs, and real-time learning — all in one
                         platform. Start your journey today.
                     </p>
 
                     {/* Features */}
-                    <div className="flex flex-wrap gap-3">
+                    <div ref={featuresRef} className="flex flex-wrap gap-3">
                         {features.map((f, i) => {
                             const Icon = f.icon;
                             return (
@@ -107,7 +164,7 @@ const MainHeader = () => {
                     </div>
 
                     {/* Stats (NumberTicker) */}
-                    <div className="flex gap-8 pt-4">
+                    <div ref={statsRef} className="flex gap-8 pt-4">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-indigo-600">
                                 <NumberTicker value={counts.students} />
@@ -133,7 +190,9 @@ const MainHeader = () => {
                 </div>
 
                 {/* RIGHT */}
-                <Viedopage />
+                <div ref={videoRef}>
+                    <Viedopage />
+                </div>
             </div>
         </div>
     );
