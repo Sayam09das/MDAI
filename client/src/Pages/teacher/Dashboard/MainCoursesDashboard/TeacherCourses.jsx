@@ -33,6 +33,8 @@ const TeacherCourses = () => {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [viewMode, setViewMode] = useState("grid"); // grid or list
     const [generatingCerts, setGeneratingCerts] = useState(null); // courseId of course generating certs
+    const [showConfirmModal, setShowConfirmModal] = useState(false); // Confirmation modal state
+    const [selectedCourse, setSelectedCourse] = useState(null); // Course selected for certificate generation
 
     /* ================= FETCH COURSES ================= */
     const fetchTeacherCourses = async () => {
@@ -416,7 +418,10 @@ const TeacherCourses = () => {
                                             )}
                                             {course.isPublished && (
                                                 <button
-                                                    onClick={() => generateCertificates(course._id)}
+                                                    onClick={() => {
+                                                        setSelectedCourse(course);
+                                                        setShowConfirmModal(true);
+                                                    }}
                                                     disabled={generatingCerts === course._id}
                                                     className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all disabled:opacity-50"
                                                     title="Mark as Complete & Generate Certificates"
@@ -447,6 +452,54 @@ const TeacherCourses = () => {
                     <div className="mt-6 text-center text-sm text-gray-600">
                         Showing <span className="font-semibold text-gray-900">{filteredCourses.length}</span> of{" "}
                         <span className="font-semibold text-gray-900">{courses.length}</span> courses
+                    </div>
+                )}
+
+                {/* Confirmation Modal for Certificate Generation */}
+                {showConfirmModal && selectedCourse && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Award className="w-8 h-8 text-amber-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                    Complete Course & Generate Certificates?
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    Are you sure you want to mark <strong>{selectedCourse.title}</strong> as complete and generate certificates for all eligible students?
+                                </p>
+                                <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>{selectedCourse.enrolledStudents?.length || 0}</strong> students enrolled in this course
+                                    </p>
+                                </div>
+                                <p className="text-sm text-gray-500 mb-6">
+                                    This action cannot be undone. Students who meet the eligibility criteria will receive their certificates.
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowConfirmModal(false);
+                                        setSelectedCourse(null);
+                                    }}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowConfirmModal(false);
+                                        generateCertificates(selectedCourse._id);
+                                        setSelectedCourse(null);
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-colors"
+                                >
+                                    Yes, Generate Certificates
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
