@@ -83,6 +83,8 @@ import PaymentDemo from "./Pages/Student/Dashboard/CoursePayment/PaymentDemo"
 import PayLaterRequest from "./Pages/Student/Dashboard/CoursePayment/PayLaterRequest"
 import StudentComplaints from "./Pages/Student/Dashboard/Complaints/StudentComplaints"
 import TeacherComplaints from "./Pages/teacher/Dashboard/Complaints/TeacherComplaints"
+import StudentSupport from "./Pages/Student/Dashboard/Support/StudentSupport"
+import TeacherSupport from "./Pages/teacher/Dashboard/Support/TeacherSupport"
 import ReturnStudentAssignments from "./Pages/Student/Dashboard/StudentAssignments/ReturnStudentAssignments"
 import ReturnTeacherAssignments from "./Pages/teacher/Dashboard/MainAssignments/ReturnTeacherAssignments"
 import CreateAssignment from "./Pages/teacher/Dashboard/CreateAssignment/CreateAssignment"
@@ -154,6 +156,7 @@ const App = () => {
           <Route path="payments" element={<ReturnStudentPayments />} />
           <Route path="payment/:enrollmentId" element={<StudentPaymentPage />} />
           <Route path="complaints" element={<StudentComplaints />} />
+          <Route path="support" element={<StudentSupport />} />
           <Route path="assignments" element={<ReturnStudentAssignments />} />
           <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
           <Route path="assignments/:assignmentId/detail" element={<SubmissionDetail />} />
@@ -193,6 +196,7 @@ const App = () => {
           <Route path="announcements" element={<TeacherAnnouncements />} />
           <Route path="finance" element={<ReturnTeacherFinance />} />
           <Route path="complaints" element={<TeacherComplaints />} />
+          <Route path="support" element={<TeacherSupport />} />
           <Route path="assignments" element={<ReturnTeacherAssignments />} />
           <Route path="create-assignment" element={<CreateAssignment />} />
           <Route path="assignments/:assignmentId/detail" element={<AssignmentDetail />} />
