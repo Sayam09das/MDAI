@@ -9,6 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const HowItWorks = () => {
   const [activeStep, setActiveStep] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
   const headerRef = useRef(null);
   const stepsRef = useRef([]);
