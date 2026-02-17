@@ -11,7 +11,7 @@ import {
   getMyEnrollments,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
-import upload from "../middlewares/multer.js";
+import { imageUpload } from "../middlewares/multer.js";
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ router.post("/logout", logout);
 router.get("/me", protect, getCurrentUser);
 
 // Update user profile
-router.put("/profile", protect, upload.single("profileImage"), updateUserProfile);
+router.put("/profile", protect, imageUpload.single("profileImage"), updateUserProfile);
 
 router.get("/students", protect, getAllStudents);
 
