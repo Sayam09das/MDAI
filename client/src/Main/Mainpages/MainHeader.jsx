@@ -6,7 +6,7 @@ import { NumberTicker } from "@/components/ui/number-ticker";
 import AnnouncementMarquee from "../AnnouncementMarquee/AnnouncementMarquee";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
