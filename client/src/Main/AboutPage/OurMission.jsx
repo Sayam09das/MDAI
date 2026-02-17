@@ -14,11 +14,20 @@ import {
     Sparkles,
     TrendingUp
 } from 'lucide-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const OurMission = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [activeCard, setActiveCard] = useState(null);
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const cardsRef = useRef([]);
+    const featuresRef = useRef([]);
+    const ctaRef = useRef(null);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -40,6 +49,91 @@ const OurMission = () => {
             }
         };
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header animation
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Main cards with 3D effect
+            cardsRef.current.forEach((card, index) => {
+                gsap.fromTo(card,
+                    { opacity: 0, y: 60, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        rotateX: 0,
+                        duration: 0.8,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            });
+
+            // Features grid animation
+            featuresRef.current.forEach((feature, index) => {
+                gsap.fromTo(feature,
+                    { opacity: 0, y: 40, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.6,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: feature,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            });
+
+            // CTA animation
+            gsap.fromTo(ctaRef.current,
+                { opacity: 0, y: 40 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: ctaRef.current,
+                        start: "top 90%",
+                        end: "top 70%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     const mainCards = [
         {

@@ -74,7 +74,7 @@ Add extraordinary scroll-triggered animations to all main page components with G
 
 ## Status: Completed
 - [x] Plan created
-- [x] MainHeader.jsx - Adding scroll parallax and reveals
+- [x] MainHeader.jsx - Adding scroll parallax and reveals + WebGL 3D Background
 - [x] StatsBar.jsx - Enhancing with 3D effects
 - [x] Course.jsx - Adding parallax cards
 - [x] HowItWorks.jsx - Adding 3D step animations
@@ -83,4 +83,8 @@ Add extraordinary scroll-triggered animations to all main page components with G
 - [x] Whychoose.jsx - Adding 3D feature cards
 - [x] TeacherInvitation.jsx - Adding scroll reveals
 - [x] StudentTestimonials.jsx - Adding carousel effects
+- [x] AboutHeroSection.jsx - Adding parallax & 3D cards
+- [x] OurMission.jsx - Adding scroll-triggered animations
+- [x] WebGLComponents.jsx - Created reusable WebGL components
+- [x] Three.js + @react-three/fiber + @react-three/drei installed
 

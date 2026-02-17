@@ -6,9 +6,60 @@ import { NumberTicker } from "@/components/ui/number-ticker";
 import AnnouncementMarquee from "../AnnouncementMarquee/AnnouncementMarquee";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Canvas } from "@react-three/fiber";
+import { Float, Points, PointMaterial } from "@react-three/drei";
+import * as THREE from "three";
 
 // Register ScrollTrigger
 gsap.registerPlugin(ScrollTrigger);
+
+// Animated 3D Particles for WebGL
+const AnimatedParticles = () => {
+  const ref = useRef();
+  const count = 2000;
+  
+  const positions = useRef(new Float32Array(count * 3));
+  
+  useEffect(() => {
+    for (let i = 0; i < count; i++) {
+      positions.current[i * 3] = (Math.random() - 0.5) * 15;
+      positions.current[i * 3 + 1] = (Math.random() - 0.5) * 15;
+      positions.current[i * 3 + 2] = (Math.random() - 0.5) * 10;
+    }
+  }, []);
+
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.x = state.clock.elapsedTime * 0.03;
+      ref.current.rotation.y = state.clock.elapsedTime * 0.05;
+    }
+  });
+
+  return (
+    <Points ref={ref} positions={positions.current} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#818cf8"
+        size={0.025}
+        sizeAttenuation={true}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </Points>
+  );
+};
+
+// Floating 3D Shapes
+const Floating3DShape = ({ position, color, speed = 1 }) => {
+  return (
+    <Float speed={speed} rotationIntensity={1.5} floatIntensity={2}>
+      <mesh position={position}>
+        <icosahedronGeometry args={[0.3, 0]} />
+        <meshStandardMaterial color={color} wireframe transparent opacity={0.6} />
+      </mesh>
+    </Float>
+  );
+};
 
 const MainHeader = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -184,6 +235,20 @@ const MainHeader = () => {
 
     return (
         <div ref={containerRef} className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3" style={{ perspective: "1000px" }}>
+            {/* WebGL 3D Background */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+                <Canvas camera={{ position: [0, 0, 5], fov: 75 }} style={{ background: 'transparent' }}>
+                    <ambientLight intensity={0.3} />
+                    <pointLight position={[10, 10, 10]} intensity={0.8} color="#6366f1" />
+                    <pointLight position={[-10, -10, -10]} intensity={0.5} color="#a855f7" />
+                    <AnimatedParticles />
+                    <Floating3DShape position={[-3, 2, -2]} color="#6366f1" speed={1} />
+                    <Floating3DShape position={[3, -1, -1]} color="#ec4899" speed={1.5} />
+                    <Floating3DShape position={[2, 2, -3]} color="#06b6d4" speed={2} />
+                    <Floating3DShape position={[-2, -2, -2]} color="#10b981" speed={1.2} />
+                </Canvas>
+            </div>
+            
             <div className="mt-20">
                 <AnnouncementMarquee />
             </div>

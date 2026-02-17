@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Sparkles,
     TrendingUp,
@@ -11,13 +11,92 @@ import {
     ArrowDown
 } from 'lucide-react';
 import AnnouncementMarquee from '../AnnouncementMarquee/AnnouncementMarquee';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const AboutHeroSection = () => {
     const [isVisible, setIsVisible] = useState(false);
+    const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const statsRef = useRef(null);
+    const floatingRef = useRef([]);
 
     useEffect(() => {
-        setIsVisible(true);
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
+        return () => observer.disconnect();
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header parallax
+            gsap.to(headerRef.current, {
+                y: -50,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            // Stats cards animation with 3D effect
+            if (statsRef.current) {
+                gsap.fromTo(statsRef.current.children,
+                    { opacity: 0, y: 50, scale: 0.9, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        rotateX: 0,
+                        duration: 0.8,
+                        stagger: 0.15,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: statsRef.current,
+                            start: "top 80%",
+                            end: "top 40%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Floating icons parallax
+            floatingRef.current.forEach((el, i) => {
+                gsap.to(el, {
+                    y: -100 - (i * 20),
+                    rotation: 15 + (i * 5),
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 1 + (i * 0.2)
+                    }
+                });
+            });
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     const stats = [
         { icon: Users, value: '50K+', label: 'Active Students', color: 'from-blue-500 to-indigo-600' },
@@ -36,7 +115,7 @@ const AboutHeroSection = () => {
     ];
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+        <div ref={sectionRef} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white" style={{ perspective: "1000px" }}>
             {/* Grid Background Pattern */}
             <div className="absolute inset-0">
                 <div className="absolute inset-0" style={{
@@ -61,6 +140,7 @@ const AboutHeroSection = () => {
                 return (
                     <div
                         key={index}
+                        ref={el => floatingRef.current[index] = el}
                         className={`hidden lg:block absolute ${item.position} ${item.color} opacity-20 animate-float`}
                         style={{ animationDelay: item.delay }}
                     >
@@ -69,7 +149,7 @@ const AboutHeroSection = () => {
                 );
             })}
             {/* Main Content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 text-center">
+            <div ref={headerRef} className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 text-center">
                 {/* Badge */}
                 <div className={`inline-flex items-center space-x-2 px-6 py-3 bg-indigo-50 border border-indigo-200 rounded-full mb-8 shadow-md transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
                     }`}>
@@ -120,7 +200,7 @@ const AboutHeroSection = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className={`grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                <div ref={statsRef} className={`grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     }`}>
                     {stats.map((stat, index) => {
                         const Icon = stat.icon;
@@ -128,7 +208,7 @@ const AboutHeroSection = () => {
                             <div
                                 key={index}
                                 className="group bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-indigo-300 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-                                style={{ transitionDelay: `${index * 100}ms` }}
+                                style={{ transitionDelay: `${index * 100}ms`, transformStyle: "preserve-3d" }}
                             >
                                 <div className={`w-14 h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-md`}>
                                     <Icon className="w-7 h-7 text-white" />
