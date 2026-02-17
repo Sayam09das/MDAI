@@ -19,12 +19,22 @@ import {
 } from 'lucide-react';
 import CoursePreview from './CoursePreview';
 import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 
 const CourseHeader = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [enrollCount, setEnrollCount] = useState(0);
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const badgesRef = useRef(null);
+    const contentRef = useRef(null);
+    const featuresRef = useRef(null);
+    const previewRef = useRef(null);
 
     const courseData = {
         title: 'Complete Web Development Bootcamp 2025',
@@ -90,6 +100,111 @@ const CourseHeader = () => {
         }, duration / steps);
 
         return () => clearInterval(timer);
+    }, [isVisible]);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header parallax
+            gsap.to(headerRef.current, {
+                y: -30,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            // Badges animation with stagger
+            if (badgesRef.current) {
+                gsap.fromTo(badgesRef.current.children,
+                    { opacity: 0, y: -20, scale: 0.8 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.5,
+                        stagger: 0.1,
+                        ease: "back.out(1.7)",
+                        scrollTrigger: {
+                            trigger: badgesRef.current,
+                            start: "top 85%",
+                            end: "top 50%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Content animation with 3D effect
+            if (contentRef.current) {
+                gsap.fromTo(contentRef.current,
+                    { opacity: 0, x: -50, rotateX: 15 },
+                    {
+                        opacity: 1,
+                        x: 0,
+                        rotateX: 0,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: contentRef.current,
+                            start: "top 80%",
+                            end: "top 30%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Features grid animation
+            if (featuresRef.current) {
+                gsap.fromTo(featuresRef.current.children,
+                    { opacity: 0, y: 30, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.6,
+                        stagger: 0.1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: featuresRef.current,
+                            start: "top 85%",
+                            end: "top 50%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Preview section animation
+            if (previewRef.current) {
+                gsap.fromTo(previewRef.current,
+                    { opacity: 0, x: 50, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        x: 0,
+                        scale: 1,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: previewRef.current,
+                            start: "top 80%",
+                            end: "top 30%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+        }, sectionRef);
+
+        return () => ctx.revert();
     }, [isVisible]);
 
     const badges = [

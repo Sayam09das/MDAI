@@ -87,4 +87,5 @@ Add extraordinary scroll-triggered animations to all main page components with G
 - [x] OurMission.jsx - Adding scroll-triggered animations
 - [x] WebGLComponents.jsx - Created reusable WebGL components
 - [x] Three.js + @react-three/fiber + @react-three/drei installed
+- [x] CoursePage - CourseHeader.jsx - GSAP scroll animations with 3D effects
 
