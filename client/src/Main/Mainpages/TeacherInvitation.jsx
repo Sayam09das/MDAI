@@ -17,12 +17,32 @@ import {
     Target,
     Zap
 } from 'lucide-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const TeacherInvitation = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [hoveredBenefit, setHoveredBenefit] = useState(null);
     const [activeStep, setActiveStep] = useState(0);
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const statsRef = useRef(null);
+    const benefitsRef = useRef(null);
+    const stepsRef = useRef(null);
+    const featureCardsRef = useRef([]);
+    const float1Ref = useRef(null);
+    const float2Ref = useRef(null);
+    const float3Ref = useRef(null);
+
+    // Add refs to array
+    const addToFeatureCardsRef = (el) => {
+        if (el && !featureCardsRef.current.includes(el)) {
+            featureCardsRef.current.push(el);
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -44,6 +64,149 @@ const TeacherInvitation = () => {
             }
         };
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header animation with scrub
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Stats animation
+            gsap.fromTo(statsRef.current,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: statsRef.current,
+                        start: "top 90%",
+                        end: "top 60%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Benefits animation with 3D effect
+            if (benefitsRef.current) {
+                gsap.fromTo(benefitsRef.current.children,
+                    { opacity: 0, x: -30, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        x: 0,
+                        rotateX: 0,
+                        duration: 0.6,
+                        stagger: 0.1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: benefitsRef.current,
+                            start: "top 85%",
+                            end: "top 50%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Steps animation
+            if (stepsRef.current) {
+                gsap.fromTo(stepsRef.current,
+                    { opacity: 0, x: 30 },
+                    {
+                        opacity: 1,
+                        x: 0,
+                        duration: 0.8,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: stepsRef.current,
+                            start: "top 85%",
+                            end: "top 50%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+
+            // Feature cards with parallax
+            featureCardsRef.current.forEach((card, index) => {
+                gsap.fromTo(card,
+                    { opacity: 0, y: 30, scale: 0.9 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.6,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 95%",
+                            end: "top 70%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            });
+
+            // Parallax floating blobs
+            gsap.to(float1Ref.current, {
+                y: -100,
+                rotation: 45,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(float2Ref.current, {
+                y: -80,
+                rotation: -45,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1.5
+                }
+            });
+
+            gsap.to(float3Ref.current, {
+                y: -120,
+                rotation: 90,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 2
+                }
+            });
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     useEffect(() => {
         if (!isVisible) return;

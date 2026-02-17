@@ -69,6 +69,7 @@ const LazyImage = ({ src, alt, className }) => {
 
 const CourseCard = ({ course, index, isRealCourse = false }) => {
     const navigate = useNavigate();
+    const cardRef = useRef(null);
     
     // Handle both real courses (from API) and demo courses (from JSON)
     const courseImage = isRealCourse ? course.thumbnail?.url : course.image;
@@ -102,21 +103,27 @@ const CourseCard = ({ course, index, isRealCourse = false }) => {
 
     return (
         <div
-            className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
+            ref={cardRef}
+            className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-2"
             style={{
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                perspective: "1000px"
             }}
         >
-            {/* Image */}
+            {/* Image with parallax effect */}
             <div className="relative h-48 overflow-hidden">
-                <LazyImage
-                    src={courseImage || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=500&fit=crop"}
-                    alt={courseTitle}
-                    className="w-full h-full"
-                />
+                <div className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-700 ease-out">
+                    <LazyImage
+                        src={courseImage || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=500&fit=crop"}
+                        alt={courseTitle}
+                        className="w-full h-full"
+                    />
+                </div>
                 <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-xs font-semibold text-indigo-600">
                     {courseLevel}
                 </div>
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
 
             {/* Content */}
@@ -173,6 +180,7 @@ const CoursesSection = () => {
     const headerRef = useRef(null);
     const gridRef = useRef(null);
     const cardsRef = useRef([]);
+    const bgPatternRef = useRef(null);
 
     // Add card ref to array
     const addToCardsRef = (el) => {
@@ -210,12 +218,12 @@ const CoursesSection = () => {
         fetchRealCourses();
     }, []);
 
-    // GSAP Scroll Animations
+    // GSAP Scroll Animations with enhanced effects
     useEffect(() => {
         if (loadingCourses) return;
 
         const ctx = gsap.context(() => {
-            // Header animation
+            // Header animation with scrub
             if (headerRef.current) {
                 gsap.fromTo(headerRef.current,
                     { opacity: 0, y: 50 },
@@ -223,35 +231,67 @@ const CoursesSection = () => {
                         opacity: 1,
                         y: 0,
                         duration: 1,
-                        ease: "power3.out",
+                        ease: "power2.out",
                         scrollTrigger: {
                             trigger: headerRef.current,
-                            start: "top 80%",
-                            toggleActions: "play none none none"
+                            start: "top 85%",
+                            end: "top 50%",
+                            scrub: 1,
+                            toggleActions: "play reverse play reverse"
                         }
                     }
                 );
             }
 
-            // Course cards stagger animation
-            if (cardsRef.current.length > 0) {
-                gsap.fromTo(cardsRef.current,
-                    { opacity: 0, y: 60, scale: 0.9 },
+            // Course cards - each animates independently with 3D effect and parallax
+            cardsRef.current.forEach((card, index) => {
+                // Card reveal animation
+                gsap.fromTo(card,
+                    { opacity: 0, y: 80, scale: 0.8, rotateX: 45 },
                     {
                         opacity: 1,
                         y: 0,
                         scale: 1,
+                        rotateX: 0,
                         duration: 0.8,
-                        stagger: 0.15,
                         ease: "power3.out",
                         scrollTrigger: {
-                            trigger: gridRef.current,
-                            start: "top 75%",
-                            toggleActions: "play none none none"
+                            trigger: card,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
                         }
                     }
                 );
-            }
+
+                // Parallax effect on scroll
+                gsap.fromTo(card,
+                    { y: 0 },
+                    {
+                        y: -20,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1
+                        }
+                    }
+                );
+            });
+
+            // Background pattern parallax
+            gsap.to(bgPatternRef.current, {
+                y: -100,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -275,9 +315,17 @@ const CoursesSection = () => {
         <section
             id="courses"
             ref={sectionRef}
-            className="py-16 md:py-24 bg-gradient-to-b from-white to-gray-50"
+            className="py-16 md:py-24 bg-gradient-to-b from-white to-gray-50 overflow-hidden"
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Background Pattern with parallax */}
+            <div ref={bgPatternRef} className="absolute inset-0 opacity-5 pointer-events-none">
+                <div className="absolute inset-0" style={{
+                    backgroundImage: `radial-gradient(circle at 2px 2px, #4F46E5 1px, transparent 0)`,
+                    backgroundSize: '30px 30px',
+                }} />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
                 {/* Header */}
                 <div ref={headerRef} className="text-center mb-12 md:mb-16">
                     <div className="inline-flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full mb-4">
@@ -319,11 +367,12 @@ const CoursesSection = () => {
 
                 {/* Grid */}
                 {!loadingCourses && (
-                    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12">
+                    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12" style={{ perspective: "1000px" }}>
                         {coursesToShow.map((course, index) => (
                             <div 
                                 key={course._id || course.id} 
                                 ref={addToCardsRef}
+                                style={{ transformStyle: "preserve-3d" }}
                             >
                                 <CourseCard 
                                     course={course} 

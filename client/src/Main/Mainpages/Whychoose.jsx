@@ -13,11 +13,27 @@ import {
     Zap,
     TrendingUp
 } from 'lucide-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const Whychoose = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [activeFeature, setActiveFeature] = useState(0);
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const featuresRef = useRef([]);
+    const benefitsRef = useRef(null);
+    const ctaRef = useRef(null);
+
+    // Add refs to array
+    const addToFeaturesRef = (el) => {
+        if (el && !featuresRef.current.includes(el)) {
+            featuresRef.current.push(el);
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -39,6 +55,104 @@ const Whychoose = () => {
             }
         };
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header animation with scrub
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Features with 3D effect
+            featuresRef.current.forEach((feature, index) => {
+                gsap.fromTo(feature,
+                    { opacity: 0, y: 60, scale: 0.8, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        rotateX: 0,
+                        duration: 0.7,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: feature,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+
+                // Parallax
+                gsap.fromTo(feature,
+                    { y: 0 },
+                    {
+                        y: -15,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: feature,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1
+                        }
+                    }
+                );
+            });
+
+            // Benefits bar animation
+            gsap.fromTo(benefitsRef.current,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: benefitsRef.current,
+                        start: "top 90%",
+                        end: "top 70%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // CTA animation
+            gsap.fromTo(ctaRef.current,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: ctaRef.current,
+                        start: "top 90%",
+                        end: "top 70%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     useEffect(() => {
         if (!isVisible) return;

@@ -15,6 +15,9 @@ const HowItWorks = () => {
   const ctaRef = useRef(null);
   const lineRef = useRef(null);
   const navigate = useNavigate()
+  const blob1Ref = useRef(null);
+  const blob2Ref = useRef(null);
+  const blob3Ref = useRef(null);
 
   // Add refs to array
   const addToStepsRef = (el) => {
@@ -23,7 +26,7 @@ const HowItWorks = () => {
     }
   };
 
-  // GSAP Scroll Animations with scrub - works on scroll up and down
+  // GSAP Scroll Animations with enhanced 3D effects
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Header animation with scrub
@@ -44,20 +47,22 @@ const HowItWorks = () => {
         }
       );
 
-      // Steps stagger animation with scrub - each step animates independently
+      // Steps stagger animation with scrub - each step animates independently with 3D effect
       stepsRef.current.forEach((step, index) => {
         gsap.fromTo(step,
           { 
             opacity: 0, 
             y: 80, 
-            scale: 0.9,
-            rotate: index % 2 === 0 ? -5 : 5
+            scale: 0.8,
+            rotateX: 45,
+            rotateZ: index % 2 === 0 ? -5 : 5
           },
           {
             opacity: 1,
             y: 0,
             scale: 1,
-            rotate: 0,
+            rotateX: 0,
+            rotateZ: 0,
             duration: 0.8,
             ease: "power3.out",
             scrollTrigger: {
@@ -110,9 +115,11 @@ const HowItWorks = () => {
         }
       );
 
-      // Parallax background elements
-      gsap.to(".blob-1", {
+      // Parallax background elements with different speeds
+      gsap.to(blob1Ref.current, {
         y: -100,
+        rotation: 45,
+        ease: "none",
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top bottom",
@@ -121,8 +128,10 @@ const HowItWorks = () => {
         }
       });
 
-      gsap.to(".blob-2", {
+      gsap.to(blob2Ref.current, {
         y: -150,
+        rotation: -45,
+        ease: "none",
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top bottom",
@@ -131,8 +140,10 @@ const HowItWorks = () => {
         }
       });
 
-      gsap.to(".blob-3", {
+      gsap.to(blob3Ref.current, {
         y: -200,
+        rotation: 90,
+        ease: "none",
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top bottom",
@@ -191,25 +202,27 @@ const HowItWorks = () => {
     <section
       ref={sectionRef}
       className="relative py-16 md:py-24 lg:py-32 bg-gradient-to-b from-gray-50 via-white to-gray-50 overflow-hidden"
+      style={{ perspective: "1000px" }}
     >
       {/* Animated Background Elements with Parallax */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="blob-1 absolute top-1/4 -left-32 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
-        <div className="blob-2 absolute top-1/3 -right-32 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
-        <div className="blob-3 absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+        <div ref={blob1Ref} className="blob-1 absolute top-1/4 -left-32 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
+        <div ref={blob2Ref} className="blob-2 absolute top-1/3 -right-32 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
+        <div ref={blob3Ref} className="blob-3 absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
       </div>
 
       <style>{`
         .step-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-style: preserve-3d;
         }
 
         .step-card:hover {
-          transform: translateY(-12px) scale(1.02);
+          transform: translateY(-12px) scale(1.02) rotateX(5deg);
         }
 
         .step-card.active {
-          transform: translateY(-8px) scale(1.05);
+          transform: translateY(-8px) scale(1.05) rotateX(5deg);
           box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.3);
         }
 
@@ -288,7 +301,7 @@ const HowItWorks = () => {
                   className={`step-card ${isActive ? 'active' : ''}`}
                   onMouseEnter={() => setActiveStep(index)}
                 >
-                  <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl p-6 md:p-8 h-full border-2 border-transparent hover:border-indigo-100 transition-all duration-300 group">
+                  <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl p-6 md:p-8 h-full border-2 border-transparent hover:border-indigo-100 transition-all duration-300 group" style={{ transformStyle: "preserve-3d" }}>
                     {/* Step Number Badge */}
                     <div className="absolute -top-4 -right-4 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg transform rotate-12 hover:rotate-0 transition-transform duration-300 group-hover:scale-110">
                       <span className="text-white font-bold text-lg md:text-xl">

@@ -10,12 +10,30 @@ import {
     CheckCircle,
     Sparkles
 } from 'lucide-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const StudentTestimonials = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const carouselRef = useRef(null);
+    const statsRef = useRef(null);
+    const cardsRef = useRef([]);
+    const quote1Ref = useRef(null);
+    const quote2Ref = useRef(null);
+
+    // Add refs to array
+    const addToCardsRef = (el) => {
+        if (el && !cardsRef.current.includes(el)) {
+            cardsRef.current.push(el);
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -37,6 +55,111 @@ const StudentTestimonials = () => {
             }
         };
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header animation with scrub
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Testimonial cards with 3D effect
+            cardsRef.current.forEach((card, index) => {
+                gsap.fromTo(card,
+                    { opacity: 0, y: 60, scale: 0.8, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        rotateX: 0,
+                        duration: 0.8,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+
+                // Parallax effect
+                gsap.fromTo(card,
+                    { y: 0 },
+                    {
+                        y: -15,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1
+                        }
+                    }
+                );
+            });
+
+            // Stats animation
+            gsap.fromTo(statsRef.current,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: statsRef.current,
+                        start: "top 90%",
+                        end: "top 70%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Quote decorations parallax
+            gsap.to(quote1Ref.current, {
+                y: -50,
+                rotation: -15,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(quote2Ref.current, {
+                y: -30,
+                rotation: 15,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1.5
+                }
+            });
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     useEffect(() => {
         if (!isVisible || isPaused) return;

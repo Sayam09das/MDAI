@@ -4,12 +4,27 @@ import {
   Brain, Cpu, Camera, Music, Globe, Sparkles, ArrowRight,
   Filter, Search, X, BookOpen
 } from 'lucide-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const CategoriesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const cardsRef = useRef([]);
+  const searchRef = useRef(null);
+
+  // Add refs to array
+  const addToCardsRef = (el) => {
+    if (el && !cardsRef.current.includes(el)) {
+      cardsRef.current.push(el);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -27,6 +42,86 @@ const CategoriesSection = () => {
 
     return () => observer.disconnect();
   }, []);
+
+  // GSAP Scroll Animations
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header animation with scrub
+      gsap.fromTo(headerRef.current,
+        { opacity: 0, y: 50 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            end: "top 50%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
+          }
+        }
+      );
+
+      // Search bar animation
+      gsap.fromTo(searchRef.current,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: searchRef.current,
+            start: "top 90%",
+            end: "top 70%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
+          }
+        }
+      );
+
+      // Category cards with 3D effect
+      cardsRef.current.forEach((card, index) => {
+        gsap.fromTo(card,
+          { opacity: 0, y: 60, scale: 0.8, rotateX: 45 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            rotateX: 0,
+            duration: 0.7,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 90%",
+              end: "top 60%",
+              scrub: 1.5,
+              toggleActions: "play reverse play reverse"
+            }
+          }
+        );
+
+        // Parallax effect
+        gsap.fromTo(card,
+          { y: 0 },
+          {
+            y: -10,
+            ease: "none",
+            scrollTrigger: {
+              trigger: card,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 1
+            }
+          }
+        );
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, [isVisible]);
 
   const categories = [
     {

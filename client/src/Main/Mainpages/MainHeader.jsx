@@ -28,6 +28,9 @@ const MainHeader = () => {
     const featuresRef = useRef(null);
     const statsRef = useRef(null);
     const videoRef = useRef(null);
+    const blob1Ref = useRef(null);
+    const blob2Ref = useRef(null);
+    const leftContentRef = useRef(null);
 
     useEffect(() => {
         setIsVisible(true);
@@ -86,6 +89,93 @@ const MainHeader = () => {
         return () => ctx.revert();
     }, []);
 
+    // Scroll-triggered Parallax Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Parallax for blob 1 - moves at different speed
+            gsap.to(blob1Ref.current, {
+                y: -150,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            // Parallax for blob 2 - opposite direction
+            gsap.to(blob2Ref.current, {
+                y: -100,
+                x: 50,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: 1.5
+                }
+            });
+
+            // Left content reveal on scroll
+            gsap.fromTo(leftContentRef.current,
+                { opacity: 0, x: -50 },
+                {
+                    opacity: 1,
+                    x: 0,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: containerRef.current,
+                        start: "top 80%",
+                        end: "top 30%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Video parallax - moves slightly on scroll
+            gsap.fromTo(videoRef.current,
+                { opacity: 0.5, scale: 0.9, y: 50 },
+                {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: containerRef.current,
+                        start: "top 70%",
+                        end: "top 20%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Stats counter animation on scroll
+            gsap.fromTo(statsRef.current,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: statsRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+        }, containerRef);
+
+        return () => ctx.revert();
+    }, []);
+
     const features = [
         { icon: Video, text: "Live Classes", color: "text-indigo-600" },
         { icon: BookOpen, text: "Expert Courses", color: "text-blue-600" },
@@ -93,30 +183,35 @@ const MainHeader = () => {
     ];
 
     return (
-        <div ref={containerRef} className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3">
+        <div ref={containerRef} className="relative min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-hidden mt-3" style={{ perspective: "1000px" }}>
             <div className="mt-20">
                 <AnnouncementMarquee />
             </div>
-            {/* Background blobs */}
-            <div className="absolute inset-0 pointer-events-none">
+            {/* Background blobs with parallax */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
-                    className="absolute top-20 left-10 w-64 h-64 bg-indigo-200 rounded-full blur-3xl opacity-30"
+                    ref={blob1Ref}
+                    className="absolute top-20 left-10 w-64 h-64 bg-indigo-200 rounded-full blur-3xl opacity-40"
                     style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
                 />
                 <div
-                    className="absolute top-40 right-20 w-72 h-72 bg-purple-200 rounded-full blur-3xl opacity-30"
+                    ref={blob2Ref}
+                    className="absolute top-40 right-20 w-72 h-72 bg-purple-200 rounded-full blur-3xl opacity-40"
                     style={{ transform: `translate(${-mousePosition.x}px, ${-mousePosition.y}px)` }}
                 />
+                {/* Additional decorative blobs */}
+                <div className="absolute bottom-20 left-1/3 w-48 h-48 bg-pink-200 rounded-full blur-3xl opacity-30 animate-pulse" />
             </div>
 
             <div className="relative max-w-7xl mx-auto px-4 pt-24 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                 {/* LEFT */}
                 <div
+                    ref={leftContentRef}
                     className={`space-y-8 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
                         }`}
                 >
                     {/* Badge */}
-                    <div ref={badgeRef} className="inline-flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow border">
+                    <div ref={badgeRef} className="inline-flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow border hover:shadow-lg hover:scale-105 transition-all duration-300">
                         <Sparkles className="w-4 h-4 text-indigo-600" />
                         <span className="text-sm font-medium text-gray-700">
                             AI-Powered Learning
@@ -152,7 +247,7 @@ const MainHeader = () => {
                             return (
                                 <div
                                     key={i}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow border"
+                                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow border hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                                 >
                                     <Icon className={`w-4 h-4 ${f.color}`} />
                                     <span className="text-sm font-medium text-gray-700">
@@ -190,7 +285,7 @@ const MainHeader = () => {
                 </div>
 
                 {/* RIGHT */}
-                <div ref={videoRef}>
+                <div ref={videoRef} className="transform-style-3d">
                     <Viedopage />
                 </div>
             </div>

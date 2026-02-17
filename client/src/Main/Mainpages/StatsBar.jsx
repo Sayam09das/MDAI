@@ -42,6 +42,8 @@ const StatsBar = () => {
     const statsRef = useRef([]);
     const separatorRef = useRef(null);
     const trustRef = useRef(null);
+    const float1Ref = useRef(null);
+    const float2Ref = useRef(null);
 
     // Default fallback values
     const defaultStats = {
@@ -79,61 +81,88 @@ const StatsBar = () => {
         fetchStats();
     }, []);
 
-    // GSAP Scroll Animations
+    // Add visibility observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
+    // GSAP Scroll Animations with scrub - works on scroll up and down
     useEffect(() => {
         const ctx = gsap.context(() => {
-            // Header animation
+            // Header animation with scrub - works on scroll up and down
             gsap.fromTo(headerRef.current,
-                { opacity: 0, y: 40 },
+                { opacity: 0, y: 50 },
                 {
                     opacity: 1,
                     y: 0,
                     duration: 1,
-                    ease: "power3.out",
+                    ease: "power2.out",
                     scrollTrigger: {
                         trigger: headerRef.current,
-                        start: "top 80%",
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
                     }
                 }
             );
 
-            // Stats cards stagger animation
-            if (statsRef.current.length > 0) {
-                gsap.fromTo(statsRef.current,
-                    { opacity: 0, y: 60, scale: 0.9 },
+            // Stats cards stagger animation - each card animates independently with 3D effect
+            statsRef.current.forEach((stat, index) => {
+                gsap.fromTo(stat,
+                    { opacity: 0, y: 80, scale: 0.8, rotateX: 45 },
                     {
                         opacity: 1,
                         y: 0,
                         scale: 1,
+                        rotateX: 0,
                         duration: 0.8,
-                        stagger: 0.15,
-                        ease: "back.out(1.7)",
+                        ease: "power3.out",
                         scrollTrigger: {
-                            trigger: statsRef.current[0],
-                            start: "top 85%",
+                            trigger: stat,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
                         }
                     }
                 );
-            }
+            });
 
-            // Separator line animation
+            // Separator line animation with scrub
             gsap.fromTo(separatorRef.current,
                 { opacity: 0, scaleX: 0 },
                 {
                     opacity: 1,
                     scaleX: 1,
-                    duration: 0.8,
+                    duration: 1,
                     ease: "power2.out",
                     scrollTrigger: {
                         trigger: separatorRef.current,
                         start: "top 90%",
+                        end: "top 70%",
+                        scrub: 1.5,
+                        toggleActions: "play reverse play reverse"
                     }
                 }
             );
 
-            // Trust badge animation
+            // Trust badge animation with scrub
             gsap.fromTo(trustRef.current,
-                { opacity: 0, y: 20 },
+                { opacity: 0, y: 30 },
                 {
                     opacity: 1,
                     y: 0,
@@ -142,9 +171,37 @@ const StatsBar = () => {
                     scrollTrigger: {
                         trigger: trustRef.current,
                         start: "top 95%",
+                        end: "top 80%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
                     }
                 }
             );
+
+            // Parallax floating blobs
+            gsap.to(float1Ref.current, {
+                y: -80,
+                rotation: 360,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(float2Ref.current, {
+                y: -60,
+                rotation: -360,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1.5
+                }
+            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -244,6 +301,7 @@ const StatsBar = () => {
         <div
             ref={sectionRef}
             className="relative py-12 md:py-16 bg-white border-y border-gray-200 overflow-hidden"
+            style={{ perspective: "1000px" }}
         >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-5">
@@ -253,9 +311,9 @@ const StatsBar = () => {
                 }} />
             </div>
 
-            {/* Floating Background Shapes */}
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" />
+            {/* Floating Background Shapes with parallax */}
+            <div ref={float1Ref} className="absolute top-0 left-1/4 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" />
+            <div ref={float2Ref} className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float-delayed" />
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -282,9 +340,10 @@ const StatsBar = () => {
                                 key={index}
                                 ref={addToStatsRef}
                                 className="group relative"
+                                style={{ transformStyle: "preserve-3d" }}
                             >
                                 {/* Card */}
-                                <div className="relative bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                                <div className="relative bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300" style={{ transform: "translateZ(0)" }}>
 
                                     {/* Gradient Border Effect on Hover */}
                                     <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />

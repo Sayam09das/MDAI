@@ -2,18 +2,33 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Video, Clock, Users, Calendar, Play, Lock, TrendingUp, Bell } from 'lucide-react';
 import { toast } from "react-toastify"
 import { useNavigate } from "react-router-dom"
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Register ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 const LiveClassesSection = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [activeTab, setActiveTab] = useState('all');
     const sectionRef = useRef(null);
+    const headerRef = useRef(null);
+    const cardsRef = useRef([]);
     const navigate = useNavigate()
+    const blob1Ref = useRef(null);
+    const blob2Ref = useRef(null);
 
 
     // Simulate user login status - Change to true to test logged-in state
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Add refs to array
+    const addToCardsRef = (el) => {
+        if (el && !cardsRef.current.includes(el)) {
+            cardsRef.current.push(el);
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -31,6 +46,93 @@ const LiveClassesSection = () => {
 
         return () => observer.disconnect();
     }, []);
+
+    // GSAP Scroll Animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Header animation with scrub
+            gsap.fromTo(headerRef.current,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: headerRef.current,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+
+            // Card animations with 3D effect
+            cardsRef.current.forEach((card, index) => {
+                gsap.fromTo(card,
+                    { opacity: 0, y: 80, scale: 0.8, rotateX: 45 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        rotateX: 0,
+                        duration: 0.8,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 90%",
+                            end: "top 60%",
+                            scrub: 1.5,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+
+                // Parallax effect
+                gsap.fromTo(card,
+                    { y: 0 },
+                    {
+                        y: -15,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1
+                        }
+                    }
+                );
+            });
+
+            // Parallax blobs
+            gsap.to(blob1Ref.current, {
+                y: -80,
+                rotation: 45,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(blob2Ref.current, {
+                y: -60,
+                rotation: -45,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: sectionRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1.5
+                }
+            });
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, [isVisible]);
 
     // Update current time every minute
     useEffect(() => {
